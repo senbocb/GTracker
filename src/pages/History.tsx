@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, History as HistoryIcon, Filter, Search, Download } from 'lucide-react';
+import { ChevronLeft, History as HistoryIcon, Filter, Search, Download, Calendar, Swords } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from 'react-router-dom';
@@ -22,12 +22,18 @@ const History = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
             <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">COMBAT LOGS</h1>
-            <p className="text-slate-400 font-medium">Review every engagement and tactical outcome.</p>
+            <p className="text-slate-400 font-medium">Review every engagement and tactical outcome across all operations.</p>
           </div>
-          <Button variant="outline" className="border-slate-800 bg-slate-900/50 hover:bg-slate-800">
-            <Download className="mr-2" size={18} />
-            EXPORT DATA
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="border-slate-800 bg-slate-900/50 hover:bg-slate-800">
+              <Calendar className="mr-2" size={18} />
+              DATE RANGE
+            </Button>
+            <Button variant="outline" className="border-slate-800 bg-slate-900/50 hover:bg-slate-800">
+              <Download className="mr-2" size={18} />
+              EXPORT
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -35,7 +41,7 @@ const History = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             <Input 
               placeholder="Search by map, agent, or result..." 
-              className="bg-slate-900 border-slate-800 pl-10 h-12"
+              className="bg-slate-900 border-slate-800 pl-10 h-12 focus:ring-blue-500"
             />
           </div>
           <Button variant="outline" className="border-slate-800 bg-slate-900/50 h-12 px-6">
@@ -45,14 +51,17 @@ const History = () => {
         </div>
 
         <div className="space-y-6">
-          <div className="p-1 rounded-2xl bg-slate-800/30 border border-slate-800">
-            <MatchHistory />
+          <div className="p-1 rounded-2xl bg-slate-800/10 border border-slate-800/50">
+            <MatchHistory matches={[]} />
           </div>
           
-          {/* Mocking more history for this page */}
-          <div className="p-1 rounded-2xl bg-slate-800/30 border border-slate-800 opacity-60">
-            <div className="p-6 text-center text-slate-500 font-bold uppercase tracking-widest text-xs">
-              End of Recent Logs • Load More
+          <div className="p-12 rounded-2xl bg-slate-900/20 border border-dashed border-slate-800 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center text-slate-700">
+              <Swords size={24} />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">End of Combat Logs</p>
+              <p className="text-xs text-slate-600">No further data available for the selected period.</p>
             </div>
           </div>
         </div>

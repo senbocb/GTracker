@@ -7,12 +7,12 @@ import ProgressChart from '@/components/ProgressChart';
 import MatchHistory from '@/components/MatchHistory';
 import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
-import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2 } from 'lucide-react';
+import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 
 const Index = () => {
-  // Empty state for games
+  // Empty state for games - in a real app, this would come from a database
   const games: any[] = [];
 
   return (
@@ -53,20 +53,47 @@ const Index = () => {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-black tracking-tight text-white mb-2">COMMAND CENTER</h1>
-            <p className="text-slate-400 font-medium">Initialize your trackers to begin data collection.</p>
+            <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">COMMAND CENTER</h1>
+            <p className="text-slate-400 font-medium">Operational overview and tactical performance monitoring.</p>
           </div>
-          <Link to="/add-game">
-            <Button className="bg-blue-600 hover:bg-blue-500 text-white font-black px-6 py-6 rounded-2xl shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
-              <Plus className="mr-2" size={20} />
-              ADD NEW GAME
-            </Button>
-          </Link>
+          <div className="flex gap-3">
+            <Link to="/add-game">
+              <Button className="bg-blue-600 hover:bg-blue-500 text-white font-black px-6 py-6 rounded-2xl shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
+                <Plus className="mr-2" size={20} />
+                INITIALIZE TRACKER
+              </Button>
+            </Link>
+          </div>
         </header>
+
+        {/* Global Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          {[
+            { label: 'Active Trackers', value: '0', icon: Gamepad2, color: 'text-blue-500' },
+            { label: 'Total Engagements', value: '0', icon: Activity, color: 'text-emerald-500' },
+            { label: 'Avg Win Rate', value: '0%', icon: Target, color: 'text-purple-500' },
+            { label: 'Session Time', value: '00:00', icon: Zap, color: 'text-yellow-500' },
+          ].map((stat, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <stat.icon size={16} className={stat.color} />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
+              </div>
+              <p className="text-2xl font-black text-white">{stat.value}</p>
+            </div>
+          ))}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column: Game Cards & Analytics */}
           <div className="lg:col-span-2 space-y-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <span className="w-2 h-6 bg-blue-600 rounded-full" />
+                ACTIVE OPERATIONS
+              </h2>
+            </div>
+
             {games.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {games.map((game, i) => (
@@ -74,16 +101,16 @@ const Index = () => {
                 ))}
               </div>
             ) : (
-              <div className="p-12 rounded-3xl border-2 border-dashed border-slate-800 flex flex-col items-center justify-center text-center space-y-4 bg-slate-900/20">
-                <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center text-slate-700">
-                  <Gamepad2 size={32} />
+              <div className="p-16 rounded-3xl border-2 border-dashed border-slate-800/50 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/10">
+                <div className="w-20 h-20 rounded-3xl bg-slate-900 flex items-center justify-center text-slate-700 shadow-inner">
+                  <Gamepad2 size={40} />
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-500">No Active Trackers</h3>
-                  <p className="text-slate-600 max-w-xs mx-auto">Add your first game to start monitoring your competitive performance.</p>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-slate-400">No Active Trackers</h3>
+                  <p className="text-slate-600 max-w-xs mx-auto text-sm">Deploy your first game tracker to begin monitoring your competitive performance metrics.</p>
                 </div>
                 <Link to="/add-game">
-                  <Button variant="outline" className="border-slate-800 hover:bg-slate-800">
+                  <Button variant="outline" className="border-slate-800 hover:bg-slate-800 text-slate-400 font-bold px-8">
                     Initialize Tracker
                   </Button>
                 </Link>
@@ -107,7 +134,10 @@ const Index = () => {
 
             <MatchHistory matches={[]} />
             
-            <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-white">
+            <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Target size={80} />
+              </div>
               <h3 className="text-lg font-black italic mb-4 uppercase tracking-tighter text-slate-500">Season Goal</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-end">
@@ -118,7 +148,7 @@ const Index = () => {
                   <div className="h-full bg-slate-700 w-0 rounded-full" />
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Define a target rank in your settings to track your seasonal progress.
+                  Define a target rank in your <Link to="/settings" className="text-blue-500 hover:underline">settings</Link> to track your seasonal progress.
                 </p>
               </div>
             </div>
