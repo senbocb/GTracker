@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2 } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from "@/lib/utils";
 import AppLayout from '@/components/AppLayout';
@@ -39,6 +39,7 @@ const COUNTRIES = [
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddingSocial, setIsAddingSocial] = useState(false);
   const [profile, setProfile] = useState({
     username: 'UNIDENTIFIED_USER',
     avatar: '',
@@ -52,8 +53,11 @@ const Profile = () => {
   const [games, setGames] = useState<any[]>([]);
   const [careerStats, setCareerStats] = useState<any[]>([]);
   
+  const [newSocial, setNewSocial] = useState({ name: '', url: '', icon: '' });
+  
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const socialIconRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
@@ -87,22 +91,55 @@ const Profile = () => {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner' | 'social') => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const maxWidth = type === 'avatar' ? 400 : 1200;
-        const maxHeight = type === 'avatar' ? 400 : 600;
+        let maxWidth = 400;
+        let maxHeight = 400;
+        
+        if (type === 'banner') {
+          maxWidth = 1200;
+          maxHeight = 600;
+        } else if (type === 'social') {
+          maxWidth = 100;
+          maxHeight = 100;
+        }
         
         const processed = await processImage(file, maxWidth, maxHeight, 0.7);
-        const updated = { ...profile, [type]: processed };
-        setProfile(updated);
-        localStorage.setItem('combat_profile', JSON.stringify(updated));
-        showSuccess(`${type} updated.`);
+        
+        if (type === 'social') {
+          setNewSocial({ ...newSocial, icon: processed });
+        } else {
+          const updated = { ...profile, [type]: processed };
+          setProfile(updated);
+          localStorage.setItem('combat_profile', JSON.stringify(updated));
+          showSuccess(`${type} updated.`);
+        }
       } catch (err) {
         showError(`Failed to process ${type}.`);
       }
     }
+  };
+
+  const handleAddSocial = () => {
+    if (!newSocial.name || !newSocial.url) {
+      showError("Name and URL are required.");
+      return;
+    }
+    const updatedSocials = [...socials, { ...newSocial, id: Date.now().toString() }];
+    setSocials(updatedSocials);
+    localStorage.setItem('combat_socials', JSON.stringify(updatedSocials));
+    setNewSocial({ name: '', url: '', icon: '' });
+    setIsAddingSocial(false);
+    showSuccess("Platform linked.");
+  };
+
+  const removeSocial = (id: string) => {
+    const updated = socials.filter(s => s.id !== id);
+    setSocials(updated);
+    localStorage.setItem('combat_socials', JSON.stringify(updated));
+    showSuccess("Platform removed.");
   };
 
   const level = Math.floor(profile.xp / 100) + 1;
@@ -198,15 +235,109 @@ const Profile = () => {
                   </div>
                 </div>
               ) : (
-                <div 
-                  onClick={() => setIsEditing(true)} 
-                  className="space-y-1 cursor-pointer group inline-block"
-                >
-                  <h1 className="text-3xl font-black tracking-tight text-white italic uppercase truncate group-hover:text-indigo-400 transition-colors flex items-center gap-3">
-                    {profile.username}
-                    <Edit2 size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
-                  </h1>
-                  <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Level {level} Operator</p>
+                <div className="space-y-2">
+                  <div 
+                    onClick={() => setIsEditing(true)} 
+                    className="cursor-pointer group inline-block"
+                  >
+                    <h1 className="text-3xl font-black tracking-tight text-white italic uppercase truncate group-hover:text-indigo-400 transition-colors flex items-center gap-3">
+                      {profile.username}
+                      <Edit2 size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
+                    </h1>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-4">
+                    <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Level {level} Operator</p>
+                    
+                    <div className="flex items-center gap-3">
+                      {socials.map((social) => (
+                        <div key={social.id} className="group relative flex items-center">
+                          <a 
+                            href={social.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white uppercase tracking-widest transition-colors"
+                          >
+                            {social.icon ? (
+                              <img src={social.icon} alt={social.name} className="w-4 h-4 object-contain rounded-sm" />
+                            ) : (
+                              <Globe size={14} />
+                            )}
+                            <span className="hidden sm:inline">{social.name}</span>
+                          </a>
+                          <button 
+                            onClick={() => removeSocial(social.id)}
+                            className="ml-1 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 transition-opacity"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      <Dialog open={isAddingSocial} onOpenChange={setIsAddingSocial}>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-indigo-500">
+                            <Plus size={14} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-slate-950 border-slate-800 text-white">
+                          <DialogHeader>
+                            <DialogTitle className="italic uppercase font-black">LINK PLATFORM</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-6 py-4">
+                            <div className="grid gap-2">
+                              <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Name</Label>
+                              <Input 
+                                placeholder="e.g. Twitter, Discord, Twitch" 
+                                value={newSocial.name}
+                                onChange={(e) => setNewSocial({...newSocial, name: e.target.value})}
+                                className="bg-slate-900 border-slate-800"
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile URL</Label>
+                              <Input 
+                                placeholder="https://..." 
+                                value={newSocial.url}
+                                onChange={(e) => setNewSocial({...newSocial, url: e.target.value})}
+                                className="bg-slate-900 border-slate-800"
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Icon (PNG/JPEG)</Label>
+                              <div className="flex items-center gap-4">
+                                <Button 
+                                  variant="outline" 
+                                  onClick={() => socialIconRef.current?.click()}
+                                  className="bg-slate-900 border-slate-800 text-slate-300"
+                                >
+                                  <Camera size={16} className="mr-2" />
+                                  Upload Icon
+                                </Button>
+                                {newSocial.icon && (
+                                  <div className="w-10 h-10 rounded bg-slate-900 border border-slate-800 p-1">
+                                    <img src={newSocial.icon} alt="Preview" className="w-full h-full object-contain" />
+                                  </div>
+                                )}
+                              </div>
+                              <input 
+                                type="file" 
+                                ref={socialIconRef} 
+                                className="hidden" 
+                                accept="image/*" 
+                                onChange={(e) => handleImageUpload(e, 'social')} 
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button onClick={handleAddSocial} className="w-full bg-indigo-600 font-black uppercase py-6">
+                              ATTACH LINK
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
