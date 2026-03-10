@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Gamepad2, Image as ImageIcon, Plus } from 'lucide-react';
+import { ChevronLeft, Gamepad2, Image as ImageIcon, Plus, Info } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,9 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link, useNavigate } from 'react-router-dom';
 import { showSuccess } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 
-const GAME_RANKS: Record<string, { ranks: string[], modes?: string[] }> = {
+const GAME_CONFIGS: Record<string, { ranks: string[], modes?: string[] }> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"] },
   "Counter-Strike 2": { ranks: [], modes: ["Premier", "Faceit"] },
   "Apex Legends": { ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"] },
@@ -22,62 +21,62 @@ const GAME_RANKS: Record<string, { ranks: string[], modes?: string[] }> = {
 
 const AddGame = () => {
   const navigate = useNavigate();
-  const [selectedGame, setSelectedGame] = useState('');
-  const [selectedModes, setSelectedModes] = useState<string[]>([]);
+  const [selection, setSelection] = useState(''); // Format: "GameTitle:ModeName" or "GameTitle"
   const [imageUrl, setImageUrl] = useState('');
-
-  const handleGameChange = (val: string) => {
-    setSelectedGame(val);
-    setSelectedModes([]);
-  };
-
-  const toggleMode = (mode: string) => {
-    setSelectedModes(prev => 
-      prev.includes(mode) ? prev.filter(m => m !== mode) : [...prev, mode]
-    );
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selection) return;
+
+    const [gameTitle, modeName] = selection.split(':');
+    const finalModeName = modeName || 'Standard';
+    
     const existingGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+    const existingGameIndex = existingGames.findIndex((g: any) => g.title === gameTitle);
     
-    // Check if game already exists to merge
-    const existingGameIndex = existingGames.findIndex((g: any) => g.title === selectedGame);
-    
-    const modesData = selectedModes.length > 0 ? selectedModes : ['Standard'];
-    
-    const newModes = modesData.map(mode => ({
-      name: mode,
+    const newMode = {
+      name: finalModeName,
       rank: 'Unranked',
       tier: '',
       peakRank: 'Unranked',
       history: []
-    }));
+    };
 
     if (existingGameIndex > -1) {
-      // Merge modes
       const game = existingGames[existingGameIndex];
-      const currentModeNames = game.modes.map((m: any) => m.name);
-      const filteredNewModes = newModes.filter(m => !currentModeNames.includes(m.name));
-      game.modes = [...game.modes, ...filteredNewModes];
+      const modeExists = game.modes.some((m: any) => m.name === finalModeName);
+      
+      if (!modeExists) {
+        game.modes.push(newMode);
+      }
       if (imageUrl) game.image = imageUrl;
     } else {
       existingGames.push({
         id: Date.now().toString(),
-        title: selectedGame,
+        title: gameTitle,
         image: imageUrl,
-        modes: newModes,
+        modes: [newMode],
         winRate: '0%',
         hoursPlayed: '0h'
       });
     }
     
     localStorage.setItem('combat_games', JSON.stringify(existingGames));
-    showSuccess(`${selectedGame} tracker initialized.`);
+    showSuccess(`${gameTitle} (${finalModeName}) tracker initialized.`);
     navigate('/');
   };
 
-  const gameData = GAME_RANKS[selectedGame];
+  // Flatten configs into a single list of options
+  const options: { label: string, value: string }[] = [];
+  Object.entries(GAME_CONFIGS).forEach(([title, config]) => {
+    if (config.modes) {
+      config.modes.forEach(mode => {
+        options.push({ label: `${title} - ${mode}`, value: `${title}:${mode}` });
+      });
+    } else {
+      options.push({ label: title, value: title });
+    }
+  });
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
@@ -91,7 +90,7 @@ const AddGame = () => {
 
         <div className="mb-10">
           <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">INITIALIZE TRACKER</h1>
-          <p className="text-slate-400 font-medium">Select a game and the ranking systems you wish to monitor.</p>
+          <p className="text-slate-400 font-medium">Select your combat environment from the unified deployment list.</p>
         </div>
 
         <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl overflow-hidden">
@@ -99,47 +98,31 @@ const AddGame = () => {
           <CardHeader>
             <CardTitle className="text-xl font-bold flex items-center gap-2">
               <Gamepad2 className="text-blue-500" />
-              GAME CONFIG
+              DEPLOYMENT CONFIG
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-6">
                 <div className="grid gap-2">
-                  <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Select Game</Label>
-                  <Select onValueChange={handleGameChange} required>
-                    <SelectTrigger className="bg-slate-950 border-slate-800 h-12">
-                      <SelectValue placeholder="Choose a title..." />
+                  <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Select Game & Mode</Label>
+                  <Select onValueChange={setSelection} required>
+                    <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base">
+                      <SelectValue placeholder="Choose an operation..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      {Object.keys(GAME_RANKS).map(game => (
-                        <SelectItem key={game} value={game}>{game}</SelectItem>
+                      {options.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value} className="py-3">
+                          {opt.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-[10px] text-slate-600 flex items-center gap-1 mt-1">
+                    <Info size={10} />
+                    Multiple modes for the same game will be grouped automatically.
+                  </p>
                 </div>
-
-                {gameData?.modes && (
-                  <div className="space-y-3">
-                    <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Ranking Systems</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {gameData.modes.map(mode => (
-                        <div 
-                          key={mode} 
-                          onClick={() => toggleMode(mode)}
-                          className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                            selectedModes.includes(mode) 
-                              ? 'bg-blue-600/10 border-blue-500 text-white' 
-                              : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700'
-                          }`}
-                        >
-                          <Checkbox checked={selectedModes.includes(mode)} className="border-slate-700" />
-                          <span className="font-bold uppercase text-xs tracking-wider">{mode}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Cover Image URL (Optional)</Label>
@@ -156,7 +139,7 @@ const AddGame = () => {
                 </div>
               </div>
 
-              <Button type="submit" disabled={!selectedGame} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Button type="submit" disabled={!selection} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
                 DEPLOY TRACKER
               </Button>
             </form>
