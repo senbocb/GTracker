@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity } from 'lucide-react';
+import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -88,6 +88,7 @@ const GameDetail = () => {
     timestamp: new Date().toISOString().slice(0, 16)
   });
   const [isLogOpen, setIsLogOpen] = useState(false);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -189,19 +190,38 @@ const GameDetail = () => {
         const modeIdx = g.modes.findIndex((m: any) => m.name === activeMode);
         if (modeIdx === -1) return g;
 
-        const historyEntry = {
-          id: Date.now().toString(),
-          rank: logData.rank,
-          tier: logData.tier,
-          timestamp: new Date(logData.timestamp).toISOString()
-        };
-
         const newModes = [...g.modes];
+        const history = [...(g.modes[modeIdx].history || [])];
+
+        if (editingLogId) {
+          const logIdx = history.findIndex(h => h.id === editingLogId);
+          if (logIdx > -1) {
+            history[logIdx] = {
+              ...history[logIdx],
+              rank: logData.rank,
+              tier: logData.tier,
+              timestamp: new Date(logData.timestamp).toISOString()
+            };
+          }
+        } else {
+          history.unshift({
+            id: Date.now().toString(),
+            rank: logData.rank,
+            tier: logData.tier,
+            timestamp: new Date(logData.timestamp).toISOString()
+          });
+        }
+
+        // Update current rank if this is the newest entry
+        const newest = history.reduce((prev, curr) => 
+          new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
+        );
+
         newModes[modeIdx] = {
           ...g.modes[modeIdx],
-          rank: logData.rank,
-          tier: logData.tier,
-          history: [historyEntry, ...(g.modes[modeIdx].history || [])]
+          rank: newest.rank,
+          tier: newest.tier,
+          history: history
         };
         return { ...g, modes: newModes };
       }
@@ -211,7 +231,18 @@ const GameDetail = () => {
     localStorage.setItem('combat_games', JSON.stringify(updatedGames));
     setGame(updatedGames.find((g: any) => g.id === id));
     setIsLogOpen(false);
-    showSuccess("Rank update logged.");
+    setEditingLogId(null);
+    showSuccess(editingLogId ? "Log entry updated." : "Rank update logged.");
+  };
+
+  const openEditDialog = (log: any) => {
+    setEditingLogId(log.id);
+    setLogData({
+      rank: log.rank,
+      tier: log.tier,
+      timestamp: new Date(log.timestamp).toISOString().slice(0, 16)
+    });
+    setIsLogOpen(true);
   };
 
   const showTierSelect = metadata.tierCount > 0 && !metadata.noTierRanks.includes(logData.rank);
@@ -228,18 +259,18 @@ const GameDetail = () => {
               Back to Dashboard
             </Button>
           </Link>
-          <Dialog open={isLogOpen} onOpenChange={setIsLogOpen}>
+          <Dialog open={isLogOpen} onOpenChange={(v) => { setIsLogOpen(v); if(!v) setEditingLogId(null); }}>
             <DialogTrigger asChild>
               <Button className="bg-indigo-600 hover:bg-indigo-500 font-bold shadow-lg shadow-indigo-600/20">
                 <Plus size={16} className="mr-2" /> LOG RANK CHANGE
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-slate-950 border-slate-800 text-white">
-              <DialogHeader><DialogTitle className="italic uppercase font-black">LOG COMBAT DATA</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="italic uppercase font-black">{editingLogId ? 'EDIT COMBAT LOG' : 'LOG COMBAT DATA'}</DialogTitle></DialogHeader>
               <div className="space-y-6 py-4">
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">
-                    {isFaceit ? 'Faceit ELO' : 'New Rank'}
+                    {isFaceit ? 'Faceit ELO' : 'Rank / Rating'}
                   </Label>
                   {metadata.ranks.length > 0 ? (
                     <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
@@ -295,7 +326,7 @@ const GameDetail = () => {
                   <Input type="datetime-local" value={logData.timestamp} onChange={(e) => setLogData({...logData, timestamp: e.target.value})} className="bg-slate-900 border-slate-800" />
                 </div>
               </div>
-              <DialogFooter><Button onClick={handleLogRank} className="w-full bg-indigo-600 font-black uppercase py-6">Confirm Log</Button></DialogFooter>
+              <DialogFooter><Button onClick={handleLogRank} className="w-full bg-indigo-600 font-black uppercase py-6">{editingLogId ? 'Update Entry' : 'Confirm Log'}</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -341,6 +372,7 @@ const GameDetail = () => {
                       <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-slate-800">Date / Time</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-slate-800">Rank / Rating</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -370,9 +402,19 @@ const GameDetail = () => {
                             )}
                           </div>
                         </td>
+                        <td className="px-6 py-4">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-slate-500 hover:text-white"
+                            onClick={() => openEditDialog(h)}
+                          >
+                            <Edit2 size={14} />
+                          </Button>
+                        </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={3} className="px-6 py-12 text-center text-slate-600 text-xs font-bold uppercase tracking-widest">No combat data logged.</td></tr>
+                      <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-600 text-xs font-bold uppercase tracking-widest">No combat data logged.</td></tr>
                     )}
                   </tbody>
                 </table>

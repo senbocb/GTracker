@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -60,11 +60,36 @@ const Profile = () => {
   };
 
   const level = Math.floor(profile.xp / 100) + 1;
+  
+  const peakAchievements = useMemo(() => {
+    return games.filter(game => {
+      return game.modes.some((mode: any) => {
+        const r = mode.peakRank?.toLowerCase() || "";
+        const t = mode.tier?.toLowerCase() || "";
+        const g = game.title?.toLowerCase() || "";
+
+        if (g.includes('valorant') && r === 'radiant') return true;
+        if (g.includes('overwatch') && r === 'top 500') return true;
+        if (g.includes('league') && r === 'challenger') return true;
+        if (g.includes('apex') && r === 'apex predator') return true;
+        if (g.includes('counter-strike') && t.includes('level 10')) return true;
+        return false;
+      });
+    }).map(game => ({
+      id: `master_${game.id}`,
+      label: `${game.title} Master`,
+      icon: <Trophy size={20} />,
+      unlocked: true,
+      color: 'text-indigo-400 rainbow-gradient'
+    }));
+  }, [games]);
+
   const medals = [
     { id: 'recruit', label: 'Recruit', icon: <User size={20} />, minLevel: 1, color: 'text-slate-400' },
     { id: 'veteran', label: 'Veteran', icon: <Shield size={20} />, minLevel: 5, color: 'text-blue-400' },
     { id: 'elite', label: 'Elite', icon: <Star size={20} />, minLevel: 10, color: 'text-indigo-400' },
     { id: 'legend', label: 'Legend', icon: <Trophy size={20} />, minLevel: 20, color: 'text-yellow-400' },
+    ...peakAchievements
   ];
 
   return (
@@ -117,15 +142,18 @@ const Profile = () => {
             <section className="space-y-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2"><Medal className="text-yellow-500" size={20} /> MEDALS & ACHIEVEMENTS</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {medals.map((medal) => (
-                  <div key={medal.id} className={cn("p-4 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all", level >= medal.minLevel ? "bg-slate-900/50 border-slate-800" : "bg-slate-950/20 border-slate-900 opacity-30 grayscale")}>
-                    <div className={cn("w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center shadow-lg", level >= medal.minLevel ? medal.color : "text-slate-800")}>{medal.icon}</div>
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>
-                      <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{level >= medal.minLevel ? 'Unlocked' : `Level ${medal.minLevel}`}</p>
+                {medals.map((medal: any) => {
+                  const isUnlocked = medal.unlocked || level >= medal.minLevel;
+                  return (
+                    <div key={medal.id} className={cn("p-4 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all", isUnlocked ? "bg-slate-900/50 border-slate-800" : "bg-slate-950/20 border-slate-900 opacity-30 grayscale")}>
+                      <div className={cn("w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center shadow-lg", isUnlocked ? medal.color : "text-slate-800")}>{medal.icon}</div>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>
+                        <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{isUnlocked ? 'Unlocked' : `Level ${medal.minLevel}`}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           </div>

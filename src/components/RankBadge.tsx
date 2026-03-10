@@ -14,8 +14,24 @@ interface RankBadgeProps {
 const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) => {
   const [imgError, setImgError] = useState(false);
 
+  const isPeakRank = () => {
+    const r = rank?.toLowerCase() || "";
+    const t = tier?.toLowerCase() || "";
+    const g = gameTitle?.toLowerCase() || "";
+
+    if (g.includes('valorant') && r === 'radiant') return true;
+    if (g.includes('overwatch') && r === 'top 500') return true;
+    if (g.includes('league') && r === 'challenger') return true;
+    if (g.includes('apex') && r === 'apex predator') return true;
+    if (g.includes('counter-strike') && t.includes('level 10')) return true;
+    
+    return false;
+  };
+
   const getRankColor = (rankName: string) => {
-    const r = rankName.toLowerCase();
+    if (isPeakRank()) return 'rainbow-gradient';
+
+    const r = rankName?.toLowerCase() || "";
     const t = tier?.toLowerCase() || "";
     
     // Faceit specific colors based on level
@@ -40,7 +56,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
 
   const getIconUrl = (game: string, rankName: string, tierName?: string) => {
     const g = game.toLowerCase();
-    const r = rankName.toLowerCase();
+    const r = rankName?.toLowerCase() || "";
     const t = tierName?.toLowerCase() || "";
     
     // Valorant
