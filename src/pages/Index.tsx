@@ -8,10 +8,11 @@ import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
-import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap } from 'lucide-react';
+import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap, Search, Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const DEFAULT_LAYOUT: LayoutSection[] = [
   { id: 'quick_stats', label: 'Quick Stats', enabled: true },
@@ -109,19 +110,21 @@ const Index = () => {
     switch (id) {
       case 'quick_stats':
         return (
-          <div key="quick_stats" className={cn("mb-10", isCompact && "mb-6")}>
+          <div key="quick_stats" className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Quick Stats</h2>
+              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Tactical Overview</h2>
               <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} />
             </div>
-            <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-4", isCompact && "gap-3")}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {statConfigs.filter(c => c.enabled).map((config) => (
-                <div key={config.id} className={cn("p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm", isCompact && "p-3")}>
+                <div key={config.id} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm group hover:border-blue-500/30 transition-all">
                   <div className="flex items-center gap-3 mb-2">
-                    <Activity size={14} className="text-blue-500" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{config.label}</span>
+                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Activity size={12} className="text-blue-500" />
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{config.label}</span>
                   </div>
-                  <p className={cn("text-2xl font-black text-white", isCompact && "text-xl")}>{getStatValue(config)}</p>
+                  <p className="text-2xl font-black text-white tabular-nums">{getStatValue(config)}</p>
                 </div>
               ))}
             </div>
@@ -129,19 +132,26 @@ const Index = () => {
         );
       case 'active_operations':
         return (
-          <div key="active_operations" className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <span className="w-2 h-6 bg-blue-600 rounded-full" />
-              ACTIVE OPERATIONS
-            </h2>
+          <div key="active_operations" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-black text-white flex items-center gap-3 italic uppercase tracking-tight">
+                <span className="w-1.5 h-6 bg-blue-600 rounded-full" />
+                Active Operations
+              </h2>
+              <Link to="/add-game">
+                <Button variant="ghost" size="sm" className="text-blue-500 hover:text-blue-400 font-bold text-[10px] uppercase tracking-widest">
+                  <Plus size={14} className="mr-1" /> New Deployment
+                </Button>
+              </Link>
+            </div>
             {games.length > 0 ? (
-              <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6", isCompact && "gap-4")}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {games.map((game) => (
                   <GameCard key={game.id} {...game} />
                 ))}
               </div>
             ) : (
-              <div className="p-16 rounded-3xl border-2 border-dashed border-slate-800/50 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/10">
+              <div className="p-16 rounded-[2rem] border-2 border-dashed border-slate-800/50 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/10">
                 <div className="w-20 h-20 rounded-3xl bg-slate-900 flex items-center justify-center text-slate-700 shadow-inner">
                   <Gamepad2 size={40} />
                 </div>
@@ -150,7 +160,7 @@ const Index = () => {
                   <p className="text-slate-600 max-w-xs mx-auto text-sm">Deploy your first game tracker to begin monitoring your competitive performance metrics.</p>
                 </div>
                 <Link to="/add-game">
-                  <Button variant="outline" className="border-slate-800 hover:bg-slate-800 text-slate-400 font-bold px-8">
+                  <Button className="bg-blue-600 hover:bg-blue-500 text-white font-black px-8 py-6 rounded-2xl">
                     Initialize Tracker
                   </Button>
                 </Link>
@@ -161,6 +171,7 @@ const Index = () => {
       case 'session_tracker':
         return (
           <div key="session_tracker" className="space-y-4">
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Live Intel</h2>
             <SessionTracker />
             <AddMatchModal />
           </div>
@@ -168,10 +179,7 @@ const Index = () => {
       case 'match_history':
         return (
           <div key="match_history" className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <span className="w-2 h-6 bg-blue-600 rounded-full" />
-              RECENT ACTIVITY
-            </h2>
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Recent Engagements</h2>
             <MatchHistory matches={recentMatches} />
           </div>
         );
@@ -180,72 +188,88 @@ const Index = () => {
     }
   };
 
-  const mainSectionIds = ['quick_stats', 'active_operations'];
-  const sidebarSectionIds = ['session_tracker', 'match_history'];
-
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
-      <aside className="fixed left-0 top-0 h-full w-20 hidden md:flex flex-col items-center py-8 border-r border-slate-800 bg-slate-950/50 backdrop-blur-xl z-50">
-        <Link to="/">
-          <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center mb-12 shadow-lg shadow-blue-600/20 cursor-pointer hover:scale-105 transition-transform">
-            <LayoutDashboard className="text-white" size={24} />
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:scale-105 transition-transform">
+                <LayoutDashboard className="text-white" size={20} />
+              </div>
+              <span className="text-lg font-black italic uppercase tracking-tighter text-white hidden sm:block">Command Center</span>
+            </Link>
+            
+            <nav className="hidden md:flex items-center gap-1">
+              <Link to="/">
+                <Button variant="ghost" className="text-slate-400 hover:text-white font-bold text-[11px] uppercase tracking-widest px-4">Dashboard</Button>
+              </Link>
+              <Link to="/history">
+                <Button variant="ghost" className="text-slate-400 hover:text-white font-bold text-[11px] uppercase tracking-widest px-4">History</Button>
+              </Link>
+              <Link to="/settings">
+                <Button variant="ghost" className="text-slate-400 hover:text-white font-bold text-[11px] uppercase tracking-widest px-4">Settings</Button>
+              </Link>
+            </nav>
           </div>
-        </Link>
-        <nav className="flex flex-col gap-8">
-          <Link to="/history">
-            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
-              <History size={24} />
-            </Button>
-          </Link>
-          <Link to="/profile">
-            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
-              <User size={24} />
-            </Button>
-          </Link>
-          <Link to="/settings">
-            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
-              <Settings size={24} />
-            </Button>
-          </Link>
-        </nav>
-        <div className="mt-auto">
-          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
-            <Bell size={20} />
-          </Button>
-        </div>
-      </aside>
 
-      <main className={cn("md:ml-20 p-6 md:p-10 max-w-7xl mx-auto", isCompact && "p-4 md:p-6")}>
-        <header className={cn("flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12", isCompact && "mb-8")}>
-          <div>
-            <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">
-              {profile?.username ? `${profile.username}'S COMMAND CENTER` : 'COMMAND CENTER'}
-            </h1>
-            <p className="text-slate-400 font-medium">Operational overview and tactical performance monitoring.</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <LayoutSettings sections={layout} onUpdate={updateLayout} />
-            <Link to="/add-game">
-              <Button className="bg-blue-600 hover:bg-blue-500 text-white font-black px-6 py-6 rounded-2xl shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
-                <Plus className="mr-2" size={20} />
-                INITIALIZE TRACKER
-              </Button>
+          <div className="flex items-center gap-4">
+            <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-slate-800">
+              <Search size={14} className="text-slate-500" />
+              <input 
+                type="text" 
+                placeholder="Search operations..." 
+                className="bg-transparent border-none outline-none text-[11px] font-bold text-slate-300 placeholder:text-slate-600 w-32"
+              />
+            </div>
+            
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white relative">
+              <Bell size={20} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-slate-950" />
+            </Button>
+
+            <Link to="/profile">
+              <div className="flex items-center gap-3 pl-4 border-l border-slate-800 group cursor-pointer">
+                <div className="text-right hidden sm:block">
+                  <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{profile?.username || 'OPERATOR'}</p>
+                  <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest leading-none">Level {Math.floor((profile?.xp || 0) / 100) + 1}</p>
+                </div>
+                <Avatar className="w-10 h-10 border-2 border-slate-800 group-hover:border-blue-500 transition-colors">
+                  <AvatarImage src={profile?.avatar} />
+                  <AvatarFallback className="bg-slate-900 text-slate-400 font-black">
+                    {profile?.username?.substring(0, 2).toUpperCase() || 'OP'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
             </Link>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
+      <main className="max-w-7xl mx-auto p-6 md:p-10">
+        <div className="flex flex-col lg:flex-row gap-10">
+          {/* Main Content Area */}
+          <div className="flex-1 space-y-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-black tracking-tight text-white italic uppercase">Operational Status</h1>
+                <p className="text-slate-500 font-medium text-sm">Real-time performance metrics and deployment status.</p>
+              </div>
+              <LayoutSettings sections={layout} onUpdate={updateLayout} />
+            </div>
+
             {layout
-              .filter(s => mainSectionIds.includes(s.id))
+              .filter(s => ['quick_stats', 'active_operations'].includes(s.id))
               .map(s => renderSection(s.id))}
           </div>
 
-          <div className="space-y-8">
+          {/* Sidebar Intel Panel */}
+          <aside className="w-full lg:w-80 space-y-10">
             {layout
-              .filter(s => sidebarSectionIds.includes(s.id))
+              .filter(s => ['session_tracker', 'match_history'].includes(s.id))
               .map(s => renderSection(s.id))}
-          </div>
+          </aside>
         </div>
 
         <footer className="mt-20 pb-10 border-t border-slate-800 pt-10">
