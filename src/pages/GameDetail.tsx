@@ -278,7 +278,7 @@ const GameDetail = () => {
             </div>
             <div className="flex flex-col items-end gap-2">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Current Status</p>
-              <RankBadge rank={currentModeData?.rank} tier={currentModeData?.tier} className="scale-110" />
+              <RankBadge rank={currentModeData?.rank} tier={currentModeData?.tier} gameTitle={game.title} className="scale-110" />
             </div>
           </div>
         </div>
@@ -327,6 +327,7 @@ const GameDetail = () => {
                         </p>
                       </div>
                     </div>
+                    <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
                   </div>
                 ))}
               </CardContent>

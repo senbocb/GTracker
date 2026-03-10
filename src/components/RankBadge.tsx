@@ -1,16 +1,19 @@
 "use client";
 
-import React from 'react';
-import { Trophy, Star, Shield, Medal } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trophy } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface RankBadgeProps {
   rank: string;
   tier?: string;
+  gameTitle?: string;
   className?: string;
 }
 
-const RankBadge = ({ rank, tier, className }: RankBadgeProps) => {
+const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) => {
+  const [imgError, setImgError] = useState(false);
+
   const getRankColor = (rankName: string) => {
     const r = rankName.toLowerCase();
     if (r.includes('iron') || r.includes('bronze')) return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
@@ -24,15 +27,60 @@ const RankBadge = ({ rank, tier, className }: RankBadgeProps) => {
     return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
   };
 
+  const getIconUrl = (game: string, rankName: string, tierName?: string) => {
+    const g = game.toLowerCase();
+    const r = rankName.toLowerCase();
+    const t = tierName?.toLowerCase() || "";
+    
+    // Valorant
+    if (g.includes('valorant')) {
+      const tierNum = t.replace(/\D/g, '') || '1';
+      return `https://trackercdn.com/cdn/valorant/ranks/${r}_${tierNum}.png`;
+    }
+    
+    // League of Legends
+    if (g.includes('league')) {
+      return `https://trackercdn.com/cdn/league/ranks/${r}.png`;
+    }
+
+    // Apex Legends
+    if (g.includes('apex')) {
+      return `https://trackercdn.com/cdn/apex/ranks/${r}.png`;
+    }
+
+    // Overwatch
+    if (g.includes('overwatch')) {
+      return `https://trackercdn.com/cdn/overwatch/ranks/${r}.png`;
+    }
+
+    // CS2 Faceit
+    if (r.includes('level')) {
+      const lvl = r.replace(/\D/g, '');
+      return `https://trackercdn.com/cdn/faceit/levels/level${lvl}.png`;
+    }
+
+    return null;
+  };
+
+  const iconUrl = getIconUrl(gameTitle, rank, tier);
   const colorClasses = getRankColor(rank);
 
   return (
     <div className={cn(
-      "flex items-center gap-2 px-3 py-1 rounded-full border text-sm font-bold uppercase tracking-wider",
+      "flex items-center gap-2 px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all hover:scale-105",
       colorClasses,
       className
     )}>
-      <Trophy size={14} />
+      {iconUrl && !imgError ? (
+        <img 
+          src={iconUrl} 
+          alt={rank} 
+          className="w-5 h-5 object-contain"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <Trophy size={12} />
+      )}
       <span>{rank} {tier}</span>
     </div>
   );

@@ -55,7 +55,7 @@ const GameCard = ({ id, title, modes = [], winRate, hoursPlayed, image }: GameCa
             <div key={idx} className="flex items-center justify-between border-b border-slate-800/50 pb-2 last:border-0 last:pb-0">
               <div className="space-y-0.5">
                 <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">{mode.name}</p>
-                <RankBadge rank={mode.rank} tier={mode.tier} className="scale-90 origin-left" />
+                <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-90 origin-left" />
               </div>
               <div className="text-right">
                 <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Peak</p>
