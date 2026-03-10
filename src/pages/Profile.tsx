@@ -14,14 +14,39 @@ import { cn } from "@/lib/utils";
 import AppLayout from '@/components/AppLayout';
 import { processImage } from '@/utils/imageProcessing';
 
+const COUNTRIES = [
+  { name: "United States", flag: "🇺🇸" },
+  { name: "United Kingdom", flag: "🇬🇧" },
+  { name: "Canada", flag: "🇨🇦" },
+  { name: "Germany", flag: "🇩🇪" },
+  { name: "France", flag: "🇫🇷" },
+  { name: "Japan", flag: "🇯🇵" },
+  { name: "South Korea", flag: "🇰🇷" },
+  { name: "Brazil", flag: "🇧🇷" },
+  { name: "Australia", flag: "🇦🇺" },
+  { name: "India", flag: "🇮🇳" },
+  { name: "China", flag: "🇨🇳" },
+  { name: "Spain", flag: "🇪🇸" },
+  { name: "Italy", flag: "🇮🇹" },
+  { name: "Netherlands", flag: "🇳🇱" },
+  { name: "Sweden", flag: "🇸🇪" },
+  { name: "Norway", flag: "🇳🇴" },
+  { name: "Denmark", flag: "🇩🇰" },
+  { name: "Finland", flag: "🇫🇮" },
+  { name: "Poland", flag: "🇵🇱" },
+  { name: "Turkey", flag: "🇹🇷" },
+];
+
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     username: 'UNIDENTIFIED_USER',
     avatar: '',
     banner: '',
-    createdAt: '',
-    xp: 0
+    createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    xp: 0,
+    country: 'United States',
+    countryFlag: '🇺🇸'
   });
   const [socials, setSocials] = useState<any[]>([]);
   const [games, setGames] = useState<any[]>([]);
@@ -32,7 +57,15 @@ const Profile = () => {
 
   useEffect(() => {
     const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
-    if (savedProfile) setProfile(savedProfile);
+    if (savedProfile) {
+      setProfile(prev => ({
+        ...prev,
+        ...savedProfile,
+        createdAt: savedProfile.createdAt || prev.createdAt,
+        country: savedProfile.country || prev.country,
+        countryFlag: savedProfile.countryFlag || prev.countryFlag
+      }));
+    }
     const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
     setSocials(savedSocials);
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -45,6 +78,13 @@ const Profile = () => {
     localStorage.setItem('combat_profile', JSON.stringify(profile));
     setIsEditing(false);
     showSuccess("Profile updated.");
+  };
+
+  const handleCountryChange = (countryName: string) => {
+    const country = COUNTRIES.find(c => c.name === countryName);
+    if (country) {
+      setProfile({ ...profile, country: country.name, countryFlag: country.flag });
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
@@ -104,7 +144,14 @@ const Profile = () => {
         <div className="relative mb-12">
           <div className="h-48 w-full rounded-3xl bg-slate-900/90 border border-slate-800 overflow-hidden relative backdrop-blur-sm">
             {profile.banner ? <img src={profile.banner} alt="Banner" className="w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent" />}
-            <Button variant="ghost" size="sm" className="absolute top-4 right-4 text-slate-300 hover:text-white bg-slate-950/50" onClick={() => bannerInputRef.current?.click()}><Camera size={14} className="mr-2" /> Edit Banner</Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute top-4 right-4 text-slate-300 hover:text-white bg-slate-950/50 rounded-full h-10 w-10" 
+              onClick={() => bannerInputRef.current?.click()}
+            >
+              <Camera size={18} />
+            </Button>
             <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
           </div>
           
@@ -116,15 +163,52 @@ const Profile = () => {
             </div>
             
             <div className="pb-4 flex-1 min-w-0">
-              {isEditing ? <Input value={profile.username} onChange={(e) => setProfile({...profile, username: e.target.value})} className="bg-slate-900 border-slate-800 text-white font-black italic h-10" /> : (
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-black tracking-tight text-white italic uppercase truncate">{profile.username}</h1>
+              {isEditing ? (
+                <div className="space-y-3 max-w-xs animate-in fade-in slide-in-from-left-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Username</Label>
+                    <Input 
+                      value={profile.username} 
+                      onChange={(e) => setProfile({...profile, username: e.target.value})} 
+                      className="bg-slate-900 border-slate-800 text-white font-black italic h-10" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Country</Label>
+                    <Select onValueChange={handleCountryChange} value={profile.country}>
+                      <SelectTrigger className="bg-slate-900 border-slate-800 text-white h-10">
+                        <SelectValue placeholder="Select Country" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {COUNTRIES.map(c => (
+                          <SelectItem key={c.name} value={c.name} className="focus:bg-indigo-600">
+                            <span className="mr-2">{c.flag}</span> {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-500 font-bold">
+                      <Check size={16} className="mr-1" /> Save Changes
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-white">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => setIsEditing(true)} 
+                  className="space-y-1 cursor-pointer group inline-block"
+                >
+                  <h1 className="text-3xl font-black tracking-tight text-white italic uppercase truncate group-hover:text-indigo-400 transition-colors flex items-center gap-3">
+                    {profile.username}
+                    <Edit2 size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
+                  </h1>
                   <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Level {level} Operator</p>
                 </div>
               )}
-            </div>
-            <div className="pb-4 shrink-0">
-              {isEditing ? <Button size="sm" onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-500"><Check size={16} className="mr-1" /> Save</Button> : <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="border-slate-800 text-slate-300 hover:text-white hover-highlight"><Edit2 size={14} className="mr-2" /> Edit Profile</Button>}
             </div>
           </div>
         </div>
@@ -166,8 +250,25 @@ const Profile = () => {
             <section className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-sm">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Profile Stats</h3>
               <div className="space-y-4">
-                <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Total XP</span><span className="text-sm font-black text-indigo-400">{profile.xp}</span></div>
-                <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Games Tracked</span><span className="text-sm font-black text-white">{games.length}</span></div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-300 uppercase">Joined</span>
+                  <span className="text-sm font-black text-white">{profile.createdAt}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-300 uppercase">Country</span>
+                  <span className="text-sm font-black text-white flex items-center gap-2">
+                    <span>{profile.countryFlag}</span>
+                    <span>{profile.country}</span>
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-300 uppercase">Total XP</span>
+                  <span className="text-sm font-black text-indigo-400">{profile.xp}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-300 uppercase">Games Tracked</span>
+                  <span className="text-sm font-black text-white">{games.length}</span>
+                </div>
               </div>
             </section>
           </div>

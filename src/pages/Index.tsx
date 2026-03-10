@@ -106,7 +106,7 @@ const Index = () => {
         return (
           <div key="quick_stats" className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tactical Overview</h2>
+              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Tactical Overview</h2>
               <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -213,11 +213,7 @@ const Index = () => {
       <main className="max-w-7xl mx-auto p-6 md:p-10">
         <div className="flex flex-col lg:flex-row gap-10">
           <div className="flex-1 space-y-10">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-black tracking-tight text-white italic uppercase">Operational Status</h1>
-                <p className="text-slate-400 font-medium text-sm">Real-time performance metrics and deployment status.</p>
-              </div>
+            <div className="flex items-center justify-end mb-6">
               <LayoutSettings sections={layout} onUpdate={updateLayout} />
             </div>
 
