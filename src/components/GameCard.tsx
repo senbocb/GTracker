@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import RankBadge from './RankBadge';
-import { MoreVertical, Target, Zap } from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 
@@ -18,18 +18,16 @@ interface GameCardProps {
   id: string;
   title: string;
   modes: GameMode[];
-  winRate?: string;
-  hoursPlayed?: string;
   image?: string;
 }
 
-const GameCard = ({ id, title, modes = [], winRate, hoursPlayed, image }: GameCardProps) => {
+const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
   const navigate = useNavigate();
 
   return (
     <Card 
       onClick={() => navigate(`/game/${id}`)}
-      className="overflow-hidden bg-slate-900 border-slate-800 group hover:border-blue-500/50 transition-all duration-300 cursor-pointer"
+      className="overflow-hidden bg-slate-900 border-slate-800 group hover:border-indigo-500/50 transition-all duration-300 cursor-pointer hover-highlight"
     >
       <div className="relative h-32 overflow-hidden">
         {image ? (
@@ -63,17 +61,6 @@ const GameCard = ({ id, title, modes = [], winRate, hoursPlayed, image }: GameCa
               </div>
             </div>
           ))}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
-            <Target size={12} className="text-emerald-400" />
-            <p className="text-[10px] font-bold text-white">{winRate || "0%"}</p>
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
-            <Zap size={12} className="text-blue-400" />
-            <p className="text-[10px] font-bold text-white">{hoursPlayed || "0h"}</p>
-          </div>
         </div>
       </CardContent>
     </Card>

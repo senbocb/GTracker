@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Trash2, Zap, History, Plus, Calendar, Clock, Trophy, StickyNote, Save, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import { showSuccess } from '@/utils/toast';
@@ -21,7 +20,7 @@ const GAME_RANKS: Record<string, { ranks: string[] }> = {
   "Apex Legends": { ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"] },
   "Overwatch 2": { ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"] },
   "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] },
-  "Counter-Strike 2": { ranks: [] } // CS2 uses numeric rating for Premier
+  "Counter-Strike 2": { ranks: [] }
 };
 
 const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`);
@@ -198,7 +197,7 @@ const GameDetail = () => {
       <main className="max-w-5xl mx-auto p-6 md:p-10">
         <div className="flex items-center justify-between mb-8">
           <Link to="/">
-            <Button variant="ghost" className="text-slate-400 hover:text-white -ml-4">
+            <Button variant="ghost" className="text-slate-400 hover:text-white -ml-4 hover-highlight">
               <ChevronLeft className="mr-2" size={20} />
               Back to Dashboard
             </Button>
@@ -206,7 +205,7 @@ const GameDetail = () => {
           <div className="flex gap-2">
             <Dialog open={isLogOpen} onOpenChange={setIsLogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-500 font-bold">
+                <Button className="bg-indigo-600 hover:bg-indigo-500 font-bold shadow-lg shadow-indigo-600/20">
                   <Plus size={16} className="mr-2" /> LOG RANK CHANGE
                 </Button>
               </DialogTrigger>
@@ -249,7 +248,7 @@ const GameDetail = () => {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleLogRank} className="w-full bg-blue-600 font-black uppercase py-6">Confirm Log</Button>
+                  <Button onClick={handleLogRank} className="w-full bg-indigo-600 font-black uppercase py-6">Confirm Log</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -269,7 +268,7 @@ const GameDetail = () => {
               <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full">
                 <TabsList className="bg-slate-950/50 border border-slate-800 p-1 h-auto">
                   {game.modes.map((m: any) => (
-                    <TabsTrigger key={m.name} value={m.name} className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                    <TabsTrigger key={m.name} value={m.name} className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
                       {m.name}
                     </TabsTrigger>
                   ))}
@@ -287,50 +286,78 @@ const GameDetail = () => {
           <div className="md:col-span-2 space-y-8">
             <ProgressChart data={chartData} rankNames={isCS2Premier ? [] : ranks} />
 
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <History className="text-blue-500" size={20} />
-                  COMBAT LOGS
+            <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-slate-800 bg-slate-900/80">
+                <CardTitle className="text-sm font-black italic uppercase tracking-widest flex items-center gap-2">
+                  <TableIcon className="text-indigo-500" size={16} />
+                  COMBAT LOGS (SHEET VIEW)
                 </CardTitle>
                 <div className="flex gap-2">
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className={`text-[10px] font-bold uppercase ${sortMetric === 'time' ? 'text-blue-500' : 'text-slate-500'}`}
+                    className={`text-[10px] font-bold uppercase hover-highlight ${sortMetric === 'time' ? 'text-indigo-400' : 'text-slate-500'}`}
                     onClick={() => toggleSort('time')}
                   >
-                    Time {sortMetric === 'time' && (sortOrder === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />)}
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className={`text-[10px] font-bold uppercase ${sortMetric === 'rank' ? 'text-blue-500' : 'text-slate-500'}`}
-                    onClick={() => toggleSort('rank')}
-                  >
-                    Rank {sortMetric === 'rank' && (sortOrder === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />)}
+                    Date {sortMetric === 'time' && (sortOrder === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />)}
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {sortedHistory.map((h: any) => (
-                  <div key={h.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-800 group">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-1 h-8 rounded-full ${h.isPeak ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'bg-blue-600'}`} />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-black text-white uppercase">{h.rank} {h.tier}</p>
-                          {h.isPeak && <Trophy size={12} className="text-yellow-500" />}
-                        </div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                          {new Date(h.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
-                  </div>
-                ))}
-              </CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-950/50 border-b border-slate-800">
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-slate-800">Date / Time</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-slate-800">Rank / Rating</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedHistory.length > 0 ? (
+                      sortedHistory.map((h: any, idx) => (
+                        <tr key={h.id} className={cn(
+                          "border-b border-slate-800/50 hover-highlight transition-colors",
+                          idx % 2 === 0 ? "bg-slate-900/20" : "bg-transparent"
+                        )}>
+                          <td className="px-6 py-4 text-xs font-mono text-slate-400 border-r border-slate-800/50">
+                            {new Date(h.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-800/50">
+                            <div className="flex items-center gap-3">
+                              <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
+                              <span className="text-xs font-black text-white uppercase">{h.rank} {h.tier}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              {h.isPeak ? (
+                                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[9px] font-black text-yellow-500 uppercase">
+                                  <Trophy size={10} /> Peak Rank
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-black text-indigo-400 uppercase">
+                                  Update
+                                </span>
+                              )}
+                              {idx === 0 && (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase">
+                                  Current
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="px-6 py-12 text-center text-slate-600 text-xs font-bold uppercase tracking-widest">
+                          No combat data logged for this mode.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </Card>
           </div>
 
@@ -346,13 +373,13 @@ const GameDetail = () => {
                     href={link.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 transition-all group"
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/50 transition-all group hover-highlight"
                   >
                     <span className="text-xs font-bold text-white uppercase">{link.name}</span>
-                    <ExternalLink size={14} className="text-slate-500 group-hover:text-blue-500" />
+                    <ExternalLink size={14} className="text-slate-500 group-hover:text-indigo-400" />
                   </a>
                 ))}
-                <Button variant="ghost" className="w-full border border-dashed border-slate-800 text-slate-500 hover:text-white text-[10px] font-bold uppercase" onClick={handleAddExternalLink}>
+                <Button variant="ghost" className="w-full border border-dashed border-slate-800 text-slate-500 hover:text-white text-[10px] font-bold uppercase hover-highlight" onClick={handleAddExternalLink}>
                   <Plus size={12} className="mr-2" /> Add Tracker Link
                 </Button>
               </CardContent>
