@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Swords, Plus, Zap, Trophy, Target, Calendar, Map as MapIcon, Activity } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+
+const GAME_METADATA: Record<string, { ranks: string[], tierCount: number, noTierRanks: string[] }> = {
+  "Valorant": { 
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
+    tierCount: 3,
+    noTierRanks: ["Radiant"]
+  },
+  "Overwatch 2": { 
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
+    tierCount: 5,
+    noTierRanks: ["Top 500"]
+  },
+  "League of Legends": { 
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
+    tierCount: 4,
+    noTierRanks: ["Master", "Grandmaster", "Challenger"]
+  },
+  "Apex Legends": { 
+    ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
+    tierCount: 4,
+    noTierRanks: ["Master", "Apex Predator"]
+  },
+  "Counter-Strike 2": { 
+    ranks: [], 
+    tierCount: 0,
+    noTierRanks: []
+  }
+};
+
+const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => (i + 1).toString());
 
 const AddMatchModal = () => {
   const [open, setOpen] = useState(false);
@@ -20,7 +50,7 @@ const AddMatchModal = () => {
     gameMode: '',
     rank: '',
     tier: '',
-    status: 'update', // 'current', 'peak', 'update'
+    status: 'update',
     map: '',
     result: 'win',
     timestamp: new Date().toISOString().slice(0, 16)
@@ -38,12 +68,20 @@ const AddMatchModal = () => {
     }
   }, [open]);
 
+  const selectedGameObj = useMemo(() => games.find(g => g.id === formData.gameId), [games, formData.gameId]);
+  const metadata = useMemo(() => GAME_METADATA[selectedGameObj?.title] || { ranks: [], tierCount: 0, noTierRanks: [] }, [selectedGameObj]);
+
+  const isCS2Premier = selectedGameObj?.title === 'Counter-Strike 2' && formData.gameMode === 'Premier';
+  const isCS2Faceit = selectedGameObj?.title === 'Counter-Strike 2' && formData.gameMode === 'Faceit';
+
   const handleGameChange = (id: string) => {
     const game = games.find(g => g.id === id);
     setFormData(prev => ({ 
       ...prev, 
       gameId: id, 
-      gameMode: game?.modes[0]?.name || '' 
+      gameMode: game?.modes[0]?.name || '',
+      rank: '',
+      tier: ''
     }));
   };
 
@@ -80,15 +118,9 @@ const AddMatchModal = () => {
     });
 
     localStorage.setItem('combat_games', JSON.stringify(updatedGames));
-    
-    // Update Profile XP
-    const profile = JSON.parse(localStorage.getItem('combat_profile') || '{"xp":0}');
-    profile.xp += mode === 'detailed' ? 25 : 10;
-    localStorage.setItem('combat_profile', JSON.stringify(profile));
-
-    showSuccess(`${mode === 'quick' ? 'Rank' : 'Match'} logged successfully!`);
+    showSuccess("Combat data logged successfully!");
     setOpen(false);
-    window.location.reload(); // Refresh to sync all components
+    window.location.reload();
   };
 
   return (
@@ -141,12 +173,12 @@ const AddMatchModal = () => {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-slate-500">Mode</Label>
-              <Select value={formData.gameMode} onValueChange={(v) => setFormData({...formData, gameMode: v})}>
+              <Select value={formData.gameMode} onValueChange={(v) => setFormData({...formData, gameMode: v, rank: '', tier: ''})}>
                 <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                   <SelectValue placeholder="Select Mode" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                  {games.find(g => g.id === formData.gameId)?.modes.map((m: any) => (
+                  {selectedGameObj?.modes.map((m: any) => (
                     <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -156,24 +188,56 @@ const AddMatchModal = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500">Rank / Rating</Label>
-              <Input 
-                value={formData.rank} 
-                onChange={(e) => setFormData({...formData, rank: e.target.value})}
-                placeholder="e.g. Gold" 
-                className="bg-slate-900 border-slate-800 text-white" 
-                required
-              />
+              <Label className="text-[10px] font-bold uppercase text-slate-500">
+                {isCS2Premier ? 'Rating (1-40,000)' : isCS2Faceit ? 'Faceit Level' : 'Rank'}
+              </Label>
+              {isCS2Premier ? (
+                <Input 
+                  type="number"
+                  min="1"
+                  max="40000"
+                  value={formData.rank} 
+                  onChange={(e) => setFormData({...formData, rank: e.target.value})}
+                  placeholder="e.g. 15400" 
+                  className="bg-slate-900 border-slate-800 text-white" 
+                  required
+                />
+              ) : isCS2Faceit ? (
+                <Select value={formData.rank} onValueChange={(v) => setFormData({...formData, rank: v})}>
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
+                    <SelectValue placeholder="Level" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    {FACEIT_LEVELS.map(lvl => <SelectItem key={lvl} value={lvl}>Level {lvl}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={formData.rank} onValueChange={(v) => setFormData({...formData, rank: v})}>
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
+                    <SelectValue placeholder="Select Rank" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    {metadata.ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500">Tier / Points</Label>
-              <Input 
-                value={formData.tier} 
-                onChange={(e) => setFormData({...formData, tier: e.target.value})}
-                placeholder="e.g. 3 or 25RR" 
-                className="bg-slate-900 border-slate-800 text-white" 
-              />
-            </div>
+
+            {!isCS2Premier && !isCS2Faceit && metadata.tierCount > 0 && !metadata.noTierRanks.includes(formData.rank) && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-left-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Tier (1-{metadata.tierCount})</Label>
+                <Select value={formData.tier} onValueChange={(v) => setFormData({...formData, tier: v})}>
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
+                    <SelectValue placeholder="Tier" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    {Array.from({ length: metadata.tierCount }, (_, i) => (i + 1).toString()).map(t => (
+                      <SelectItem key={t} value={t}>Tier {t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -183,24 +247,9 @@ const AddMatchModal = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                <SelectItem value="update">
-                  <div className="flex items-center gap-2">
-                    <Activity size={14} className="text-indigo-400" />
-                    <span>Standard Update</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="current">
-                  <div className="flex items-center gap-2">
-                    <Target size={14} className="text-emerald-400" />
-                    <span>Set as Current Rank</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="peak">
-                  <div className="flex items-center gap-2">
-                    <Trophy size={14} className="text-yellow-400" />
-                    <span>Set as New Peak</span>
-                  </div>
-                </SelectItem>
+                <SelectItem value="update">Standard Update</SelectItem>
+                <SelectItem value="current">Set as Current Rank</SelectItem>
+                <SelectItem value="peak">Set as New Peak</SelectItem>
               </SelectContent>
             </Select>
           </div>

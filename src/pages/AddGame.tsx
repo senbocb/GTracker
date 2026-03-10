@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -24,18 +24,24 @@ const GAME_CONFIGS: Record<string, { ranks: string[], modes?: string[] }> = {
 
 const AddGame = () => {
   const navigate = useNavigate();
-  const [selection, setSelection] = useState(''); // Format: "GameTitle:ModeName" or "GameTitle"
+  const [selectedGame, setSelectedGame] = useState('');
+  const [selectedMode, setSelectedMode] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+
+  const gameOptions = Object.keys(GAME_CONFIGS);
+  const modeOptions = useMemo(() => {
+    if (!selectedGame) return [];
+    return GAME_CONFIGS[selectedGame].modes || [];
+  }, [selectedGame]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selection) return;
+    if (!selectedGame) return;
 
-    const [gameTitle, modeName] = selection.split(':');
-    const finalModeName = modeName || 'Standard';
+    const finalModeName = selectedMode || 'Standard';
     
     const existingGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const existingGameIndex = existingGames.findIndex((g: any) => g.title === gameTitle);
+    const existingGameIndex = existingGames.findIndex((g: any) => g.title === selectedGame);
     
     const newMode = {
       name: finalModeName,
@@ -56,7 +62,7 @@ const AddGame = () => {
     } else {
       existingGames.push({
         id: Date.now().toString(),
-        title: gameTitle,
+        title: selectedGame,
         image: imageUrl,
         modes: [newMode],
         winRate: '0%',
@@ -65,21 +71,9 @@ const AddGame = () => {
     }
     
     localStorage.setItem('combat_games', JSON.stringify(existingGames));
-    showSuccess(`${gameTitle} (${finalModeName}) tracker initialized.`);
+    showSuccess(`${selectedGame} (${finalModeName}) tracker initialized.`);
     navigate('/');
   };
-
-  // Flatten configs into a single list of options
-  const options: { label: string, value: string }[] = [];
-  Object.entries(GAME_CONFIGS).forEach(([title, config]) => {
-    if (config.modes) {
-      config.modes.forEach(mode => {
-        options.push({ label: `${title} - ${mode}`, value: `${title}:${mode}` });
-      });
-    } else {
-      options.push({ label: title, value: title });
-    }
-  });
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
@@ -108,24 +102,34 @@ const AddGame = () => {
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-6">
                 <div className="grid gap-2">
-                  <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Select Game & Mode</Label>
-                  <Select onValueChange={setSelection} required>
+                  <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Select Game</Label>
+                  <Select onValueChange={(v) => { setSelectedGame(v); setSelectedMode(''); }} required>
                     <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base">
                       <SelectValue placeholder="Choose an operation..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      {options.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value} className="py-3">
-                          {opt.label}
-                        </SelectItem>
+                      {gameOptions.map(game => (
+                        <SelectItem key={game} value={game} className="py-3">{game}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-slate-600 flex items-center gap-1 mt-1">
-                    <Info size={10} />
-                    Multiple modes for the same game will be grouped automatically.
-                  </p>
                 </div>
+
+                {modeOptions.length > 0 && (
+                  <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
+                    <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Select Mode</Label>
+                    <Select onValueChange={setSelectedMode} required>
+                      <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base">
+                        <SelectValue placeholder="Choose a mode..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {modeOptions.map(mode => (
+                          <SelectItem key={mode} value={mode} className="py-3">{mode}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Cover Image URL (Optional)</Label>
@@ -142,7 +146,7 @@ const AddGame = () => {
                 </div>
               </div>
 
-              <Button type="submit" disabled={!selection} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Button type="submit" disabled={!selectedGame || (modeOptions.length > 0 && !selectedMode)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
                 DEPLOY TRACKER
               </Button>
             </form>
