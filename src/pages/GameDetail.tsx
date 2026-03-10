@@ -16,12 +16,44 @@ import ProgressChart from '@/components/ProgressChart';
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
-const GAME_RANKS: Record<string, { ranks: string[] }> = {
-  "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"] },
-  "Apex Legends": { ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"] },
-  "Overwatch 2": { ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"] },
-  "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] },
-  "Counter-Strike 2": { ranks: [] }
+interface GameMetadata {
+  ranks: string[];
+  tierCount: number;
+  tierDirection: 'asc' | 'desc';
+  noTierRanks: string[];
+}
+
+const GAME_METADATA: Record<string, GameMetadata> = {
+  "Valorant": { 
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
+    tierCount: 3,
+    tierDirection: 'asc', // 3 is highest
+    noTierRanks: ["Radiant"]
+  },
+  "Overwatch 2": { 
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
+    tierCount: 5,
+    tierDirection: 'asc', // 5 is highest
+    noTierRanks: ["Top 500"]
+  },
+  "League of Legends": { 
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
+    tierCount: 4,
+    tierDirection: 'desc', // 1 is highest
+    noTierRanks: ["Master", "Grandmaster", "Challenger"]
+  },
+  "Apex Legends": { 
+    ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
+    tierCount: 4,
+    tierDirection: 'desc', // 1 is highest
+    noTierRanks: ["Master", "Apex Predator"]
+  },
+  "Counter-Strike 2": { 
+    ranks: [], 
+    tierCount: 0,
+    tierDirection: 'asc',
+    noTierRanks: []
+  }
 };
 
 const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`);
@@ -58,26 +90,37 @@ const GameDetail = () => {
     return game?.modes.find((m: any) => m.name === activeMode);
   }, [game, activeMode]);
 
+  const metadata = useMemo(() => {
+    return GAME_METADATA[game?.title] || { ranks: [], tierCount: 0, tierDirection: 'asc', noTierRanks: [] };
+  }, [game]);
+
   const ranks = useMemo(() => {
     if (activeMode === 'Faceit') return FACEIT_LEVELS;
-    return GAME_RANKS[game?.title]?.ranks || [];
-  }, [game, activeMode]);
+    return metadata.ranks;
+  }, [metadata, activeMode]);
 
-  // Helper to compare rank values for Peak calculation
   const getRankValue = (rankName: string, tierName?: string) => {
     if (!rankName) return 0;
     
-    // Handle numeric ratings (like CS2 Premier)
     const numeric = parseInt(rankName.replace(/\D/g, ''));
     if (!isNaN(numeric) && !ranks.includes(rankName)) return numeric;
 
     const rankIdx = ranks.indexOf(rankName);
     if (rankIdx === -1) return 0;
 
-    // Add tier value (e.g. Gold 3 > Gold 1)
-    // For OW2, user specified 1 is lowest, 5 is highest
     const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
-    return (rankIdx + 1) * 10 + tierValue;
+    const baseValue = (rankIdx + 1) * 100;
+
+    if (metadata.noTierRanks.includes(rankName) || metadata.tierCount === 0) {
+      return baseValue;
+    }
+
+    if (metadata.tierDirection === 'asc') {
+      return baseValue + tierValue;
+    } else {
+      // For desc (1 is highest), we invert the tier value
+      return baseValue + (metadata.tierCount - tierValue + 1);
+    }
   };
 
   const { sortedHistory, currentId, peakId } = useMemo(() => {
@@ -86,20 +129,16 @@ const GameDetail = () => {
     }
 
     const history = [...currentModeData.history];
-    
-    // 1. Find Current (Latest by timestamp)
     const current = history.reduce((prev, curr) => 
       new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
     );
 
-    // 2. Find Peak (Highest rank value)
     const peak = history.reduce((prev, curr) => {
       const valPrev = getRankValue(prev.rank, prev.tier);
       const valCurr = getRankValue(curr.rank, curr.tier);
       return valCurr > valPrev ? curr : prev;
     });
 
-    // 3. Sort for display
     const sorted = history.sort((a, b) => {
       const timeA = new Date(a.timestamp).getTime();
       const timeB = new Date(b.timestamp).getTime();
@@ -107,7 +146,7 @@ const GameDetail = () => {
     });
 
     return { sortedHistory: sorted, currentId: current.id, peakId: peak.id };
-  }, [currentModeData, sortOrder, ranks]);
+  }, [currentModeData, sortOrder, ranks, metadata]);
 
   const handleLogRank = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -141,6 +180,8 @@ const GameDetail = () => {
     showSuccess("Rank update logged.");
   };
 
+  const showTierSelect = metadata.tierCount > 0 && !metadata.noTierRanks.includes(logData.rank);
+
   if (!game) return null;
 
   return (
@@ -164,26 +205,40 @@ const GameDetail = () => {
               <div className="space-y-6 py-4">
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">New Rank</Label>
-                  <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
-                    <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Rank" /></SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      {ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  {ranks.length > 0 ? (
+                    <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
+                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Rank" /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      placeholder="Enter Rating (e.g. 15400)" 
+                      value={logData.rank} 
+                      onChange={(e) => setLogData({...logData, rank: e.target.value})}
+                      className="bg-slate-900 border-slate-800"
+                    />
+                  )}
                 </div>
-                <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500">Tier (1-5)</Label>
-                  <Select 
-                    onValueChange={(v) => setLogData({...logData, tier: v})} 
-                    value={logData.tier}
-                    disabled={logData.rank === 'Top 500'}
-                  >
-                    <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Tier" /></SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      {['1', '2', '3', '4', '5'].map(t => <SelectItem key={t} value={t}>Tier {t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                
+                {showTierSelect && (
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Tier (1-{metadata.tierCount})</Label>
+                    <Select 
+                      onValueChange={(v) => setLogData({...logData, tier: v})} 
+                      value={logData.tier}
+                    >
+                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Tier" /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {Array.from({ length: metadata.tierCount }, (_, i) => (i + 1).toString()).map(t => (
+                          <SelectItem key={t} value={t}>Tier {t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">Log Date</Label>
                   <Input type="datetime-local" value={logData.timestamp} onChange={(e) => setLogData({...logData, timestamp: e.target.value})} className="bg-slate-900 border-slate-800" />
