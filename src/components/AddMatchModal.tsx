@@ -7,38 +7,55 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Swords, Plus, Zap, Trophy, Target, Calendar, Map as MapIcon, Activity } from 'lucide-react';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
-const GAME_METADATA: Record<string, { ranks: string[], tierCount: number, noTierRanks: string[] }> = {
+const GAME_METADATA: Record<string, { ranks: string[], tierCount: number, noTierRanks: string[], tierDirection: 'asc' | 'desc' }> = {
   "Valorant": { 
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
     tierCount: 3,
-    noTierRanks: ["Radiant"]
+    noTierRanks: ["Radiant"],
+    tierDirection: 'asc'
   },
   "Overwatch 2": { 
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
     tierCount: 5,
-    noTierRanks: ["Top 500"]
+    noTierRanks: ["Top 500"],
+    tierDirection: 'desc' // 1 is highest
   },
   "League of Legends": { 
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
     tierCount: 4,
-    noTierRanks: ["Master", "Grandmaster", "Challenger"]
+    noTierRanks: ["Master", "Grandmaster", "Challenger"],
+    tierDirection: 'desc'
   },
   "Apex Legends": { 
     ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
     tierCount: 4,
-    noTierRanks: ["Master", "Apex Predator"]
+    noTierRanks: ["Master", "Apex Predator"],
+    tierDirection: 'desc'
   },
   "Counter-Strike 2": { 
     ranks: [], 
     tierCount: 0,
-    noTierRanks: []
+    noTierRanks: [],
+    tierDirection: 'asc'
   }
 };
 
-const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => (i + 1).toString());
+const getFaceitLevel = (elo: number) => {
+  if (elo >= 2001) return "10";
+  if (elo >= 1751) return "9";
+  if (elo >= 1531) return "8";
+  if (elo >= 1351) return "7";
+  if (elo >= 1201) return "6";
+  if (elo >= 1051) return "5";
+  if (elo >= 901) return "4";
+  if (elo >= 751) return "3";
+  if (elo >= 501) return "2";
+  if (elo >= 100) return "1";
+  return "1";
+};
 
 const AddMatchModal = () => {
   const [open, setOpen] = useState(false);
@@ -69,7 +86,7 @@ const AddMatchModal = () => {
   }, [open]);
 
   const selectedGameObj = useMemo(() => games.find(g => g.id === formData.gameId), [games, formData.gameId]);
-  const metadata = useMemo(() => GAME_METADATA[selectedGameObj?.title] || { ranks: [], tierCount: 0, noTierRanks: [] }, [selectedGameObj]);
+  const metadata = useMemo(() => GAME_METADATA[selectedGameObj?.title] || { ranks: [], tierCount: 0, noTierRanks: [], tierDirection: 'asc' }, [selectedGameObj]);
 
   const isCS2Premier = selectedGameObj?.title === 'Counter-Strike 2' && formData.gameMode === 'Premier';
   const isCS2Faceit = selectedGameObj?.title === 'Counter-Strike 2' && formData.gameMode === 'Faceit';
@@ -88,6 +105,25 @@ const AddMatchModal = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation for OW2 Tiers
+    if (selectedGameObj?.title === 'Overwatch 2' && !metadata.noTierRanks.includes(formData.rank) && !formData.tier) {
+      showError("Tier is required for Overwatch 2 logs.");
+      return;
+    }
+
+    let finalRank = formData.rank;
+    let finalTier = formData.tier;
+
+    // Auto-calculate Faceit Level
+    if (isCS2Faceit) {
+      const elo = parseInt(formData.rank);
+      if (isNaN(elo)) {
+        showError("Please enter a valid ELO number.");
+        return;
+      }
+      finalTier = `Level ${getFaceitLevel(elo)}`;
+    }
+    
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const updatedGames = savedGames.map((g: any) => {
       if (g.id === formData.gameId) {
@@ -96,8 +132,8 @@ const AddMatchModal = () => {
 
         const historyEntry = {
           id: Date.now().toString(),
-          rank: formData.rank,
-          tier: formData.tier,
+          rank: finalRank,
+          tier: finalTier,
           timestamp: new Date(formData.timestamp).toISOString(),
           isPeak: formData.status === 'peak',
           map: formData.map,
@@ -107,9 +143,9 @@ const AddMatchModal = () => {
         const newModes = [...g.modes];
         newModes[modeIdx] = {
           ...g.modes[modeIdx],
-          rank: formData.status === 'current' || formData.status === 'peak' ? formData.rank : g.modes[modeIdx].rank,
-          tier: formData.status === 'current' || formData.status === 'peak' ? formData.tier : g.modes[modeIdx].tier,
-          peakRank: formData.status === 'peak' ? formData.rank : g.modes[modeIdx].peakRank,
+          rank: formData.status === 'current' || formData.status === 'peak' ? finalRank : g.modes[modeIdx].rank,
+          tier: formData.status === 'current' || formData.status === 'peak' ? finalTier : g.modes[modeIdx].tier,
+          peakRank: formData.status === 'peak' ? finalRank : g.modes[modeIdx].peakRank,
           history: [historyEntry, ...(g.modes[modeIdx].history || [])]
         };
         return { ...g, modes: newModes };
@@ -189,28 +225,17 @@ const AddMatchModal = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-slate-500">
-                {isCS2Premier ? 'Rating (1-40,000)' : isCS2Faceit ? 'Faceit Level' : 'Rank'}
+                {isCS2Premier ? 'Rating (1-40,000)' : isCS2Faceit ? 'Faceit ELO' : 'Rank'}
               </Label>
-              {isCS2Premier ? (
+              {isCS2Premier || isCS2Faceit ? (
                 <Input 
                   type="number"
-                  min="1"
-                  max="40000"
                   value={formData.rank} 
                   onChange={(e) => setFormData({...formData, rank: e.target.value})}
-                  placeholder="e.g. 15400" 
+                  placeholder={isCS2Faceit ? "e.g. 1250" : "e.g. 15400"} 
                   className="bg-slate-900 border-slate-800 text-white" 
                   required
                 />
-              ) : isCS2Faceit ? (
-                <Select value={formData.rank} onValueChange={(v) => setFormData({...formData, rank: v})}>
-                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
-                    <SelectValue placeholder="Level" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    {FACEIT_LEVELS.map(lvl => <SelectItem key={lvl} value={lvl}>Level {lvl}</SelectItem>)}
-                  </SelectContent>
-                </Select>
               ) : (
                 <Select value={formData.rank} onValueChange={(v) => setFormData({...formData, rank: v})}>
                   <SelectTrigger className="bg-slate-900 border-slate-800 text-white">

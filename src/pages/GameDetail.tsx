@@ -27,25 +27,25 @@ const GAME_METADATA: Record<string, GameMetadata> = {
   "Valorant": { 
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
     tierCount: 3,
-    tierDirection: 'asc', // 3 is highest
+    tierDirection: 'asc',
     noTierRanks: ["Radiant"]
   },
   "Overwatch 2": { 
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
     tierCount: 5,
-    tierDirection: 'asc', // 5 is highest
+    tierDirection: 'desc', // 1 is highest
     noTierRanks: ["Top 500"]
   },
   "League of Legends": { 
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
     tierCount: 4,
-    tierDirection: 'desc', // 1 is highest
+    tierDirection: 'desc',
     noTierRanks: ["Master", "Grandmaster", "Challenger"]
   },
   "Apex Legends": { 
     ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
     tierCount: 4,
-    tierDirection: 'desc', // 1 is highest
+    tierDirection: 'desc',
     noTierRanks: ["Master", "Apex Predator"]
   },
   "Counter-Strike 2": { 
@@ -56,7 +56,7 @@ const GAME_METADATA: Record<string, GameMetadata> = {
   }
 };
 
-const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`);
+const OW2_ROLE_ORDER = ["Tank", "Damage", "Support"];
 
 const GameDetail = () => {
   const { id } = useParams();
@@ -78,6 +78,12 @@ const GameDetail = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const found = savedGames.find((g: any) => g.id === id);
     if (found) {
+      // Sort modes for OW2
+      if (found.title === 'Overwatch 2') {
+        found.modes.sort((a: any, b: any) => 
+          OW2_ROLE_ORDER.indexOf(a.name) - OW2_ROLE_ORDER.indexOf(b.name)
+        );
+      }
       setGame(found);
       setActiveMode(found.modes[0]?.name || '');
       setExternalLinks(found.externalLinks || []);
@@ -94,18 +100,14 @@ const GameDetail = () => {
     return GAME_METADATA[game?.title] || { ranks: [], tierCount: 0, tierDirection: 'asc', noTierRanks: [] };
   }, [game]);
 
-  const ranks = useMemo(() => {
-    if (activeMode === 'Faceit') return FACEIT_LEVELS;
-    return metadata.ranks;
-  }, [metadata, activeMode]);
-
   const getRankValue = (rankName: string, tierName?: string) => {
     if (!rankName) return 0;
     
+    // Handle numeric ratings (CS2 Premier or Faceit ELO)
     const numeric = parseInt(rankName.replace(/\D/g, ''));
-    if (!isNaN(numeric) && !ranks.includes(rankName)) return numeric;
+    if (!isNaN(numeric) && !metadata.ranks.includes(rankName)) return numeric;
 
-    const rankIdx = ranks.indexOf(rankName);
+    const rankIdx = metadata.ranks.indexOf(rankName);
     if (rankIdx === -1) return 0;
 
     const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
@@ -146,9 +148,15 @@ const GameDetail = () => {
     });
 
     return { sortedHistory: sorted, currentId: current.id, peakId: peak.id };
-  }, [currentModeData, sortOrder, ranks, metadata]);
+  }, [currentModeData, sortOrder, metadata]);
 
   const handleLogRank = () => {
+    // Validation for OW2 Tiers
+    if (game?.title === 'Overwatch 2' && !metadata.noTierRanks.includes(logData.rank) && !logData.tier) {
+      alert("Tier selection is mandatory for Overwatch 2.");
+      return;
+    }
+
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const updatedGames = savedGames.map((g: any) => {
       if (g.id === id) {
@@ -205,16 +213,16 @@ const GameDetail = () => {
               <div className="space-y-6 py-4">
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">New Rank</Label>
-                  {ranks.length > 0 ? (
+                  {metadata.ranks.length > 0 ? (
                     <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
                       <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Rank" /></SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                        {metadata.ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   ) : (
                     <Input 
-                      placeholder="Enter Rating (e.g. 15400)" 
+                      placeholder={activeMode === 'Faceit' ? "Enter ELO" : "Enter Rating"} 
                       value={logData.rank} 
                       onChange={(e) => setLogData({...logData, rank: e.target.value})}
                       className="bg-slate-900 border-slate-800"
@@ -271,7 +279,7 @@ const GameDetail = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
-            <ProgressChart data={[]} rankNames={ranks} />
+            <ProgressChart data={[]} rankNames={metadata.ranks} />
 
             <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between border-b border-slate-800 bg-slate-900/80">
