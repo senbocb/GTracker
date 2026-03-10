@@ -1,13 +1,26 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { showSuccess } from '@/utils/toast';
 
 const Profile = () => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [profile, setProfile] = useState({
+    username: 'UNIDENTIFIED_USER',
+    status: 'New Recruit • Initialize Profile',
+    avatar: ''
+  });
+
+  const handleSave = () => {
+    setIsEditing(false);
+    showSuccess("Profile updated successfully.");
+  };
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
       <main className="max-w-4xl mx-auto p-6 md:p-10">
@@ -28,14 +41,51 @@ const Profile = () => {
           </div>
           <div className="absolute -bottom-8 left-8 flex items-end gap-6">
             <div className="w-32 h-32 rounded-3xl bg-slate-950 border-4 border-[#020617] flex items-center justify-center shadow-2xl group cursor-pointer relative overflow-hidden">
-              <User size={64} className="text-slate-800 group-hover:text-blue-500 transition-colors" />
+              {profile.avatar ? (
+                <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User size={64} className="text-slate-800 group-hover:text-blue-500 transition-colors" />
+              )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                 <Camera size={24} className="text-white" />
               </div>
             </div>
+            <div className="pb-2 flex-1">
+              {isEditing ? (
+                <div className="space-y-2 max-w-xs">
+                  <Input 
+                    value={profile.username} 
+                    onChange={(e) => setProfile({...profile, username: e.target.value})}
+                    className="bg-slate-900 border-slate-800 text-white font-black italic"
+                  />
+                  <Input 
+                    value={profile.status} 
+                    onChange={(e) => setProfile({...profile, status: e.target.value})}
+                    className="bg-slate-900 border-slate-800 text-slate-400 text-sm"
+                  />
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-3xl font-black tracking-tight text-white italic uppercase">{profile.username}</h1>
+                  <p className="text-slate-500 font-medium">{profile.status}</p>
+                </>
+              )}
+            </div>
             <div className="pb-2">
-              <h1 className="text-3xl font-black tracking-tight text-slate-700 italic">UNIDENTIFIED_USER</h1>
-              <p className="text-slate-600 font-medium">New Recruit • Initialize Profile</p>
+              {isEditing ? (
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-500">
+                    <Check size={16} className="mr-1" /> Save
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="text-slate-400">
+                    <X size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="border-slate-800 text-slate-400 hover:text-white">
+                  <Edit2 size={14} className="mr-2" /> Edit Profile
+                </Button>
+              )}
             </div>
           </div>
         </div>

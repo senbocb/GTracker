@@ -2,14 +2,21 @@
 
 import React from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Eye, Monitor, User } from 'lucide-react';
+import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Target, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { showSuccess } from '@/utils/toast';
 
 const Settings = () => {
+  const handleSaveGoal = (e: React.FormEvent) => {
+    e.preventDefault();
+    showSuccess("Season goal updated.");
+  };
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
       <main className="max-w-3xl mx-auto p-6 md:p-10">
@@ -26,6 +33,29 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
+          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Target className="text-blue-500" size={20} />
+                SEASON GOAL
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSaveGoal} className="space-y-4">
+                <div className="grid gap-2">
+                  <Label className="text-xs font-bold uppercase text-slate-500">Target Rank</Label>
+                  <div className="relative">
+                    <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                    <Input placeholder="e.g. Immortal" className="bg-slate-950 border-slate-800 pl-10" />
+                  </div>
+                </div>
+                <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-500">
+                  Update Goal
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
           <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
             <CardHeader>
               <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -70,24 +100,6 @@ const Settings = () => {
                 <div className="space-y-0.5">
                   <Label className="text-base font-bold text-white">Session Reminders</Label>
                   <p className="text-sm text-slate-500">Alert after 3 hours of continuous play.</p>
-                </div>
-                <Switch />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <Shield className="text-blue-500" size={20} />
-                PRIVACY
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-bold text-white">Public Profile</Label>
-                  <p className="text-sm text-slate-500">Allow others to view your career stats.</p>
                 </div>
                 <Switch />
               </div>
