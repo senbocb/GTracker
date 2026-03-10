@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import GameCard from '@/components/GameCard';
 import ProgressChart from '@/components/ProgressChart';
@@ -12,8 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 
 const Index = () => {
-  // Empty state for games - in a real app, this would come from a database
-  const games: any[] = [];
+  const [games, setGames] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    // Load games from local storage
+    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+    setGames(savedGames);
+
+    // Load profile from local storage
+    const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
+    setProfile(savedProfile);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
@@ -53,7 +63,9 @@ const Index = () => {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">COMMAND CENTER</h1>
+            <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">
+              {profile?.username ? `${profile.username}'S COMMAND CENTER` : 'COMMAND CENTER'}
+            </h1>
             <p className="text-slate-400 font-medium">Operational overview and tactical performance monitoring.</p>
           </div>
           <div className="flex gap-3">
@@ -69,7 +81,7 @@ const Index = () => {
         {/* Global Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           {[
-            { label: 'Active Trackers', value: '0', icon: Gamepad2, color: 'text-blue-500' },
+            { label: 'Active Trackers', value: games.length.toString(), icon: Gamepad2, color: 'text-blue-500' },
             { label: 'Total Engagements', value: '0', icon: Activity, color: 'text-emerald-500' },
             { label: 'Avg Win Rate', value: '0%', icon: Target, color: 'text-purple-500' },
             { label: 'Session Time', value: '00:00', icon: Zap, color: 'text-yellow-500' },

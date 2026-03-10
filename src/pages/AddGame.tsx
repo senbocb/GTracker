@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Gamepad2, Image as ImageIcon, Trophy, Clock, Target, Link as LinkIcon } from 'lucide-react';
+import { ChevronLeft, Gamepad2, Image as ImageIcon, Trophy, Link as LinkIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,10 +12,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AddGame = () => {
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    title: '',
+    rank: '',
+    tier: '',
+    trackerLink: '',
+    evxlLink: '',
+    image: ''
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    showSuccess("Game initialized. Data tracking active.");
+    
+    // Get existing games
+    const existingGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+    
+    // Add new game with some default stats for the demo
+    const newGame = {
+      ...formData,
+      id: Date.now(),
+      peakRank: formData.rank,
+      winRate: '50%',
+      hoursPlayed: '0h'
+    };
+    
+    const updatedGames = [...existingGames, newGame];
+    localStorage.setItem('combat_games', JSON.stringify(updatedGames));
+    
+    showSuccess(`${formData.title} tracker initialized.`);
     navigate('/');
   };
 
@@ -51,6 +75,8 @@ const AddGame = () => {
                     id="title" 
                     placeholder="e.g. Valorant, CS2" 
                     className="bg-slate-950 border-slate-800 h-12 focus:ring-blue-500"
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
                     required
                   />
                 </div>
@@ -64,6 +90,8 @@ const AddGame = () => {
                         id="rank" 
                         placeholder="Rank Name" 
                         className="bg-slate-950 border-slate-800 h-12 pl-10"
+                        value={formData.rank}
+                        onChange={(e) => setFormData({...formData, rank: e.target.value})}
                         required
                       />
                     </div>
@@ -74,6 +102,8 @@ const AddGame = () => {
                       id="tier" 
                       placeholder="e.g. III" 
                       className="bg-slate-950 border-slate-800 h-12"
+                      value={formData.tier}
+                      onChange={(e) => setFormData({...formData, tier: e.target.value})}
                     />
                   </div>
                 </div>
@@ -86,6 +116,8 @@ const AddGame = () => {
                       id="tracker_link" 
                       placeholder="https://tracker.gg/valorant/profile/..." 
                       className="bg-slate-950 border-slate-800 h-12 pl-10"
+                      value={formData.trackerLink}
+                      onChange={(e) => setFormData({...formData, trackerLink: e.target.value})}
                     />
                   </div>
                 </div>
@@ -98,6 +130,8 @@ const AddGame = () => {
                       id="evxl_link" 
                       placeholder="https://evxl.app/profile/..." 
                       className="bg-slate-950 border-slate-800 h-12 pl-10"
+                      value={formData.evxlLink}
+                      onChange={(e) => setFormData({...formData, evxlLink: e.target.value})}
                     />
                   </div>
                 </div>
@@ -110,6 +144,8 @@ const AddGame = () => {
                       id="image" 
                       placeholder="Direct image link" 
                       className="bg-slate-950 border-slate-800 h-12 pl-10"
+                      value={formData.image}
+                      onChange={(e) => setFormData({...formData, image: e.target.value})}
                     />
                   </div>
                 </div>

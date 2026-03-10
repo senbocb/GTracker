@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,24 @@ const Profile = () => {
     avatar: ''
   });
 
-  // Mock social links
+  useEffect(() => {
+    const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
+    if (savedProfile) {
+      setProfile(savedProfile);
+    }
+  }, []);
+
+  const handleSave = () => {
+    localStorage.setItem('combat_profile', JSON.stringify(profile));
+    setIsEditing(false);
+    showSuccess("Profile updated successfully.");
+  };
+
+  // Mock social links - in a real app these would also be in localStorage
   const socialLinks = [
     { name: 'Discord', url: '#' },
     { name: 'Twitch', url: '#' }
   ];
-
-  const handleSave = () => {
-    setIsEditing(false);
-    showSuccess("Profile updated successfully.");
-  };
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
