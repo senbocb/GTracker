@@ -75,6 +75,7 @@ const GameDetail = () => {
     if (rankIdx === -1) return 0;
 
     // Add tier value (e.g. Gold 3 > Gold 1)
+    // For OW2, user specified 1 is lowest, 5 is highest
     const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
     return (rankIdx + 1) * 10 + tierValue;
   };
@@ -125,7 +126,6 @@ const GameDetail = () => {
         const newModes = [...g.modes];
         newModes[modeIdx] = {
           ...g.modes[modeIdx],
-          // The actual current rank in the mode object should always be the latest one
           rank: logData.rank,
           tier: logData.tier,
           history: [historyEntry, ...(g.modes[modeIdx].history || [])]
@@ -168,6 +168,19 @@ const GameDetail = () => {
                     <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Rank" /></SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
                       {ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">Tier (1-5)</Label>
+                  <Select 
+                    onValueChange={(v) => setLogData({...logData, tier: v})} 
+                    value={logData.tier}
+                    disabled={logData.rank === 'Top 500'}
+                  >
+                    <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Tier" /></SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      {['1', '2', '3', '4', '5'].map(t => <SelectItem key={t} value={t}>Tier {t}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

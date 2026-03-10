@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Gamepad2, Image as ImageIcon, Plus, Info } from 'lucide-react';
+import { Gamepad2, Image as ImageIcon, Plus, Info } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,10 @@ const GAME_CONFIGS: Record<string, { ranks: string[], modes?: string[] }> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"] },
   "Counter-Strike 2": { ranks: [], modes: ["Premier", "Faceit"] },
   "Apex Legends": { ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"] },
-  "Overwatch 2": { ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"] },
+  "Overwatch 2": { 
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
+    modes: ["Tank", "Damage", "Support"]
+  },
   "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] }
 };
 
