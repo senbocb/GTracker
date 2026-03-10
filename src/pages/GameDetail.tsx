@@ -33,7 +33,7 @@ const GAME_METADATA: Record<string, GameMetadata> = {
   "Overwatch 2": { 
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
     tierCount: 5,
-    tierDirection: 'desc', // 1 is highest
+    tierDirection: 'desc',
     noTierRanks: ["Top 500"]
   },
   "League of Legends": { 
@@ -57,6 +57,21 @@ const GAME_METADATA: Record<string, GameMetadata> = {
 };
 
 const OW2_ROLE_ORDER = ["Tank", "Damage", "Support"];
+const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => (i + 1).toString());
+
+const getFaceitLevel = (elo: number) => {
+  if (elo >= 2001) return "10";
+  if (elo >= 1751) return "9";
+  if (elo >= 1531) return "8";
+  if (elo >= 1351) return "7";
+  if (elo >= 1201) return "6";
+  if (elo >= 1051) return "5";
+  if (elo >= 901) return "4";
+  if (elo >= 751) return "3";
+  if (elo >= 501) return "2";
+  if (elo >= 100) return "1";
+  return "1";
+};
 
 const GameDetail = () => {
   const { id } = useParams();
@@ -78,7 +93,6 @@ const GameDetail = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const found = savedGames.find((g: any) => g.id === id);
     if (found) {
-      // Sort modes for OW2
       if (found.title === 'Overwatch 2') {
         found.modes.sort((a: any, b: any) => 
           OW2_ROLE_ORDER.indexOf(a.name) - OW2_ROLE_ORDER.indexOf(b.name)
@@ -100,58 +114,22 @@ const GameDetail = () => {
     return GAME_METADATA[game?.title] || { ranks: [], tierCount: 0, tierDirection: 'asc', noTierRanks: [] };
   }, [game]);
 
-  const getRankValue = (rankName: string, tierName?: string) => {
-    if (!rankName) return 0;
-    
-    // Handle numeric ratings (CS2 Premier or Faceit ELO)
-    const numeric = parseInt(rankName.replace(/\D/g, ''));
-    if (!isNaN(numeric) && !metadata.ranks.includes(rankName)) return numeric;
+  const isFaceit = activeMode === 'Faceit';
 
-    const rankIdx = metadata.ranks.indexOf(rankName);
-    if (rankIdx === -1) return 0;
-
-    const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
-    const baseValue = (rankIdx + 1) * 100;
-
-    if (metadata.noTierRanks.includes(rankName) || metadata.tierCount === 0) {
-      return baseValue;
-    }
-
-    if (metadata.tierDirection === 'asc') {
-      return baseValue + tierValue;
+  const handleEloChange = (val: string) => {
+    const elo = parseInt(val);
+    if (!isNaN(elo)) {
+      setLogData({
+        ...logData,
+        rank: val,
+        tier: `Level ${getFaceitLevel(elo)}`
+      });
     } else {
-      // For desc (1 is highest), we invert the tier value
-      return baseValue + (metadata.tierCount - tierValue + 1);
+      setLogData({ ...logData, rank: val });
     }
   };
 
-  const { sortedHistory, currentId, peakId } = useMemo(() => {
-    if (!currentModeData?.history || currentModeData.history.length === 0) {
-      return { sortedHistory: [], currentId: null, peakId: null };
-    }
-
-    const history = [...currentModeData.history];
-    const current = history.reduce((prev, curr) => 
-      new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
-    );
-
-    const peak = history.reduce((prev, curr) => {
-      const valPrev = getRankValue(prev.rank, prev.tier);
-      const valCurr = getRankValue(curr.rank, curr.tier);
-      return valCurr > valPrev ? curr : prev;
-    });
-
-    const sorted = history.sort((a, b) => {
-      const timeA = new Date(a.timestamp).getTime();
-      const timeB = new Date(b.timestamp).getTime();
-      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
-    });
-
-    return { sortedHistory: sorted, currentId: current.id, peakId: peak.id };
-  }, [currentModeData, sortOrder, metadata]);
-
   const handleLogRank = () => {
-    // Validation for OW2 Tiers
     if (game?.title === 'Overwatch 2' && !metadata.noTierRanks.includes(logData.rank) && !logData.tier) {
       alert("Tier selection is mandatory for Overwatch 2.");
       return;
@@ -212,7 +190,9 @@ const GameDetail = () => {
               <DialogHeader><DialogTitle className="italic uppercase font-black">LOG COMBAT DATA</DialogTitle></DialogHeader>
               <div className="space-y-6 py-4">
                 <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500">New Rank</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">
+                    {isFaceit ? 'Faceit ELO' : 'New Rank'}
+                  </Label>
                   {metadata.ranks.length > 0 ? (
                     <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
                       <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Rank" /></SelectTrigger>
@@ -222,15 +202,30 @@ const GameDetail = () => {
                     </Select>
                   ) : (
                     <Input 
-                      placeholder={activeMode === 'Faceit' ? "Enter ELO" : "Enter Rating"} 
+                      placeholder={isFaceit ? "Enter ELO (e.g. 1250)" : "Enter Rating"} 
                       value={logData.rank} 
-                      onChange={(e) => setLogData({...logData, rank: e.target.value})}
+                      onChange={(e) => isFaceit ? handleEloChange(e.target.value) : setLogData({...logData, rank: e.target.value})}
                       className="bg-slate-900 border-slate-800"
                     />
                   )}
                 </div>
                 
-                {showTierSelect && (
+                {isFaceit && (
+                  <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Faceit Level</Label>
+                    <Select 
+                      onValueChange={(v) => setLogData({...logData, tier: `Level ${v}`})} 
+                      value={logData.tier.replace('Level ', '')}
+                    >
+                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Level" /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {FACEIT_LEVELS.map(lvl => <SelectItem key={lvl} value={lvl}>Level {lvl}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {showTierSelect && !isFaceit && (
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">Tier (1-{metadata.tierCount})</Label>
                     <Select 
