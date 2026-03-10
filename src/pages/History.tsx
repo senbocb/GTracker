@@ -2,23 +2,16 @@
 
 import React from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, History as HistoryIcon, Filter, Search, Download, Calendar, Swords } from 'lucide-react';
+import { History as HistoryIcon, Filter, Search, Download, Calendar, Swords } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from 'react-router-dom';
 import MatchHistory from '@/components/MatchHistory';
+import AppLayout from '@/components/AppLayout';
 
 const History = () => {
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
+    <AppLayout>
       <main className="max-w-5xl mx-auto p-6 md:p-10">
-        <Link to="/">
-          <Button variant="ghost" className="mb-8 text-slate-400 hover:text-white -ml-4">
-            <ChevronLeft className="mr-2" size={20} />
-            Back to Dashboard
-          </Button>
-        </Link>
-
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
             <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">COMBAT LOGS</h1>
@@ -70,7 +63,7 @@ const History = () => {
           <MadeWithDyad />
         </footer>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

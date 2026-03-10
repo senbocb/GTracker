@@ -9,11 +9,11 @@ import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
-import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Search, LayoutGrid, List } from 'lucide-react';
+import { Plus, Gamepad2, Activity, LayoutGrid, List } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import AppLayout from '@/components/AppLayout';
 
 const DEFAULT_LAYOUT: LayoutSection[] = [
   { id: 'quick_stats', label: 'Quick Stats', enabled: true },
@@ -24,25 +24,17 @@ const DEFAULT_LAYOUT: LayoutSection[] = [
 
 const Index = () => {
   const [games, setGames] = useState<any[]>([]);
-  const [profile, setProfile] = useState<any>(null);
   const [layout, setLayout] = useState<LayoutSection[]>(DEFAULT_LAYOUT);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
   const [statConfigs, setStatConfigs] = useState<QuickStatConfig[]>([]);
-  const [isCompact, setIsCompact] = useState(true);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
   useEffect(() => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
 
-    const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
-    setProfile(savedProfile);
-
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
-
-    const savedSettings = JSON.parse(localStorage.getItem('combat_settings') || 'null');
-    if (savedSettings) setIsCompact(savedSettings.compactDashboard);
 
     const savedStats = JSON.parse(localStorage.getItem('combat_stat_configs') || 'null');
     if (savedStats) {
@@ -217,67 +209,9 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-indigo-500/30">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 group-hover:scale-105 transition-transform">
-                <Gamepad2 className="text-white" size={20} />
-              </div>
-              <span className="text-lg font-black italic uppercase tracking-tighter text-white hidden sm:block">GTracker.app</span>
-            </Link>
-            
-            <nav className="hidden md:flex items-center gap-1">
-              <Link to="/">
-                <Button variant="ghost" className="text-slate-400 hover:text-white font-bold text-[11px] uppercase tracking-widest px-4 hover-highlight">Dashboard</Button>
-              </Link>
-              <Link to="/history">
-                <Button variant="ghost" className="text-slate-400 hover:text-white font-bold text-[11px] uppercase tracking-widest px-4 hover-highlight">History</Button>
-              </Link>
-              <Link to="/settings">
-                <Button variant="ghost" className="text-slate-400 hover:text-white font-bold text-[11px] uppercase tracking-widest px-4 hover-highlight">Settings</Button>
-              </Link>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-slate-800">
-              <Search size={14} className="text-slate-500" />
-              <input 
-                type="text" 
-                placeholder="Search games..." 
-                className="bg-transparent border-none outline-none text-[11px] font-bold text-slate-300 placeholder:text-slate-600 w-32"
-              />
-            </div>
-            
-            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white relative hover-highlight">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full border-2 border-slate-950" />
-            </Button>
-
-            <Link to="/profile">
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-800 group cursor-pointer hover-highlight rounded-r-xl py-2 pr-2">
-                <div className="text-right hidden sm:block">
-                  <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{profile?.username || 'OPERATOR'}</p>
-                  <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest leading-none">Level {Math.floor((profile?.xp || 0) / 100) + 1}</p>
-                </div>
-                <Avatar className="w-10 h-10 border-2 border-slate-800 group-hover:border-indigo-500 transition-colors">
-                  <AvatarImage src={profile?.avatar} />
-                  <AvatarFallback className="bg-slate-900 text-slate-400 font-black">
-                    {profile?.username?.substring(0, 2).toUpperCase() || 'OP'}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <AppLayout>
       <main className="max-w-7xl mx-auto p-6 md:p-10">
         <div className="flex flex-col lg:flex-row gap-10">
-          {/* Main Content Area */}
           <div className="flex-1 space-y-10">
             <div className="flex items-center justify-between">
               <div>
@@ -292,7 +226,6 @@ const Index = () => {
               .map(s => renderSection(s.id))}
           </div>
 
-          {/* Sidebar Intel Panel */}
           <aside className="w-full lg:w-80 space-y-10">
             {layout
               .filter(s => ['session_tracker', 'match_history'].includes(s.id))
@@ -304,7 +237,7 @@ const Index = () => {
           <MadeWithDyad />
         </footer>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

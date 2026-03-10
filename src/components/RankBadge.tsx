@@ -18,12 +18,15 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     const r = rank?.toLowerCase() || "";
     const t = tier?.toLowerCase() || "";
     const g = gameTitle?.toLowerCase() || "";
+    const rankNum = parseInt(rank) || 0;
 
     if (g.includes('valorant') && r === 'radiant') return true;
     if (g.includes('overwatch') && r === 'top 500') return true;
     if (g.includes('league') && r === 'challenger') return true;
     if (g.includes('apex') && r === 'apex predator') return true;
     if (g.includes('counter-strike') && t.includes('level 10')) return true;
+    // CS2 Premier Peak Logic
+    if (g.includes('counter-strike') && rankNum >= 30000) return true;
     
     return false;
   };
@@ -34,7 +37,6 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     const r = rankName?.toLowerCase() || "";
     const t = tier?.toLowerCase() || "";
     
-    // Faceit specific colors based on level
     if (t.includes('level')) {
       const lvl = parseInt(t.replace(/\D/g, ''));
       if (lvl >= 10) return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
@@ -59,18 +61,15 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     const r = rankName?.toLowerCase() || "";
     const t = tierName?.toLowerCase() || "";
     
-    // Valorant
     if (g.includes('valorant')) {
       const tierNum = t.replace(/\D/g, '') || '1';
       return `https://trackercdn.com/cdn/valorant/ranks/${r}_${tierNum}.png`;
     }
     
-    // League of Legends
     if (g.includes('league')) {
       return `https://trackercdn.com/cdn/league/ranks/${r}.png`;
     }
 
-    // CS2 Faceit
     if (t.includes('level')) {
       const lvl = t.replace(/\D/g, '');
       return `https://trackercdn.com/cdn/faceit/levels/level${lvl}.png`;
@@ -81,8 +80,6 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
 
   const iconUrl = getIconUrl(gameTitle, rank, tier);
   const colorClasses = getRankColor(rank);
-
-  // Special formatting for Faceit: "Level X (ELO)"
   const isFaceit = tier?.toLowerCase().includes('level');
   const displayLabel = isFaceit ? `${tier} (${rank})` : `${rank} ${tier || ''}`;
 
