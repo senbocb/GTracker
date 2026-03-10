@@ -16,14 +16,14 @@ interface Match {
 
 const MatchHistory = ({ matches = [] }: { matches?: Match[] }) => {
   return (
-    <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
+    <Card className="bg-slate-900/90 border-slate-800 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-white">Recent Matches</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {matches.length > 0 ? (
           matches.map((match) => (
-            <div key={match.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/40 border border-slate-700/50">
+            <div key={match.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/60 border border-slate-700/50">
               <div className="flex items-center gap-4">
                 <div className={`w-2 h-10 rounded-full ${
                   match.result === 'Win' ? 'bg-emerald-500' : 

@@ -53,7 +53,7 @@ const SessionTracker = () => {
   };
 
   return (
-    <Card className="bg-slate-900/80 border-blue-500/30 backdrop-blur-md overflow-hidden relative group">
+    <Card className="bg-slate-900/95 border-blue-500/30 backdrop-blur-md overflow-hidden relative group">
       <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 group-hover:w-1.5 transition-all" />
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-6">

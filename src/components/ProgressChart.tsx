@@ -21,7 +21,7 @@ const ProgressChart = ({ data = [], rankNames = [] }: ProgressChartProps) => {
   };
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
+    <Card className="bg-slate-900/90 border-slate-800 backdrop-blur-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">Performance Trajectory</CardTitle>
       </CardHeader>

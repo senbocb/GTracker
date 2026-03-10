@@ -111,7 +111,7 @@ const Index = () => {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {statConfigs.filter(c => c.enabled).map((config) => (
-                <div key={config.id} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm group hover:border-indigo-500/30 transition-all hover-highlight">
+                <div key={config.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800/50 backdrop-blur-md group hover:border-indigo-500/30 transition-all hover-highlight">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
                       <Activity size={12} className="text-indigo-500" />
@@ -133,7 +133,7 @@ const Index = () => {
                 Games
               </h2>
               <div className="flex items-center gap-4">
-                <div className="flex items-center bg-slate-900/50 border border-slate-800 rounded-lg p-1">
+                <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg p-1">
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -171,7 +171,7 @@ const Index = () => {
                 ))}
               </div>
             ) : (
-              <div className="p-16 rounded-[2rem] border-2 border-dashed border-slate-800/50 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/10">
+              <div className="p-16 rounded-[2rem] border-2 border-dashed border-slate-800/50 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/40 backdrop-blur-sm">
                 <div className="w-20 h-20 rounded-3xl bg-slate-900 flex items-center justify-center text-slate-700 shadow-inner">
                   <Gamepad2 size={40} />
                 </div>

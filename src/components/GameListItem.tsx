@@ -26,7 +26,7 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
   return (
     <div 
       onClick={() => navigate(`/game/${id}`)}
-      className="flex items-center justify-between p-4 bg-slate-900/50 border border-slate-800 rounded-xl cursor-pointer hover-highlight group transition-all"
+      className="flex items-center justify-between p-4 bg-slate-900/90 border border-slate-800 rounded-xl cursor-pointer hover-highlight group transition-all backdrop-blur-sm"
     >
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-800 shrink-0">

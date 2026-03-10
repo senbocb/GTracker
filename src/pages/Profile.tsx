@@ -103,7 +103,7 @@ const Profile = () => {
     <AppLayout>
       <main className="max-w-4xl mx-auto p-6 md:p-10">
         <div className="relative mb-12">
-          <div className="h-48 w-full rounded-3xl bg-slate-900/50 border border-slate-800 overflow-hidden relative backdrop-blur-sm">
+          <div className="h-48 w-full rounded-3xl bg-slate-900/90 border border-slate-800 overflow-hidden relative backdrop-blur-sm">
             {profile.banner ? <img src={profile.banner} alt="Banner" className="w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent" />}
             <Button variant="ghost" size="sm" className="absolute top-4 right-4 text-slate-500 hover:text-white bg-slate-950/50" onClick={() => bannerInputRef.current?.click()}><Camera size={14} className="mr-2" /> Edit Banner</Button>
             <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
@@ -136,11 +136,11 @@ const Profile = () => {
               <h2 className="text-xl font-bold text-white flex items-center gap-2"><Shield className="text-indigo-500" size={20} /> CAREER OVERVIEW</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {careerStats.length > 0 ? careerStats.map((stat) => (
-                  <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 group relative hover:border-indigo-500/30 transition-colors">
+                  <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 group relative hover:border-indigo-500/30 transition-colors backdrop-blur-sm">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
                     <p className="text-xl font-black text-white">---</p>
                   </div>
-                )) : <div className="col-span-full p-8 text-center border border-dashed border-slate-800 rounded-2xl text-slate-600 text-xs font-bold uppercase">No stats pinned to overview.</div>}
+                )) : <div className="col-span-full p-8 text-center border border-dashed border-slate-800 rounded-2xl text-slate-600 text-xs font-bold uppercase bg-slate-900/40 backdrop-blur-sm">No stats pinned to overview.</div>}
               </div>
             </section>
 
@@ -150,7 +150,7 @@ const Profile = () => {
                 {medals.map((medal: any) => {
                   const isUnlocked = medal.unlocked || level >= medal.minLevel;
                   return (
-                    <div key={medal.id} className={cn("p-4 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all", isUnlocked ? "bg-slate-900/50 border-slate-800" : "bg-slate-950/20 border-slate-900 opacity-30 grayscale")}>
+                    <div key={medal.id} className={cn("p-4 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all backdrop-blur-sm", isUnlocked ? "bg-slate-900/90 border-slate-800" : "bg-slate-950/40 border-slate-900 opacity-30 grayscale")}>
                       <div className={cn("w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center shadow-lg", isUnlocked ? medal.color : "text-slate-800")}>{medal.icon}</div>
                       <div>
                         <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>
@@ -164,7 +164,7 @@ const Profile = () => {
           </div>
 
           <div className="space-y-6">
-            <section className="p-6 rounded-3xl bg-slate-900/50 border border-slate-800 backdrop-blur-sm">
+            <section className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-sm">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-4">Profile Stats</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-400 uppercase">Total XP</span><span className="text-sm font-black text-indigo-500">{profile.xp}</span></div>
