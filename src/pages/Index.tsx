@@ -25,9 +25,9 @@ const Index = () => {
   const [games, setGames] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
   const [layout, setLayout] = useState<LayoutSection[]>(DEFAULT_LAYOUT);
+  const [recentMatches, setRecentMatches] = useState<any[]>([]);
 
   useEffect(() => {
-    // Load data once on mount
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
 
@@ -36,12 +36,38 @@ const Index = () => {
 
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
+
+    // Extract and sort all match history entries across all games
+    const allMatches: any[] = [];
+    savedGames.forEach((game: any) => {
+      game.modes.forEach((mode: any) => {
+        (mode.history || []).forEach((log: any) => {
+          allMatches.push({
+            id: log.id,
+            game: game.title,
+            result: log.isPeak ? 'Peak Reached' : 'Rank Update',
+            change: log.rank,
+            map: mode.name,
+            score: log.tier || '',
+            date: new Date(log.timestamp).toLocaleDateString()
+          });
+        });
+      });
+    });
+    
+    setRecentMatches(allMatches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5));
   }, []);
 
   const updateLayout = (newLayout: LayoutSection[]) => {
     setLayout(newLayout);
     localStorage.setItem('combat_layout', JSON.stringify(newLayout));
   };
+
+  // Calculate real stats
+  const totalEngagements = games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0);
+  const avgWinRate = games.length > 0 
+    ? Math.round(games.reduce((acc, g) => acc + parseInt(g.winRate || '0'), 0) / games.length) 
+    : 0;
 
   const renderSection = (id: string) => {
     const section = layout.find(s => s.id === id);
@@ -53,9 +79,9 @@ const Index = () => {
           <div key="quick_stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             {[
               { label: 'Active Trackers', value: games.length.toString(), icon: Gamepad2, color: 'text-blue-500' },
-              { label: 'Total Engagements', value: '0', icon: Activity, color: 'text-emerald-500' },
-              { label: 'Avg Win Rate', value: '0%', icon: Target, color: 'text-purple-500' },
-              { label: 'Session Time', value: '00:00', icon: Zap, color: 'text-yellow-500' },
+              { label: 'Total Logs', value: totalEngagements.toString(), icon: Activity, color: 'text-emerald-500' },
+              { label: 'Avg Win Rate', value: `${avgWinRate}%`, icon: Target, color: 'text-purple-500' },
+              { label: 'Operational Status', value: 'Active', icon: Zap, color: 'text-yellow-500' },
             ].map((stat, i) => (
               <div key={i} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm">
                 <div className="flex items-center gap-3 mb-2">
@@ -116,7 +142,15 @@ const Index = () => {
           </div>
         );
       case 'match_history':
-        return <MatchHistory key="match_history" matches={[]} />;
+        return (
+          <div key="match_history" className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <span className="w-2 h-6 bg-blue-600 rounded-full" />
+              RECENT ACTIVITY
+            </h2>
+            <MatchHistory matches={recentMatches} />
+          </div>
+        );
       case 'season_goal':
         return (
           <div key="season_goal" className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-white relative overflow-hidden">
