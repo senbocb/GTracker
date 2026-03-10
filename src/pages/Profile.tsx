@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { showSuccess } from '@/utils/toast';
+import { cn } from "@/lib/utils";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
