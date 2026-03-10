@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Timer as TimerIcon, Play, Pause, RotateCcw, Bell, BellOff, Zap } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Timer as TimerIcon, Play, Pause, RotateCcw, Bell, BellOff } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
@@ -53,9 +54,7 @@ const Timer = () => {
 
   const triggerAlarm = () => {
     if (!isAlarmMuted) {
-      // Visual alarm
       showSuccess("OPERATION COMPLETE: Timer Expired!");
-      // Simple browser beep if possible, or just visual
       const context = new (window.AudioContext || (window as any).webkitAudioContext)();
       const osc = context.createOscillator();
       const gain = context.createGain();
