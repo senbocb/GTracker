@@ -8,17 +8,18 @@ import MatchHistory from '@/components/MatchHistory';
 import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
-import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap } from 'lucide-react';
+import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap, ShieldAlert, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 
 const DEFAULT_LAYOUT: LayoutSection[] = [
+  { id: 'readiness_score', label: 'Combat Readiness', enabled: true },
   { id: 'quick_stats', label: 'Quick Stats', enabled: true },
   { id: 'active_operations', label: 'Active Operations', enabled: true },
   { id: 'performance_analytics', label: 'Performance Analytics', enabled: true },
   { id: 'session_tracker', label: 'Session Tracker', enabled: true },
   { id: 'match_history', label: 'Match History', enabled: true },
-  { id: 'season_goal', label: 'Season Goal', enabled: true },
+  { id: 'daily_challenge', label: 'Daily Challenge', enabled: true },
 ];
 
 const Index = () => {
@@ -37,7 +38,6 @@ const Index = () => {
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
 
-    // Extract and sort all match history entries across all games
     const allMatches: any[] = [];
     savedGames.forEach((game: any) => {
       game.modes.forEach((mode: any) => {
@@ -63,7 +63,6 @@ const Index = () => {
     localStorage.setItem('combat_layout', JSON.stringify(newLayout));
   };
 
-  // Calculate real stats
   const totalEngagements = games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0);
   const avgWinRate = games.length > 0 
     ? Math.round(games.reduce((acc, g) => acc + parseInt(g.winRate || '0'), 0) / games.length) 
@@ -74,6 +73,28 @@ const Index = () => {
     if (!section || !section.enabled) return null;
 
     switch (id) {
+      case 'readiness_score':
+        return (
+          <div key="readiness_score" className="mb-10 p-6 rounded-3xl bg-gradient-to-r from-blue-600/20 to-transparent border border-blue-500/20 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="relative w-20 h-20 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90">
+                  <circle cx="40" cy="40" r="36" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-slate-800" />
+                  <circle cx="40" cy="40" r="36" fill="transparent" stroke="currentColor" strokeWidth="8" strokeDasharray="226" strokeDashoffset={226 - (226 * 0.85)} className="text-blue-500" />
+                </svg>
+                <span className="absolute text-xl font-black text-white">85</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-black italic uppercase tracking-tighter text-white">Combat Readiness Score</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Status: Optimal • Performance +12% vs Last Week</p>
+              </div>
+            </div>
+            <div className="hidden md:flex gap-2">
+              <ShieldAlert className="text-yellow-500" size={20} />
+              <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest">Warm-up Recommended</span>
+            </div>
+          </div>
+        );
       case 'quick_stats':
         return (
           <div key="quick_stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
@@ -124,14 +145,23 @@ const Index = () => {
             )}
           </div>
         );
-      case 'performance_analytics':
+      case 'daily_challenge':
         return (
-          <div key="performance_analytics" className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <span className="w-2 h-6 bg-blue-600 rounded-full" />
-              PERFORMANCE ANALYTICS
-            </h2>
-            <ProgressChart data={[]} />
+          <div key="daily_challenge" className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Trophy size={80} />
+            </div>
+            <h3 className="text-lg font-black italic mb-4 uppercase tracking-tighter text-blue-500">Daily Challenge</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm font-bold text-white uppercase tracking-widest">Win 3 Matches in a Row</p>
+                <p className="text-xs font-bold text-slate-500">1/3</p>
+              </div>
+              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-600 w-1/3 rounded-full" />
+              </div>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Reward: +500 XP • Profile Medal</p>
+            </div>
           </div>
         );
       case 'session_tracker':
@@ -151,34 +181,13 @@ const Index = () => {
             <MatchHistory matches={recentMatches} />
           </div>
         );
-      case 'season_goal':
-        return (
-          <div key="season_goal" className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Target size={80} />
-            </div>
-            <h3 className="text-lg font-black italic mb-4 uppercase tracking-tighter text-slate-500">Season Goal</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <p className="text-sm font-bold opacity-50 uppercase tracking-widest">No Goal Set</p>
-                <p className="text-2xl font-black text-slate-800">0%</p>
-              </div>
-              <div className="h-3 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-slate-700 w-0 rounded-full" />
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Define a target rank in your <Link to="/settings" className="text-blue-500 hover:underline">settings</Link> to track your seasonal progress.
-              </p>
-            </div>
-          </div>
-        );
       default:
         return null;
     }
   };
 
-  const mainSectionIds = ['quick_stats', 'active_operations', 'performance_analytics'];
-  const sidebarSectionIds = ['session_tracker', 'match_history', 'season_goal'];
+  const mainSectionIds = ['readiness_score', 'quick_stats', 'active_operations', 'performance_analytics'];
+  const sidebarSectionIds = ['session_tracker', 'match_history', 'daily_challenge'];
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
@@ -231,12 +240,10 @@ const Index = () => {
           </div>
         </header>
 
-        {renderSection('quick_stats')}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {layout
-              .filter(s => mainSectionIds.includes(s.id) && s.id !== 'quick_stats')
+              .filter(s => mainSectionIds.includes(s.id))
               .map(s => renderSection(s.id))}
           </div>
 

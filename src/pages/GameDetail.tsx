@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Trash2, Zap, History, Plus, Calendar, Clock, Trophy } from 'lucide-react';
+import { ChevronLeft, Trash2, Zap, History, Plus, Calendar, Clock, Trophy, StickyNote, Save } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import { showSuccess } from '@/utils/toast';
@@ -24,7 +25,6 @@ const GAME_RANKS: Record<string, { ranks: string[] }> = {
 };
 
 const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`);
-const TIERS = ["I", "II", "III"];
 
 const GameDetail = () => {
   const { id } = useParams();
@@ -32,6 +32,7 @@ const GameDetail = () => {
   const [game, setGame] = useState<any>(null);
   const [activeMode, setActiveMode] = useState('');
   const [timeFrame, setTimeFrame] = useState('week');
+  const [notes, setNotes] = useState('');
   
   const [logData, setLogData] = useState({
     rank: '',
@@ -47,10 +48,18 @@ const GameDetail = () => {
     if (found) {
       setGame(found);
       setActiveMode(found.modes[0]?.name || '');
+      setNotes(found.notes || '');
     } else {
       navigate('/');
     }
   }, [id, navigate]);
+
+  const handleSaveNotes = () => {
+    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+    const updated = savedGames.map((g: any) => g.id === id ? { ...g, notes } : g);
+    localStorage.setItem('combat_games', JSON.stringify(updated));
+    showSuccess("Tactical notes updated.");
+  };
 
   const handleLogRank = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -64,8 +73,7 @@ const GameDetail = () => {
           rank: logData.rank,
           tier: logData.tier,
           timestamp: new Date(logData.timestamp).toISOString(),
-          isPeak: logData.isPeak,
-          numericValue: activeMode === 'Premier' ? parseInt(logData.rank) || 0 : 0
+          isPeak: logData.isPeak
         };
 
         const updatedMode = {
@@ -105,26 +113,10 @@ const GameDetail = () => {
   
   const getFilteredChartData = () => {
     if (!currentModeData?.history) return [];
-    
-    const now = new Date();
-    const filterDate = new Date();
-    
-    if (timeFrame === 'day') filterDate.setDate(now.getDate() - 1);
-    else if (timeFrame === 'week') filterDate.setDate(now.getDate() - 7);
-    else if (timeFrame === 'month') filterDate.setMonth(now.getMonth() - 1);
-    else if (timeFrame === 'year') filterDate.setFullYear(now.getFullYear() - 1);
-    else return currentModeData.history.map((h: any) => ({
+    return currentModeData.history.map((h: any) => ({
       date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
       rr: activeMode === 'Premier' ? parseInt(h.rank) : (GAME_RANKS[game.title]?.ranks.indexOf(h.rank) + 1) * 100 || 0
     })).reverse();
-
-    return currentModeData.history
-      .filter((h: any) => new Date(h.timestamp) >= filterDate)
-      .map((h: any) => ({
-        date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-        rr: activeMode === 'Premier' ? parseInt(h.rank) : (GAME_RANKS[game.title]?.ranks.indexOf(h.rank) + 1) * 100 || 0
-      }))
-      .reverse();
   };
 
   return (
@@ -173,24 +165,9 @@ const GameDetail = () => {
                       </Select>
                     )}
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Timestamp</Label>
-                      <Input 
-                        type="datetime-local" 
-                        value={logData.timestamp}
-                        onChange={(e) => setLogData({...logData, timestamp: e.target.value})}
-                        className="bg-slate-900 border-slate-800"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
-                      <Label className="text-[10px] font-bold uppercase text-slate-500">Peak Rank?</Label>
-                      <Switch 
-                        checked={logData.isPeak}
-                        onCheckedChange={(v) => setLogData({...logData, isPeak: v})}
-                      />
-                    </div>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Peak Rank?</Label>
+                    <Switch checked={logData.isPeak} onCheckedChange={(v) => setLogData({...logData, isPeak: v})} />
                   </div>
                 </div>
                 <DialogFooter>
@@ -217,11 +194,7 @@ const GameDetail = () => {
               <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full">
                 <TabsList className="bg-slate-950/50 border border-slate-800 p-1 h-auto">
                   {game.modes.map((m: any) => (
-                    <TabsTrigger 
-                      key={m.name} 
-                      value={m.name}
-                      className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-                    >
+                    <TabsTrigger key={m.name} value={m.name} className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                       {m.name}
                     </TabsTrigger>
                   ))}
@@ -243,21 +216,29 @@ const GameDetail = () => {
                   <Zap className="text-blue-500" size={20} />
                   PERFORMANCE ANALYTICS
                 </CardTitle>
-                <Select value={timeFrame} onValueChange={setTimeFrame}>
-                  <SelectTrigger className="w-[120px] bg-slate-950 border-slate-800 h-8 text-[10px] font-bold uppercase">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    <SelectItem value="day">Last 24h</SelectItem>
-                    <SelectItem value="week">Last 7 Days</SelectItem>
-                    <SelectItem value="month">Last 30 Days</SelectItem>
-                    <SelectItem value="year">Last Year</SelectItem>
-                    <SelectItem value="all">All Time</SelectItem>
-                  </SelectContent>
-                </Select>
               </CardHeader>
               <CardContent>
                 <ProgressChart data={getFilteredChartData()} />
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-900/50 border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <StickyNote className="text-blue-500" size={20} />
+                  TACTICAL NOTES
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea 
+                  placeholder="Log tactical improvements, agent strategies, or map-specific notes..." 
+                  className="bg-slate-950 border-slate-800 min-h-[150px] text-slate-300"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+                <Button onClick={handleSaveNotes} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold">
+                  <Save size={16} className="mr-2" /> Save Tactical Notes
+                </Button>
               </CardContent>
             </Card>
 
@@ -278,24 +259,11 @@ const GameDetail = () => {
                           <p className="font-black text-white uppercase">{h.rank} {h.tier}</p>
                           {h.isPeak && <Trophy size={12} className="text-yellow-500" />}
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                          <Calendar size={10} />
-                          {new Date(h.timestamp).toLocaleDateString()}
-                          <Clock size={10} className="ml-1" />
-                          {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{new Date(h.timestamp).toLocaleString()}</p>
                       </div>
-                    </div>
-                    <div className="text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="sm" className="text-slate-500 hover:text-white">Edit</Button>
                     </div>
                   </div>
                 ))}
-                {(!currentModeData?.history || currentModeData.history.length === 0) && (
-                  <div className="text-center py-12">
-                    <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">No combat data logged for this mode</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -198,8 +198,8 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20">
-          <div className="md:col-span-3 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+          <div className="md:col-span-2 space-y-8">
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -219,26 +219,24 @@ const Profile = () => {
                     <div className="space-y-6 py-4">
                       <div className="space-y-2">
                         <Label>Add New Stat</Label>
-                        <div className="grid grid-cols-1 gap-2">
-                          <Select onValueChange={(v) => {
-                            const [gId, type] = v.split(':');
-                            addCareerStat(gId, type as any);
-                          }}>
-                            <SelectTrigger className="bg-slate-900 border-slate-800">
-                              <SelectValue placeholder="Select Game & Stat" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                              {games.map(g => (
-                                <React.Fragment key={g.id}>
-                                  <SelectItem value={`${g.id}:peak`}>{g.title} - Peak Rank</SelectItem>
-                                  <SelectItem value={`${g.id}:current`}>{g.title} - Current Rank</SelectItem>
-                                  <SelectItem value={`${g.id}:winrate`}>{g.title} - Win Rate</SelectItem>
-                                  <SelectItem value={`${g.id}:hours`}>{g.title} - Playtime</SelectItem>
-                                </React.Fragment>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <Select onValueChange={(v) => {
+                          const [gId, type] = v.split(':');
+                          addCareerStat(gId, type as any);
+                        }}>
+                          <SelectTrigger className="bg-slate-900 border-slate-800">
+                            <SelectValue placeholder="Select Game & Stat" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                            {games.map(g => (
+                              <React.Fragment key={g.id}>
+                                <SelectItem value={`${g.id}:peak`}>{g.title} - Peak Rank</SelectItem>
+                                <SelectItem value={`${g.id}:current`}>{g.title} - Current Rank</SelectItem>
+                                <SelectItem value={`${g.id}:winrate`}>{g.title} - Win Rate</SelectItem>
+                                <SelectItem value={`${g.id}:hours`}>{g.title} - Playtime</SelectItem>
+                              </React.Fragment>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>Active Stats</Label>
@@ -251,28 +249,65 @@ const Profile = () => {
                               </Button>
                             </div>
                           ))}
-                          {careerStats.length === 0 && (
-                            <p className="text-xs text-slate-500 italic text-center py-4">No stats added yet.</p>
-                          )}
                         </div>
                       </div>
                     </div>
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {careerStats.map((stat) => (
                   <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 group relative hover:border-blue-500/30 transition-colors">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
                     <p className="text-xl font-black text-white">{getStatValue(stat)}</p>
                   </div>
                 ))}
-                {careerStats.length === 0 && (
-                  <div className="col-span-full p-12 rounded-2xl bg-slate-900/30 border border-dashed border-slate-800 text-center">
-                    <p className="text-sm font-bold text-slate-600 uppercase tracking-widest">No stats configured in overview</p>
-                    <p className="text-xs text-slate-700 mt-1">Use the configure button to add stats from your trackers.</p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Medal className="text-yellow-500" size={20} />
+                MEDALS & ACHIEVEMENTS
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {[
+                  { label: 'First Blood', icon: Zap, color: 'text-blue-400', desc: 'Logged first match' },
+                  { label: 'Veteran', icon: Shield, color: 'text-emerald-400', desc: '100+ hours logged' },
+                  { label: 'Peak Performer', icon: Trophy, color: 'text-yellow-500', desc: 'Reached Immortal' },
+                  { label: 'Socialite', icon: Globe, color: 'text-purple-400', desc: 'Linked 3+ socials' },
+                  { label: 'Consistent', icon: Star, color: 'text-cyan-400', desc: '7 day log streak' },
+                ].map((medal, i) => (
+                  <div key={i} className="p-4 rounded-2xl bg-slate-900/30 border border-slate-800 flex flex-col items-center text-center gap-2 group hover:bg-slate-900/50 transition-all">
+                    <div className={`w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center ${medal.color} shadow-lg group-hover:scale-110 transition-transform`}>
+                      <medal.icon size={24} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>
+                      <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{medal.desc}</p>
+                    </div>
                   </div>
-                )}
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <div className="space-y-6">
+            <section className="p-6 rounded-3xl bg-slate-900/50 border border-slate-800">
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-4">Profile Stats</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-400 uppercase">Account Age</span>
+                  <span className="text-sm font-black text-white">14 Days</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-400 uppercase">Total XP</span>
+                  <span className="text-sm font-black text-blue-500">12,450</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-400 uppercase">Global Rank</span>
+                  <span className="text-sm font-black text-emerald-400">#1,204</span>
+                </div>
               </div>
             </section>
           </div>
