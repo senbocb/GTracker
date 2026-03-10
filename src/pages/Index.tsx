@@ -16,21 +16,27 @@ const Index = () => {
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">
       {/* Sidebar Navigation */}
       <aside className="fixed left-0 top-0 h-full w-20 hidden md:flex flex-col items-center py-8 border-r border-slate-800 bg-slate-950/50 backdrop-blur-xl z-50">
-        <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center mb-12 shadow-lg shadow-blue-600/20">
-          <LayoutDashboard className="text-white" size={24} />
-        </div>
+        <Link to="/">
+          <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center mb-12 shadow-lg shadow-blue-600/20 cursor-pointer hover:scale-105 transition-transform">
+            <LayoutDashboard className="text-white" size={24} />
+          </div>
+        </Link>
         <nav className="flex flex-col gap-8">
-          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
-            <History size={24} />
-          </Button>
+          <Link to="/history">
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
+              <History size={24} />
+            </Button>
+          </Link>
           <Link to="/profile">
             <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
               <User size={24} />
             </Button>
           </Link>
-          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
-            <Settings size={24} />
-          </Button>
+          <Link to="/settings">
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
+              <Settings size={24} />
+            </Button>
+          </Link>
         </nav>
         <div className="mt-auto">
           <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white">
