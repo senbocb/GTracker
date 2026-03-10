@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Gamepad2, Image as ImageIcon, Plus, Info } from 'lucide-react';
+import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
