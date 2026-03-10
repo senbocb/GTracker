@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,35 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const profile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
   const [isToolsOpen, setIsToolsOpen] = React.useState(false);
+  const [customization, setCustomization] = useState({ bgColor: '#020617', bgImage: '' });
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('combat_customization') || 'null');
+    if (saved) setCustomization(saved);
+  }, [location.pathname]);
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
     { label: 'History', path: '/history', icon: <History size={20} /> },
   ];
 
+  // Apply custom background only to Home and Profile pages as requested
+  const isCustomizablePage = location.pathname === '/' || location.pathname === '/profile';
+  
+  const bgStyle = isCustomizablePage ? {
+    backgroundColor: customization.bgColor,
+    backgroundImage: customization.bgImage ? `url(${customization.bgImage})` : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed',
+    backgroundRepeat: 'no-repeat'
+  } : { backgroundColor: '#020617' };
+
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-indigo-500/30">
+    <div 
+      className="min-h-screen text-slate-200 font-sans selection:bg-indigo-500/30 transition-colors duration-500"
+      style={bgStyle}
+    >
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">

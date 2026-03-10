@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useNavigate } from 'react-router-dom';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { processImage } from '@/utils/imageProcessing';
 
 const GAME_CONFIGS: Record<string, { ranks: string[], modes?: string[] }> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"] },
@@ -33,6 +34,19 @@ const AddGame = () => {
     if (!selectedGame) return [];
     return GAME_CONFIGS[selectedGame].modes || [];
   }, [selectedGame]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const processed = await processImage(file, 800, 450, 0.7);
+        setImageUrl(processed);
+        showSuccess("Cover image processed.");
+      } catch (err) {
+        showError("Failed to process image.");
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,16 +146,20 @@ const AddGame = () => {
                 )}
 
                 <div className="grid gap-2">
-                  <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Cover Image URL (Optional)</Label>
-                  <div className="relative">
-                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                  <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Cover Image</Label>
+                  <div className="space-y-4">
                     <Input 
                       id="image" 
-                      placeholder="Direct image link" 
-                      className="bg-slate-950 border-slate-800 h-12 pl-10"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
+                      type="file"
+                      accept="image/*"
+                      className="bg-slate-950 border-slate-800 h-12"
+                      onChange={handleImageUpload}
                     />
+                    {imageUrl && (
+                      <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-slate-800">
+                        <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { cn } from "@/lib/utils";
+import AppLayout from '@/components/AppLayout';
+import { processImage } from '@/utils/imageProcessing';
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -45,17 +47,22 @@ const Profile = () => {
     showSuccess("Profile updated.");
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const updated = { ...profile, [type]: reader.result as string };
+      try {
+        // Resize avatars to 400px and banners to 1200px to save space
+        const maxWidth = type === 'avatar' ? 400 : 1200;
+        const maxHeight = type === 'avatar' ? 400 : 600;
+        
+        const processed = await processImage(file, maxWidth, maxHeight, 0.7);
+        const updated = { ...profile, [type]: processed };
         setProfile(updated);
         localStorage.setItem('combat_profile', JSON.stringify(updated));
         showSuccess(`${type} updated.`);
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        showError(`Failed to process ${type}.`);
+      }
     }
   };
 
@@ -93,12 +100,10 @@ const Profile = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
+    <AppLayout>
       <main className="max-w-4xl mx-auto p-6 md:p-10">
-        <Link to="/"><Button variant="ghost" className="mb-8 text-slate-400 hover:text-white -ml-4 hover-highlight"><ChevronLeft className="mr-2" size={20} /> Back to Dashboard</Button></Link>
-
         <div className="relative mb-12">
-          <div className="h-48 w-full rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden relative">
+          <div className="h-48 w-full rounded-3xl bg-slate-900/50 border border-slate-800 overflow-hidden relative backdrop-blur-sm">
             {profile.banner ? <img src={profile.banner} alt="Banner" className="w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent" />}
             <Button variant="ghost" size="sm" className="absolute top-4 right-4 text-slate-500 hover:text-white bg-slate-950/50" onClick={() => bannerInputRef.current?.click()}><Camera size={14} className="mr-2" /> Edit Banner</Button>
             <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
@@ -159,7 +164,7 @@ const Profile = () => {
           </div>
 
           <div className="space-y-6">
-            <section className="p-6 rounded-3xl bg-slate-900/50 border border-slate-800">
+            <section className="p-6 rounded-3xl bg-slate-900/50 border border-slate-800 backdrop-blur-sm">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-4">Profile Stats</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-400 uppercase">Total XP</span><span className="text-sm font-black text-indigo-500">{profile.xp}</span></div>
@@ -170,7 +175,7 @@ const Profile = () => {
         </div>
         <footer className="mt-20 pb-10 border-t border-slate-800 pt-10"><MadeWithDyad /></footer>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 
