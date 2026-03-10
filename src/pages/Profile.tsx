@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2 } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { showSuccess } from '@/utils/toast';
@@ -128,9 +129,10 @@ const Profile = () => {
             </Button>
             <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
           </div>
-          <div className="absolute -bottom-8 left-8 flex items-end gap-6">
+          
+          <div className="absolute -bottom-10 left-8 flex items-end gap-6 w-[calc(100%-4rem)]">
             <div 
-              className="w-32 h-32 rounded-3xl bg-slate-950 border-4 border-[#020617] flex items-center justify-center shadow-2xl group cursor-pointer relative overflow-hidden"
+              className="w-32 h-32 rounded-3xl bg-slate-950 border-4 border-[#020617] flex items-center justify-center shadow-2xl group cursor-pointer relative overflow-hidden shrink-0"
               onClick={() => avatarInputRef.current?.click()}
             >
               {profile.avatar ? (
@@ -143,18 +145,41 @@ const Profile = () => {
               </div>
               <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatar')} />
             </div>
-            <div className="pb-2 flex-1">
+            
+            <div className="pb-4 flex-1 min-w-0">
               {isEditing ? (
                 <Input 
                   value={profile.username} 
                   onChange={(e) => setProfile({...profile, username: e.target.value})}
-                  className="bg-slate-900 border-slate-800 text-white font-black italic"
+                  className="bg-slate-900 border-slate-800 text-white font-black italic h-10"
                 />
               ) : (
-                <h1 className="text-3xl font-black tracking-tight text-white italic uppercase">{profile.username}</h1>
+                <div className="space-y-1">
+                  <h1 className="text-3xl font-black tracking-tight text-white italic uppercase truncate">{profile.username}</h1>
+                  <div className="flex flex-wrap gap-2">
+                    {socials.map((link, i) => (
+                      <a 
+                        key={i} 
+                        href={link.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-[10px] font-bold text-slate-400 hover:text-blue-400 hover:border-blue-500/50 transition-all backdrop-blur-sm"
+                      >
+                        <Globe size={10} />
+                        {link.name}
+                      </a>
+                    ))}
+                    <Link to="/add-social">
+                      <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-slate-900/50 border border-slate-800 text-slate-500 hover:text-white">
+                        <Plus size={12} />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               )}
             </div>
-            <div className="pb-2">
+            
+            <div className="pb-4 shrink-0">
               {isEditing ? (
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-500">
@@ -173,8 +198,8 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
-          <div className="md:col-span-2 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20">
+          <div className="md:col-span-3 space-y-8">
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -194,7 +219,7 @@ const Profile = () => {
                     <div className="space-y-6 py-4">
                       <div className="space-y-2">
                         <Label>Add New Stat</Label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 gap-2">
                           <Select onValueChange={(v) => {
                             const [gId, type] = v.split(':');
                             addCareerStat(gId, type as any);
@@ -217,7 +242,7 @@ const Profile = () => {
                       </div>
                       <div className="space-y-2">
                         <Label>Active Stats</Label>
-                        <div className="space-y-2">
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                           {careerStats.map(s => (
                             <div key={s.id} className="flex items-center justify-between p-2 bg-slate-900 rounded-lg border border-slate-800">
                               <span className="text-sm">{s.label}</span>
@@ -226,56 +251,30 @@ const Profile = () => {
                               </Button>
                             </div>
                           ))}
+                          {careerStats.length === 0 && (
+                            <p className="text-xs text-slate-500 italic text-center py-4">No stats added yet.</p>
+                          )}
                         </div>
                       </div>
                     </div>
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {careerStats.map((stat) => (
-                  <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 group relative">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</p>
+                  <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 group relative hover:border-blue-500/30 transition-colors">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
                     <p className="text-xl font-black text-white">{getStatValue(stat)}</p>
                   </div>
                 ))}
                 {careerStats.length === 0 && (
-                  <div className="col-span-2 p-8 rounded-2xl bg-slate-900/30 border border-dashed border-slate-800 text-center">
-                    <p className="text-sm font-bold text-slate-600 uppercase tracking-widest">No stats configured</p>
+                  <div className="col-span-full p-12 rounded-2xl bg-slate-900/30 border border-dashed border-slate-800 text-center">
+                    <p className="text-sm font-bold text-slate-600 uppercase tracking-widest">No stats configured in overview</p>
+                    <p className="text-xs text-slate-700 mt-1">Use the configure button to add stats from your trackers.</p>
                   </div>
                 )}
               </div>
             </section>
-          </div>
-
-          <div className="space-y-6">
-            <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Social Links</h3>
-                <Link to="/add-social">
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500 hover:text-blue-400">
-                    <Plus size={16} />
-                  </Button>
-                </Link>
-              </div>
-              <div className="space-y-2">
-                {socials.map((link, i) => (
-                  <a 
-                    key={i} 
-                    href={link.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 transition-colors group"
-                  >
-                    <span className="text-sm font-bold text-slate-300 group-hover:text-white">{link.name}</span>
-                    <ExternalLink size={14} className="text-slate-600 group-hover:text-blue-500" />
-                  </a>
-                ))}
-                {socials.length === 0 && (
-                  <p className="text-xs text-slate-600 italic">No links added yet.</p>
-                )}
-              </div>
-            </div>
           </div>
         </div>
 
