@@ -5,8 +5,11 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import GameCard from '@/components/GameCard';
 import ProgressChart from '@/components/ProgressChart';
 import MatchHistory from '@/components/MatchHistory';
+import SessionTracker from '@/components/SessionTracker';
+import AddMatchModal from '@/components/AddMatchModal';
 import { Plus, LayoutDashboard, History, Settings, User, Bell } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   return (
@@ -20,9 +23,11 @@ const Index = () => {
           <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
             <History size={24} />
           </Button>
-          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
-            <User size={24} />
-          </Button>
+          <Link to="/profile">
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
+              <User size={24} />
+            </Button>
+          </Link>
           <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-400 hover:bg-blue-400/10">
             <Settings size={24} />
           </Button>
@@ -49,7 +54,7 @@ const Index = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Game Cards */}
+          {/* Left Column: Game Cards & Analytics */}
           <div className="lg:col-span-2 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <GameCard 
@@ -81,8 +86,12 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Right Column: History & Stats */}
+          {/* Right Column: Session, History & Goals */}
           <div className="space-y-8">
+            <SessionTracker />
+            
+            <AddMatchModal />
+
             <MatchHistory />
             
             <div className="p-6 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl shadow-blue-600/20">
