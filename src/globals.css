@@ -98,4 +98,14 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Ensure all inputs and textareas have white text for readability on dark backgrounds */
+  input, textarea, select {
+    @apply text-white !important;
+  }
+
+  /* Fix for date/time inputs which sometimes have internal styling */
+  input[type="datetime-local"] {
+    color-scheme: dark;
+  }
 }
