@@ -33,14 +33,14 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
           {image ? (
             <img src={image} alt={title} className="w-full h-full object-cover opacity-60" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-600 font-black">G</div>
+            <div className="w-full h-full flex items-center justify-center text-slate-500 font-black">G</div>
           )}
         </div>
         <div>
           <h3 className="text-sm font-black text-white uppercase italic tracking-tight">{title}</h3>
           <div className="flex gap-2 mt-1">
             {modes.map((mode, idx) => (
-              <span key={idx} className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+              <span key={idx} className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                 {mode.name}{idx < modes.length - 1 ? ' • ' : ''}
               </span>
             ))}
@@ -52,12 +52,12 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
         <div className="hidden sm:flex gap-4">
           {modes.map((mode, idx) => (
             <div key={idx} className="flex flex-col items-end">
-              <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mb-1">{mode.name}</p>
+              <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">{mode.name}</p>
               <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-75 origin-right" />
             </div>
           ))}
         </div>
-        <ChevronRight size={16} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
+        <ChevronRight size={16} className="text-slate-500 group-hover:text-indigo-400 transition-colors" />
       </div>
     </div>
   );

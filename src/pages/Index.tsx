@@ -106,7 +106,7 @@ const Index = () => {
         return (
           <div key="quick_stats" className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Tactical Overview</h2>
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tactical Overview</h2>
               <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -116,7 +116,7 @@ const Index = () => {
                     <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
                       <Activity size={12} className="text-indigo-500" />
                     </div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{config.label}</span>
+                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{config.label}</span>
                   </div>
                   <p className="text-2xl font-black text-white tabular-nums">{getStatValue(config)}</p>
                 </div>
@@ -137,7 +137,7 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-8 w-8 rounded-md", viewMode === 'card' ? "bg-indigo-600 text-white" : "text-slate-500 hover-highlight")}
+                    className={cn("h-8 w-8 rounded-md", viewMode === 'card' ? "bg-indigo-600 text-white" : "text-slate-400 hover-highlight")}
                     onClick={() => setViewMode('card')}
                   >
                     <LayoutGrid size={16} />
@@ -145,7 +145,7 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-8 w-8 rounded-md", viewMode === 'list' ? "bg-indigo-600 text-white" : "text-slate-500 hover-highlight")}
+                    className={cn("h-8 w-8 rounded-md", viewMode === 'list' ? "bg-indigo-600 text-white" : "text-slate-400 hover-highlight")}
                     onClick={() => setViewMode('list')}
                   >
                     <List size={16} />
@@ -172,12 +172,12 @@ const Index = () => {
               </div>
             ) : (
               <div className="p-16 rounded-[2rem] border-2 border-dashed border-slate-800/50 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/40 backdrop-blur-sm">
-                <div className="w-20 h-20 rounded-3xl bg-slate-900 flex items-center justify-center text-slate-700 shadow-inner">
+                <div className="w-20 h-20 rounded-3xl bg-slate-900 flex items-center justify-center text-slate-600 shadow-inner">
                   <Gamepad2 size={40} />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-slate-400">No Games Tracked</h3>
-                  <p className="text-slate-600 max-w-xs mx-auto text-sm">Deploy your first game tracker to begin monitoring your competitive performance metrics.</p>
+                  <h3 className="text-xl font-bold text-slate-300">No Games Tracked</h3>
+                  <p className="text-slate-400 max-w-xs mx-auto text-sm">Deploy your first game tracker to begin monitoring your competitive performance metrics.</p>
                 </div>
                 <Link to="/add-game">
                   <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-8 py-6 rounded-2xl shadow-lg shadow-indigo-600/20">
@@ -191,7 +191,7 @@ const Index = () => {
       case 'session_tracker':
         return (
           <div key="session_tracker" className="space-y-4">
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Live Intel</h2>
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Live Intel</h2>
             <SessionTracker />
             <AddMatchModal />
           </div>
@@ -199,7 +199,7 @@ const Index = () => {
       case 'match_history':
         return (
           <div key="match_history" className="space-y-4">
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Recent Engagements</h2>
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Recent Engagements</h2>
             <MatchHistory matches={recentMatches} />
           </div>
         );
@@ -216,7 +216,7 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-white italic uppercase">Operational Status</h1>
-                <p className="text-slate-500 font-medium text-sm">Real-time performance metrics and deployment status.</p>
+                <p className="text-slate-400 font-medium text-sm">Real-time performance metrics and deployment status.</p>
               </div>
               <LayoutSettings sections={layout} onUpdate={updateLayout} />
             </div>

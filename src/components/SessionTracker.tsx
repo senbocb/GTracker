@@ -61,14 +61,14 @@ const SessionTracker = () => {
             <Activity size={16} className="animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-widest">Live Session</span>
           </div>
-          <span className="text-[10px] font-bold text-slate-400 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50 font-mono">
+          <span className="text-[10px] font-bold text-slate-300 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50 font-mono">
             {formatTime(seconds)}
           </span>
         </div>
 
         <div className="mb-6">
           <Select value={selectedGame} onValueChange={setSelectedGame}>
-            <SelectTrigger className="bg-slate-950 border-slate-800 h-8 text-[10px] font-bold uppercase">
+            <SelectTrigger className="bg-slate-950 border-slate-800 h-8 text-[10px] font-bold uppercase text-white">
               <SelectValue placeholder="Filter by Game" />
             </SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-800 text-white">
@@ -82,20 +82,20 @@ const SessionTracker = () => {
         
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1">
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Matches</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Matches</p>
             <div className="flex items-center gap-1.5">
-              <Swords size={14} className="text-slate-400" />
+              <Swords size={14} className="text-slate-300" />
               <p className="text-xl font-black text-white">{sessionStats.matches}</p>
             </div>
           </div>
           <div className="space-y-1">
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">W / L</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">W / L</p>
             <p className="text-xl font-black text-white">
-              {sessionStats.wins} <span className="text-slate-800">/</span> {sessionStats.losses}
+              {sessionStats.wins} <span className="text-slate-700">/</span> {sessionStats.losses}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">{getMetricLabel()}</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{getMetricLabel()}</p>
             <div className={`flex items-center gap-1 ${sessionStats.netRR >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               <TrendingUp size={14} />
               <p className="text-xl font-black">{sessionStats.netRR > 0 ? `+${sessionStats.netRR}` : sessionStats.netRR}</p>
@@ -106,9 +106,9 @@ const SessionTracker = () => {
         <div className="mt-6 pt-4 border-t border-slate-800/50 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Target size={12} className="text-blue-500" />
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Session Goal: +50 RR</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Session Goal: +50 RR</p>
           </div>
-          <ChevronRight size={12} className="text-slate-700" />
+          <ChevronRight size={12} className="text-slate-600" />
         </div>
       </CardContent>
     </Card>

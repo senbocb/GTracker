@@ -16,14 +16,7 @@ import ProgressChart from '@/components/ProgressChart';
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
-interface GameMetadata {
-  ranks: string[];
-  tierCount: number;
-  tierDirection: 'asc' | 'desc';
-  noTierRanks: string[];
-}
-
-const GAME_METADATA: Record<string, GameMetadata> = {
+const GAME_METADATA: Record<string, any> = {
   "Valorant": { 
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
     tierCount: 3,
@@ -212,7 +205,6 @@ const GameDetail = () => {
           });
         }
 
-        // Update current rank if this is the newest entry
         const newest = history.reduce((prev, curr) => 
           new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
         );
@@ -254,7 +246,7 @@ const GameDetail = () => {
       <main className="max-w-5xl mx-auto p-6 md:p-10">
         <div className="flex items-center justify-between mb-8">
           <Link to="/">
-            <Button variant="ghost" className="text-slate-400 hover:text-white -ml-4 hover-highlight">
+            <Button variant="ghost" className="text-slate-300 hover:text-white -ml-4 hover-highlight">
               <ChevronLeft className="mr-2" size={20} />
               Back to Dashboard
             </Button>
@@ -269,7 +261,7 @@ const GameDetail = () => {
               <DialogHeader><DialogTitle className="italic uppercase font-black">{editingLogId ? 'EDIT COMBAT LOG' : 'LOG COMBAT DATA'}</DialogTitle></DialogHeader>
               <div className="space-y-6 py-4">
                 <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  <Label className="text-[10px] font-bold uppercase text-slate-300">
                     {isFaceit ? 'Faceit ELO' : 'Rank / Rating'}
                   </Label>
                   {metadata.ranks.length > 0 ? (
@@ -291,7 +283,7 @@ const GameDetail = () => {
                 
                 {isFaceit && (
                   <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Faceit Level</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-300">Faceit Level</Label>
                     <Select 
                       onValueChange={(v) => setLogData({...logData, tier: `Level ${v}`})} 
                       value={logData.tier.replace('Level ', '')}
@@ -306,7 +298,7 @@ const GameDetail = () => {
 
                 {showTierSelect && !isFaceit && (
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Tier (1-{metadata.tierCount})</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-300">Tier (1-{metadata.tierCount})</Label>
                     <Select 
                       onValueChange={(v) => setLogData({...logData, tier: v})} 
                       value={logData.tier}
@@ -322,7 +314,7 @@ const GameDetail = () => {
                 )}
 
                 <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-500">Log Date</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-300">Log Date</Label>
                   <Input type="datetime-local" value={logData.timestamp} onChange={(e) => setLogData({...logData, timestamp: e.target.value})} className="bg-slate-900 border-slate-800" />
                 </div>
               </div>
@@ -361,7 +353,7 @@ const GameDetail = () => {
                   <TableIcon className="text-indigo-500" size={16} />
                   COMBAT LOGS (SHEET VIEW)
                 </CardTitle>
-                <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase text-slate-500" onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>
+                <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase text-slate-400" onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>
                   Date {sortOrder === 'desc' ? <ArrowDown size={10} /> : <ArrowUp size={10} />}
                 </Button>
               </CardHeader>
@@ -369,16 +361,16 @@ const GameDetail = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950/50 border-b border-slate-800">
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-slate-800">Date / Time</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-slate-800">Rank / Rating</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-800">Date / Time</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-800">Rank / Rating</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedHistory.length > 0 ? sortedHistory.map((h: any, idx) => (
                       <tr key={h.id} className={cn("border-b border-slate-800/50 hover-highlight transition-colors", idx % 2 === 0 ? "bg-slate-900/20" : "bg-transparent")}>
-                        <td className="px-6 py-4 text-xs font-mono text-slate-400 border-r border-slate-800/50">{new Date(h.timestamp).toLocaleString()}</td>
+                        <td className="px-6 py-4 text-xs font-mono text-slate-300 border-r border-slate-800/50">{new Date(h.timestamp).toLocaleString()}</td>
                         <td className="px-6 py-4 border-r border-slate-800/50">
                           <div className="flex items-center gap-3">
                             <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
@@ -398,7 +390,7 @@ const GameDetail = () => {
                               </span>
                             )}
                             {h.id !== currentId && h.id !== peakId && (
-                              <span className="px-2 py-0.5 text-[9px] font-bold text-slate-600 uppercase tracking-widest">Log</span>
+                              <span className="px-2 py-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Log</span>
                             )}
                           </div>
                         </td>
@@ -406,7 +398,7 @@ const GameDetail = () => {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 text-slate-500 hover:text-white"
+                            className="h-8 w-8 text-slate-400 hover:text-white"
                             onClick={() => openEditDialog(h)}
                           >
                             <Edit2 size={14} />
@@ -414,7 +406,7 @@ const GameDetail = () => {
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-600 text-xs font-bold uppercase tracking-widest">No combat data logged.</td></tr>
+                      <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No combat data logged.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -424,12 +416,12 @@ const GameDetail = () => {
 
           <div className="space-y-6">
             <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader><CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">External Trackers</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest">External Trackers</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {externalLinks.map((link, i) => (
                   <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/50 transition-all group hover-highlight">
                     <span className="text-xs font-bold text-white uppercase">{link.name}</span>
-                    <ExternalLink size={14} className="text-slate-500 group-hover:text-indigo-400" />
+                    <ExternalLink size={14} className="text-slate-400 group-hover:text-indigo-400" />
                   </a>
                 ))}
               </CardContent>

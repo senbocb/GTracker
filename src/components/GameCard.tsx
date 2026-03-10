@@ -42,7 +42,7 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
           <h3 className="text-xl font-black italic tracking-tighter text-white uppercase">{title}</h3>
-          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white h-8 w-8" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white h-8 w-8" onClick={(e) => e.stopPropagation()}>
             <MoreVertical size={16} />
           </Button>
         </div>
@@ -52,12 +52,12 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
           {modes.map((mode, idx) => (
             <div key={idx} className="flex items-center justify-between border-b border-slate-800/50 pb-2 last:border-0 last:pb-0">
               <div className="space-y-0.5">
-                <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">{mode.name}</p>
+                <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">{mode.name}</p>
                 <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-90 origin-left" />
               </div>
               <div className="text-right">
-                <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Peak</p>
-                <p className="text-xs font-bold text-slate-300">{mode.peakRank || "N/A"}</p>
+                <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Peak</p>
+                <p className="text-xs font-bold text-slate-200">{mode.peakRank || "N/A"}</p>
               </div>
             </div>
           ))}

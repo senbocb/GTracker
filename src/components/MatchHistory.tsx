@@ -31,28 +31,28 @@ const MatchHistory = ({ matches = [] }: { matches?: Match[] }) => {
                 }`} />
                 <div>
                   <p className="font-bold text-white">{match.result} • {match.map}</p>
-                  <p className="text-xs text-slate-400">{match.score} • {match.date}</p>
+                  <p className="text-xs text-slate-300">{match.score} • {match.date}</p>
                 </div>
               </div>
               <div className="text-right">
                 <div className={`flex items-center gap-1 font-mono font-bold ${
                   match.result === 'Win' ? 'text-emerald-400' : 
-                  match.result === 'Loss' ? 'text-red-400' : 'text-slate-400'
+                  match.result === 'Loss' ? 'text-red-400' : 'text-slate-300'
                 }`}>
                   {match.result === 'Win' ? <TrendingUp size={14} /> : 
                    match.result === 'Loss' ? <TrendingDown size={14} /> : <Minus size={14} />}
                   {match.change}
                 </div>
-                <p className="text-[10px] uppercase tracking-widest text-slate-500">{match.game}</p>
+                <p className="text-[10px] uppercase tracking-widest text-slate-400">{match.game}</p>
               </div>
             </div>
           ))
         ) : (
           <div className="py-10 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-slate-600">
+            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-slate-500">
               <Swords size={24} />
             </div>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">No combat data logged</p>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No combat data logged</p>
           </div>
         )}
       </CardContent>
