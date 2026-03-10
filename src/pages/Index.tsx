@@ -3,12 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import GameCard from '@/components/GameCard';
-import ProgressChart from '@/components/ProgressChart';
 import MatchHistory from '@/components/MatchHistory';
 import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
-import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap, ShieldAlert, Trophy } from 'lucide-react';
+import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
+import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap, ShieldAlert } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 
@@ -16,10 +16,8 @@ const DEFAULT_LAYOUT: LayoutSection[] = [
   { id: 'readiness_score', label: 'Combat Readiness', enabled: true },
   { id: 'quick_stats', label: 'Quick Stats', enabled: true },
   { id: 'active_operations', label: 'Active Operations', enabled: true },
-  { id: 'performance_analytics', label: 'Performance Analytics', enabled: true },
   { id: 'session_tracker', label: 'Session Tracker', enabled: true },
   { id: 'match_history', label: 'Match History', enabled: true },
-  { id: 'daily_challenge', label: 'Daily Challenge', enabled: true },
 ];
 
 const Index = () => {
@@ -27,6 +25,7 @@ const Index = () => {
   const [profile, setProfile] = useState<any>(null);
   const [layout, setLayout] = useState<LayoutSection[]>(DEFAULT_LAYOUT);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
+  const [statConfigs, setStatConfigs] = useState<QuickStatConfig[]>([]);
 
   useEffect(() => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -37,6 +36,23 @@ const Index = () => {
 
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
+
+    // Initialize stat configs
+    const savedStats = JSON.parse(localStorage.getItem('combat_stat_configs') || 'null');
+    if (savedStats) {
+      setStatConfigs(savedStats);
+    } else {
+      const initial: QuickStatConfig[] = [
+        { id: 'active_trackers', label: 'Active Trackers', enabled: true, type: 'common' },
+        { id: 'total_logs', label: 'Total Logs', enabled: true, type: 'common' },
+        { id: 'avg_winrate', label: 'Avg Win Rate', enabled: true, type: 'common' },
+        { id: 'op_status', label: 'Operational Status', enabled: true, type: 'common' },
+      ];
+      savedGames.forEach((g: any) => {
+        initial.push({ id: `peak_${g.id}`, label: `${g.title} Peak`, enabled: false, type: 'game', gameId: g.id });
+      });
+      setStatConfigs(initial);
+    }
 
     const allMatches: any[] = [];
     savedGames.forEach((game: any) => {
@@ -63,10 +79,25 @@ const Index = () => {
     localStorage.setItem('combat_layout', JSON.stringify(newLayout));
   };
 
-  const totalEngagements = games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0);
-  const avgWinRate = games.length > 0 
-    ? Math.round(games.reduce((acc, g) => acc + parseInt(g.winRate || '0'), 0) / games.length) 
-    : 0;
+  const updateStatConfigs = (newConfigs: QuickStatConfig[]) => {
+    setStatConfigs(newConfigs);
+    localStorage.setItem('combat_stat_configs', JSON.stringify(newConfigs));
+  };
+
+  const getStatValue = (config: QuickStatConfig) => {
+    if (config.id === 'active_trackers') return games.length.toString();
+    if (config.id === 'total_logs') return games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0).toString();
+    if (config.id === 'avg_winrate') {
+      const avg = games.length > 0 ? Math.round(games.reduce((acc, g) => acc + parseInt(g.winRate || '0'), 0) / games.length) : 0;
+      return `${avg}%`;
+    }
+    if (config.id === 'op_status') return 'Active';
+    if (config.type === 'game') {
+      const game = games.find(g => g.id === config.gameId);
+      return game?.modes[0]?.peakRank || 'N/A';
+    }
+    return 'N/A';
+  };
 
   const renderSection = (id: string) => {
     const section = layout.find(s => s.id === id);
@@ -97,21 +128,22 @@ const Index = () => {
         );
       case 'quick_stats':
         return (
-          <div key="quick_stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            {[
-              { label: 'Active Trackers', value: games.length.toString(), icon: Gamepad2, color: 'text-blue-500' },
-              { label: 'Total Logs', value: totalEngagements.toString(), icon: Activity, color: 'text-emerald-500' },
-              { label: 'Avg Win Rate', value: `${avgWinRate}%`, icon: Target, color: 'text-purple-500' },
-              { label: 'Operational Status', value: 'Active', icon: Zap, color: 'text-yellow-500' },
-            ].map((stat, i) => (
-              <div key={i} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm">
-                <div className="flex items-center gap-3 mb-2">
-                  <stat.icon size={16} className={stat.color} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
+          <div key="quick_stats" className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Quick Stats</h2>
+              <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {statConfigs.filter(c => c.enabled).map((config) => (
+                <div key={config.id} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Activity size={14} className="text-blue-500" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{config.label}</span>
+                  </div>
+                  <p className="text-2xl font-black text-white">{getStatValue(config)}</p>
                 </div>
-                <p className="text-2xl font-black text-white">{stat.value}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         );
       case 'active_operations':
@@ -145,25 +177,6 @@ const Index = () => {
             )}
           </div>
         );
-      case 'daily_challenge':
-        return (
-          <div key="daily_challenge" className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Trophy size={80} />
-            </div>
-            <h3 className="text-lg font-black italic mb-4 uppercase tracking-tighter text-blue-500">Daily Challenge</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <p className="text-sm font-bold text-white uppercase tracking-widest">Win 3 Matches in a Row</p>
-                <p className="text-xs font-bold text-slate-500">1/3</p>
-              </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 w-1/3 rounded-full" />
-              </div>
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Reward: +500 XP • Profile Medal</p>
-            </div>
-          </div>
-        );
       case 'session_tracker':
         return (
           <div key="session_tracker" className="space-y-4">
@@ -186,8 +199,8 @@ const Index = () => {
     }
   };
 
-  const mainSectionIds = ['readiness_score', 'quick_stats', 'active_operations', 'performance_analytics'];
-  const sidebarSectionIds = ['session_tracker', 'match_history', 'daily_challenge'];
+  const mainSectionIds = ['readiness_score', 'quick_stats', 'active_operations'];
+  const sidebarSectionIds = ['session_tracker', 'match_history'];
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30">

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3 } from 'lucide-react';
 
@@ -9,10 +9,10 @@ const ProgressChart = ({ data = [] }: { data?: any[] }) => {
   return (
     <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-slate-400">Rank Rating Progress (Last 7 Days)</CardTitle>
+        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">Performance Trajectory</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[200px] w-full">
+        <div className="h-[250px] w-full">
           {data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
@@ -20,28 +20,40 @@ const ProgressChart = ({ data = [] }: { data?: any[] }) => {
                 <XAxis 
                   dataKey="date" 
                   stroke="#64748b" 
-                  fontSize={12} 
+                  fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
+                  dy={10}
                 />
                 <YAxis 
                   stroke="#64748b" 
-                  fontSize={12} 
+                  fontSize={10} 
                   tickLine={false} 
                   axisLine={false}
-                  tickFormatter={(value) => `${value}RR`}
+                  tickFormatter={(value) => `${value}`}
                 />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
-                  itemStyle={{ color: '#38bdf8' }}
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
+                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
                 />
+                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em' }} />
                 <Line 
+                  name="Current Rank"
                   type="monotone" 
-                  dataKey="rr" 
+                  dataKey="current" 
                   stroke="#38bdf8" 
                   strokeWidth={3} 
                   dot={{ fill: '#38bdf8', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, strokeWidth: 0 }}
+                />
+                <Line 
+                  name="Peak Rank"
+                  type="stepAfter" 
+                  dataKey="peak" 
+                  stroke="#eab308" 
+                  strokeWidth={2} 
+                  strokeDasharray="5 5"
+                  dot={false}
                 />
               </LineChart>
             </ResponsiveContainer>

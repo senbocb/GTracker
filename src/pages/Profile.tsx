@@ -14,8 +14,9 @@ import { showSuccess } from '@/utils/toast';
 interface CareerStat {
   id: string;
   label: string;
-  gameId: string;
-  statType: 'peak' | 'current' | 'winrate' | 'hours';
+  gameId?: string;
+  statType: 'peak' | 'current' | 'winrate' | 'hours' | 'account_age' | 'total_xp';
+  category: 'account' | 'game';
 }
 
 const Profile = () => {
@@ -23,11 +24,14 @@ const Profile = () => {
   const [profile, setProfile] = useState({
     username: 'UNIDENTIFIED_USER',
     avatar: '',
-    banner: ''
+    banner: '',
+    createdAt: '',
+    xp: 0
   });
   const [socials, setSocials] = useState<any[]>([]);
   const [games, setGames] = useState<any[]>([]);
   const [careerStats, setCareerStats] = useState<CareerStat[]>([]);
+  const [statCategory, setStatCategory] = useState<'account' | 'game' | null>(null);
   
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +51,13 @@ const Profile = () => {
   }, []);
 
   const handleSave = () => {
-    localStorage.setItem('combat_profile', JSON.stringify(profile));
+    const updatedProfile = { ...profile };
+    if (!updatedProfile.createdAt) {
+      updatedProfile.createdAt = new Date().toISOString();
+      updatedProfile.xp = 0;
+    }
+    setProfile(updatedProfile);
+    localStorage.setItem('combat_profile', JSON.stringify(updatedProfile));
     setIsEditing(false);
     showSuccess("Profile updated successfully.");
   };
@@ -67,16 +77,22 @@ const Profile = () => {
     }
   };
 
-  const addCareerStat = (gameId: string, statType: CareerStat['statType']) => {
-    const game = games.find(g => g.id === gameId);
-    if (!game) return;
+  const addCareerStat = (gameId: string | undefined, statType: CareerStat['statType'], category: 'account' | 'game') => {
+    let label = '';
+    if (category === 'account') {
+      label = statType === 'account_age' ? 'Account Age' : 'Total XP';
+    } else {
+      const game = games.find(g => g.id === gameId);
+      const labels = { peak: 'Peak Rank', current: 'Current Rank', winrate: 'Win Rate', hours: 'Hours Logged' };
+      label = `${game?.title} ${labels[statType as keyof typeof labels]}`;
+    }
 
-    const labels = { peak: 'Peak Rank', current: 'Current Rank', winrate: 'Win Rate', hours: 'Hours Logged' };
     const newStat: CareerStat = {
       id: Date.now().toString(),
-      label: `${game.title} ${labels[statType]}`,
+      label,
       gameId,
-      statType
+      statType,
+      category
     };
 
     const updated = [...careerStats, newStat];
@@ -92,12 +108,22 @@ const Profile = () => {
   };
 
   const getStatValue = (stat: CareerStat) => {
-    const game = games.find(g => g.id === stat.gameId);
-    if (!game) return 'N/A';
-    if (stat.statType === 'peak') return game.peakRank || 'N/A';
-    if (stat.statType === 'current') return game.rank || 'N/A';
-    if (stat.statType === 'winrate') return game.winRate || '0%';
-    if (stat.statType === 'hours') return game.hoursPlayed || '0h';
+    if (stat.category === 'account') {
+      if (stat.statType === 'account_age') {
+        if (!profile.createdAt) return '0 Days';
+        const diff = Date.now() - new Date(profile.createdAt).getTime();
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        return `${days} Days`;
+      }
+      if (stat.statType === 'total_xp') return profile.xp.toString();
+    } else {
+      const game = games.find(g => g.id === stat.gameId);
+      if (!game) return 'N/A';
+      if (stat.statType === 'peak') return game.modes[0]?.peakRank || 'N/A';
+      if (stat.statType === 'current') return game.modes[0]?.rank || 'N/A';
+      if (stat.statType === 'winrate') return game.winRate || '0%';
+      if (stat.statType === 'hours') return game.hoursPlayed || '0h';
+    }
     return 'N/A';
   };
 
@@ -206,7 +232,7 @@ const Profile = () => {
                   <Shield className="text-blue-500" size={20} />
                   CAREER OVERVIEW
                 </h2>
-                <Dialog>
+                <Dialog onOpenChange={(open) => !open && setStatCategory(null)}>
                   <DialogTrigger asChild>
                     <Button variant="ghost" size="sm" className="text-slate-500 hover:text-white">
                       <Settings2 size={16} className="mr-2" /> Configure
@@ -214,36 +240,60 @@ const Profile = () => {
                   </DialogTrigger>
                   <DialogContent className="bg-slate-950 border-slate-800 text-white">
                     <DialogHeader>
-                      <DialogTitle>CONFIGURE OVERVIEW</DialogTitle>
+                      <DialogTitle className="italic uppercase font-black">CONFIGURE OVERVIEW</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-6 py-4">
+                      {!statCategory ? (
+                        <div className="grid grid-cols-2 gap-4">
+                          <Button variant="outline" className="h-24 border-slate-800 bg-slate-900 hover:bg-slate-800 flex flex-col gap-2" onClick={() => setStatCategory('account')}>
+                            <User size={24} className="text-blue-500" />
+                            <span className="text-xs font-bold uppercase">Account Stats</span>
+                          </Button>
+                          <Button variant="outline" className="h-24 border-slate-800 bg-slate-900 hover:bg-slate-800 flex flex-col gap-2" onClick={() => setStatCategory('game')}>
+                            <Gamepad2 size={24} className="text-emerald-500" />
+                            <span className="text-xs font-bold uppercase">Game Stats</span>
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <Button variant="ghost" size="sm" className="text-slate-500" onClick={() => setStatCategory(null)}>
+                            <ChevronLeft size={14} className="mr-1" /> Back
+                          </Button>
+                          {statCategory === 'account' ? (
+                            <div className="space-y-2">
+                              <Button variant="outline" className="w-full justify-start border-slate-800" onClick={() => addCareerStat(undefined, 'account_age', 'account')}>Account Age</Button>
+                              <Button variant="outline" className="w-full justify-start border-slate-800" onClick={() => addCareerStat(undefined, 'total_xp', 'account')}>Total XP</Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <Select onValueChange={(v) => {
+                                const [gId, type] = v.split(':');
+                                addCareerStat(gId, type as any, 'game');
+                              }}>
+                                <SelectTrigger className="bg-slate-900 border-slate-800">
+                                  <SelectValue placeholder="Select Game & Stat" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                  {games.map(g => (
+                                    <React.Fragment key={g.id}>
+                                      <SelectItem value={`${g.id}:peak`}>{g.title} - Peak Rank</SelectItem>
+                                      <SelectItem value={`${g.id}:current`}>{g.title} - Current Rank</SelectItem>
+                                      <SelectItem value={`${g.id}:winrate`}>{g.title} - Win Rate</SelectItem>
+                                      <SelectItem value={`${g.id}:hours`}>{g.title} - Playtime</SelectItem>
+                                    </React.Fragment>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="space-y-2">
-                        <Label>Add New Stat</Label>
-                        <Select onValueChange={(v) => {
-                          const [gId, type] = v.split(':');
-                          addCareerStat(gId, type as any);
-                        }}>
-                          <SelectTrigger className="bg-slate-900 border-slate-800">
-                            <SelectValue placeholder="Select Game & Stat" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                            {games.map(g => (
-                              <React.Fragment key={g.id}>
-                                <SelectItem value={`${g.id}:peak`}>{g.title} - Peak Rank</SelectItem>
-                                <SelectItem value={`${g.id}:current`}>{g.title} - Current Rank</SelectItem>
-                                <SelectItem value={`${g.id}:winrate`}>{g.title} - Win Rate</SelectItem>
-                                <SelectItem value={`${g.id}:hours`}>{g.title} - Playtime</SelectItem>
-                              </React.Fragment>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Active Stats</Label>
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                        <Label className="text-[10px] font-bold uppercase text-slate-500">Active Stats</Label>
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                           {careerStats.map(s => (
                             <div key={s.id} className="flex items-center justify-between p-2 bg-slate-900 rounded-lg border border-slate-800">
-                              <span className="text-sm">{s.label}</span>
+                              <span className="text-xs font-bold uppercase">{s.label}</span>
                               <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeStat(s.id)}>
                                 <X size={14} />
                               </Button>
@@ -271,23 +321,21 @@ const Profile = () => {
                 MEDALS & ACHIEVEMENTS
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {[
-                  { label: 'First Blood', icon: Zap, color: 'text-blue-400', desc: 'Logged first match' },
-                  { label: 'Veteran', icon: Shield, color: 'text-emerald-400', desc: '100+ hours logged' },
-                  { label: 'Peak Performer', icon: Trophy, color: 'text-yellow-500', desc: 'Reached Immortal' },
-                  { label: 'Socialite', icon: Globe, color: 'text-purple-400', desc: 'Linked 3+ socials' },
-                  { label: 'Consistent', icon: Star, color: 'text-cyan-400', desc: '7 day log streak' },
-                ].map((medal, i) => (
-                  <div key={i} className="p-4 rounded-2xl bg-slate-900/30 border border-slate-800 flex flex-col items-center text-center gap-2 group hover:bg-slate-900/50 transition-all">
-                    <div className={`w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center ${medal.color} shadow-lg group-hover:scale-110 transition-transform`}>
-                      <medal.icon size={24} />
+                {profile.xp > 0 ? (
+                  <div className="p-4 rounded-2xl bg-slate-900/30 border border-slate-800 flex flex-col items-center text-center gap-2 group hover:bg-slate-900/50 transition-all">
+                    <div className="w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center text-blue-400 shadow-lg group-hover:scale-110 transition-transform">
+                      <Zap size={24} />
                     </div>
                     <div>
-                      <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>
-                      <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{medal.desc}</p>
+                      <p className="text-xs font-black uppercase tracking-tighter text-white">First Blood</p>
+                      <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Logged first match</p>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+                    <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">No achievements earned yet</p>
+                  </div>
+                )}
               </div>
             </section>
           </div>
@@ -298,15 +346,17 @@ const Profile = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-400 uppercase">Account Age</span>
-                  <span className="text-sm font-black text-white">14 Days</span>
+                  <span className="text-sm font-black text-white">
+                    {profile.createdAt ? `${Math.floor((Date.now() - new Date(profile.createdAt).getTime()) / (1000 * 60 * 60 * 24))} Days` : '0 Days'}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-400 uppercase">Total XP</span>
-                  <span className="text-sm font-black text-blue-500">12,450</span>
+                  <span className="text-sm font-black text-blue-500">{profile.xp}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-400 uppercase">Global Rank</span>
-                  <span className="text-sm font-black text-emerald-400">#1,204</span>
+                  <span className="text-sm font-black text-emerald-400">#---</span>
                 </div>
               </div>
             </section>

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Trash2, Zap, History, Plus, Calendar, Clock, Trophy, StickyNote, Save } from 'lucide-react';
+import { ChevronLeft, Trash2, Zap, History, Plus, Calendar, Clock, Trophy, StickyNote, Save, ExternalLink } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,8 +31,8 @@ const GameDetail = () => {
   const navigate = useNavigate();
   const [game, setGame] = useState<any>(null);
   const [activeMode, setActiveMode] = useState('');
-  const [timeFrame, setTimeFrame] = useState('week');
   const [notes, setNotes] = useState('');
+  const [externalLinks, setExternalLinks] = useState<any[]>([]);
   
   const [logData, setLogData] = useState({
     rank: '',
@@ -49,6 +49,7 @@ const GameDetail = () => {
       setGame(found);
       setActiveMode(found.modes[0]?.name || '');
       setNotes(found.notes || '');
+      setExternalLinks(found.externalLinks || []);
     } else {
       navigate('/');
     }
@@ -59,6 +60,19 @@ const GameDetail = () => {
     const updated = savedGames.map((g: any) => g.id === id ? { ...g, notes } : g);
     localStorage.setItem('combat_games', JSON.stringify(updated));
     showSuccess("Tactical notes updated.");
+  };
+
+  const handleAddExternalLink = () => {
+    const name = prompt("Enter site name (e.g. Tracker.gg):");
+    const url = prompt("Enter URL:");
+    if (name && url) {
+      const newLinks = [...externalLinks, { name, url: url.startsWith('http') ? url : `https://${url}` }];
+      setExternalLinks(newLinks);
+      const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+      const updated = savedGames.map((g: any) => g.id === id ? { ...g, externalLinks: newLinks } : g);
+      localStorage.setItem('combat_games', JSON.stringify(updated));
+      showSuccess("External tracker added.");
+    }
   };
 
   const handleLogRank = () => {
@@ -113,10 +127,18 @@ const GameDetail = () => {
   
   const getFilteredChartData = () => {
     if (!currentModeData?.history) return [];
-    return currentModeData.history.map((h: any) => ({
-      date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-      rr: activeMode === 'Premier' ? parseInt(h.rank) : (GAME_RANKS[game.title]?.ranks.indexOf(h.rank) + 1) * 100 || 0
-    })).reverse();
+    const history = [...currentModeData.history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
+    let currentPeak = 0;
+    return history.map((h: any) => {
+      const rankIndex = (GAME_RANKS[game.title]?.ranks.indexOf(h.rank) + 1) * 100 || 0;
+      if (rankIndex > currentPeak) currentPeak = rankIndex;
+      return {
+        date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        current: rankIndex,
+        peak: currentPeak
+      };
+    });
   };
 
   return (
@@ -148,11 +170,11 @@ const GameDetail = () => {
                         type="number" 
                         value={logData.rank} 
                         onChange={(e) => setLogData({...logData, rank: e.target.value})}
-                        className="bg-slate-900 border-slate-800"
+                        className="bg-slate-900 border-slate-800 text-white"
                       />
                     ) : (
                       <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
-                        <SelectTrigger className="bg-slate-900 border-slate-800">
+                        <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                           <SelectValue placeholder="Select Rank" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-900 border-slate-800 text-white">
@@ -164,6 +186,15 @@ const GameDetail = () => {
                         </SelectContent>
                       </Select>
                     )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Log Date</Label>
+                    <Input 
+                      type="datetime-local" 
+                      value={logData.timestamp} 
+                      onChange={(e) => setLogData({...logData, timestamp: e.target.value})}
+                      className="bg-slate-900 border-slate-800 text-white"
+                    />
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">Peak Rank?</Label>
@@ -210,17 +241,7 @@ const GameDetail = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <Zap className="text-blue-500" size={20} />
-                  PERFORMANCE ANALYTICS
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ProgressChart data={getFilteredChartData()} />
-              </CardContent>
-            </Card>
+            <ProgressChart data={getFilteredChartData()} />
 
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader>
@@ -232,7 +253,7 @@ const GameDetail = () => {
               <CardContent className="space-y-4">
                 <Textarea 
                   placeholder="Log tactical improvements, agent strategies, or map-specific notes..." 
-                  className="bg-slate-950 border-slate-800 min-h-[150px] text-slate-300"
+                  className="bg-slate-950 border-slate-800 min-h-[150px] text-white"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                 />
@@ -271,21 +292,24 @@ const GameDetail = () => {
           <div className="space-y-6">
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader>
-                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">Operational Stats</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">External Trackers</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Peak Rank</span>
-                  <span className="font-black text-yellow-500">{currentModeData?.peakRank || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Win Rate</span>
-                  <span className="font-black text-emerald-400">{game.winRate || '0%'}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Playtime</span>
-                  <span className="font-black text-blue-400">{game.hoursPlayed || '0h'}</span>
-                </div>
+              <CardContent className="space-y-3">
+                {externalLinks.map((link, i) => (
+                  <a 
+                    key={i} 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 transition-all group"
+                  >
+                    <span className="text-xs font-bold text-white uppercase">{link.name}</span>
+                    <ExternalLink size={14} className="text-slate-500 group-hover:text-blue-500" />
+                  </a>
+                ))}
+                <Button variant="ghost" className="w-full border border-dashed border-slate-800 text-slate-500 hover:text-white text-[10px] font-bold uppercase" onClick={handleAddExternalLink}>
+                  <Plus size={12} className="mr-2" /> Add Tracker Link
+                </Button>
               </CardContent>
             </Card>
           </div>
