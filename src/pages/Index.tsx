@@ -27,15 +27,13 @@ const Index = () => {
   const [layout, setLayout] = useState<LayoutSection[]>(DEFAULT_LAYOUT);
 
   useEffect(() => {
-    // Load games
+    // Load data once on mount
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
 
-    // Load profile
     const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
     setProfile(savedProfile);
 
-    // Load layout
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
   }, []);
@@ -78,8 +76,8 @@ const Index = () => {
             </h2>
             {games.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {games.map((game, i) => (
-                  <GameCard key={i} {...game} />
+                {games.map((game) => (
+                  <GameCard key={game.id} {...game} />
                 ))}
               </div>
             ) : (
@@ -145,7 +143,6 @@ const Index = () => {
     }
   };
 
-  // Split layout into main and sidebar for the grid
   const mainSectionIds = ['quick_stats', 'active_operations', 'performance_analytics'];
   const sidebarSectionIds = ['session_tracker', 'match_history', 'season_goal'];
 
@@ -200,7 +197,6 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Render Quick Stats if it's in the layout and enabled */}
         {renderSection('quick_stats')}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

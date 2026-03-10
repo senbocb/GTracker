@@ -87,8 +87,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action;
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId);
       } else {
@@ -176,7 +174,7 @@ function useToast() {
         listeners.splice(index, 1);
       }
     };
-  }, [state]);
+  }, []); // Fixed: Empty dependency array to prevent infinite loops
 
   return {
     ...state,
