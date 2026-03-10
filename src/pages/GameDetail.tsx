@@ -114,6 +114,54 @@ const GameDetail = () => {
     return GAME_METADATA[game?.title] || { ranks: [], tierCount: 0, tierDirection: 'asc', noTierRanks: [] };
   }, [game]);
 
+  const getRankValue = (rankName: string, tierName?: string) => {
+    if (!rankName) return 0;
+    
+    const numeric = parseInt(rankName.replace(/\D/g, ''));
+    if (!isNaN(numeric) && !metadata.ranks.includes(rankName)) return numeric;
+
+    const rankIdx = metadata.ranks.indexOf(rankName);
+    if (rankIdx === -1) return 0;
+
+    const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
+    const baseValue = (rankIdx + 1) * 100;
+
+    if (metadata.noTierRanks.includes(rankName) || metadata.tierCount === 0) {
+      return baseValue;
+    }
+
+    if (metadata.tierDirection === 'asc') {
+      return baseValue + tierValue;
+    } else {
+      return baseValue + (metadata.tierCount - tierValue + 1);
+    }
+  };
+
+  const { sortedHistory, currentId, peakId } = useMemo(() => {
+    if (!currentModeData?.history || currentModeData.history.length === 0) {
+      return { sortedHistory: [], currentId: null, peakId: null };
+    }
+
+    const history = [...currentModeData.history];
+    const current = history.reduce((prev, curr) => 
+      new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
+    );
+
+    const peak = history.reduce((prev, curr) => {
+      const valPrev = getRankValue(prev.rank, prev.tier);
+      const valCurr = getRankValue(curr.rank, curr.tier);
+      return valCurr > valPrev ? curr : prev;
+    });
+
+    const sorted = history.sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+
+    return { sortedHistory: sorted, currentId: current.id, peakId: peak.id };
+  }, [currentModeData, sortOrder, metadata]);
+
   const isFaceit = activeMode === 'Faceit';
 
   const handleEloChange = (val: string) => {
