@@ -47,10 +47,12 @@ const Index = () => {
             <h1 className="text-4xl font-black tracking-tight text-white mb-2">COMMAND CENTER</h1>
             <p className="text-slate-400 font-medium">Welcome back, Commander. Your climb continues.</p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-6 rounded-2xl shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
-            <Plus className="mr-2" size={20} />
-            ADD NEW GAME
-          </Button>
+          <Link to="/add-game">
+            <Button className="bg-blue-600 hover:bg-blue-500 text-white font-black px-6 py-6 rounded-2xl shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
+              <Plus className="mr-2" size={20} />
+              ADD NEW GAME
+            </Button>
+          </Link>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
