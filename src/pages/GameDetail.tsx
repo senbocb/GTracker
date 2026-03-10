@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Trash2, Zap, History, Plus, Calendar, Clock, Trophy, StickyNote, Save, ExternalLink } from 'lucide-react';
+import { ChevronLeft, Trash2, Zap, History, Plus, Calendar, Clock, Trophy, StickyNote, Save, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,9 @@ const GAME_RANKS: Record<string, { ranks: string[] }> = {
 
 const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`);
 
+type SortMetric = 'time' | 'rank' | 'peak';
+type SortOrder = 'asc' | 'desc';
+
 const GameDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -33,7 +36,11 @@ const GameDetail = () => {
   const [activeMode, setActiveMode] = useState('');
   const [notes, setNotes] = useState('');
   const [externalLinks, setExternalLinks] = useState<any[]>([]);
+  const [timePeriod, setTimePeriod] = useState('all');
   
+  const [sortMetric, setSortMetric] = useState<SortMetric>('time');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
   const [logData, setLogData] = useState({
     rank: '',
     tier: '',
@@ -54,6 +61,58 @@ const GameDetail = () => {
       navigate('/');
     }
   }, [id, navigate]);
+
+  const currentModeData = useMemo(() => {
+    return game?.modes.find((m: any) => m.name === activeMode);
+  }, [game, activeMode]);
+
+  const sortedHistory = useMemo(() => {
+    if (!currentModeData?.history) return [];
+    
+    const ranks = GAME_RANKS[game.title]?.ranks || [];
+    
+    return [...currentModeData.history].sort((a, b) => {
+      let comparison = 0;
+      if (sortMetric === 'time') {
+        comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      } else if (sortMetric === 'rank') {
+        comparison = ranks.indexOf(a.rank) - ranks.indexOf(b.rank);
+      } else if (sortMetric === 'peak') {
+        comparison = (a.isPeak ? 1 : 0) - (b.isPeak ? 1 : 0);
+      }
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+  }, [currentModeData, sortMetric, sortOrder, game]);
+
+  const chartData = useMemo(() => {
+    if (!currentModeData?.history) return [];
+    
+    let history = [...currentModeData.history].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const now = new Date();
+    if (timePeriod === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      history = history.filter(h => new Date(h.timestamp) >= weekAgo);
+    } else if (timePeriod === 'month') {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      history = history.filter(h => new Date(h.timestamp) >= monthAgo);
+    }
+
+    let currentPeak = 0;
+    const ranks = GAME_RANKS[game.title]?.ranks || [];
+    
+    return history.map((h: any) => {
+      const rankIndex = (ranks.indexOf(h.rank) + 1) * 100 || 0;
+      if (rankIndex > currentPeak) currentPeak = rankIndex;
+      return {
+        date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        current: rankIndex,
+        peak: currentPeak
+      };
+    });
+  }, [currentModeData, timePeriod, game]);
 
   const handleSaveNotes = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -95,9 +154,7 @@ const GameDetail = () => {
           rank: logData.rank,
           tier: logData.tier,
           peakRank: logData.isPeak ? logData.rank : g.modes[modeIdx].peakRank,
-          history: [historyEntry, ...(g.modes[modeIdx].history || [])].sort((a, b) => 
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          )
+          history: [historyEntry, ...(g.modes[modeIdx].history || [])]
         };
 
         const newModes = [...g.modes];
@@ -113,33 +170,16 @@ const GameDetail = () => {
     showSuccess("Rank update logged.");
   };
 
-  const handleDelete = () => {
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const filtered = savedGames.filter((g: any) => g.id !== id);
-    localStorage.setItem('combat_games', JSON.stringify(filtered));
-    showSuccess(`${game.title} tracker decommissioned.`);
-    navigate('/');
+  const toggleSort = (metric: SortMetric) => {
+    if (sortMetric === metric) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortMetric(metric);
+      setSortOrder('desc');
+    }
   };
 
   if (!game) return null;
-
-  const currentModeData = game.modes.find((m: any) => m.name === activeMode);
-  
-  const getFilteredChartData = () => {
-    if (!currentModeData?.history) return [];
-    const history = [...currentModeData.history].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    
-    let currentPeak = 0;
-    return history.map((h: any) => {
-      const rankIndex = (GAME_RANKS[game.title]?.ranks.indexOf(h.rank) + 1) * 100 || 0;
-      if (rankIndex > currentPeak) currentPeak = rankIndex;
-      return {
-        date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-        current: rankIndex,
-        peak: currentPeak
-      };
-    });
-  };
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
@@ -165,27 +205,18 @@ const GameDetail = () => {
                 <div className="space-y-6 py-4">
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">New Rank</Label>
-                    {activeMode === 'Premier' ? (
-                      <Input 
-                        type="number" 
-                        value={logData.rank} 
-                        onChange={(e) => setLogData({...logData, rank: e.target.value})}
-                        className="bg-slate-900 border-slate-800 text-white"
-                      />
-                    ) : (
-                      <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
-                        <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
-                          <SelectValue placeholder="Select Rank" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                          {activeMode === 'Faceit' ? (
-                            FACEIT_LEVELS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)
-                          ) : (
-                            GAME_RANKS[game.title]?.ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)
-                          )}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
+                      <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
+                        <SelectValue placeholder="Select Rank" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {activeMode === 'Faceit' ? (
+                          FACEIT_LEVELS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)
+                        ) : (
+                          GAME_RANKS[game.title]?.ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">Log Date</Label>
@@ -206,9 +237,6 @@ const GameDetail = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={handleDelete}>
-              <Trash2 size={16} className="mr-2" /> Decommission
-            </Button>
           </div>
         </div>
 
@@ -241,37 +269,52 @@ const GameDetail = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
-            <ProgressChart data={getFilteredChartData()} />
-
             <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <StickyNote className="text-blue-500" size={20} />
-                  TACTICAL NOTES
-                </CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">Performance Trajectory</CardTitle>
+                <Select value={timePeriod} onValueChange={setTimePeriod}>
+                  <SelectTrigger className="w-[120px] h-8 bg-slate-950 border-slate-800 text-[10px] font-bold uppercase">
+                    <SelectValue placeholder="Period" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="week">Last Week</SelectItem>
+                    <SelectItem value="month">Last Month</SelectItem>
+                    <SelectItem value="all">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea 
-                  placeholder="Log tactical improvements, agent strategies, or map-specific notes..." 
-                  className="bg-slate-950 border-slate-800 min-h-[150px] text-white"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-                <Button onClick={handleSaveNotes} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold">
-                  <Save size={16} className="mr-2" /> Save Tactical Notes
-                </Button>
+              <CardContent>
+                <ProgressChart data={chartData} />
               </CardContent>
             </Card>
 
             <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <History className="text-blue-500" size={20} />
                   COMBAT LOGS
                 </CardTitle>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={`text-[10px] font-bold uppercase ${sortMetric === 'time' ? 'text-blue-500' : 'text-slate-500'}`}
+                    onClick={() => toggleSort('time')}
+                  >
+                    Time {sortMetric === 'time' && (sortOrder === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />)}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={`text-[10px] font-bold uppercase ${sortMetric === 'rank' ? 'text-blue-500' : 'text-slate-500'}`}
+                    onClick={() => toggleSort('rank')}
+                  >
+                    Rank {sortMetric === 'rank' && (sortOrder === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />)}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {(currentModeData?.history || []).map((h: any) => (
+                {sortedHistory.map((h: any) => (
                   <div key={h.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-800 group">
                     <div className="flex items-center gap-4">
                       <div className={`w-1 h-8 rounded-full ${h.isPeak ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'bg-blue-600'}`} />
@@ -280,7 +323,9 @@ const GameDetail = () => {
                           <p className="font-black text-white uppercase">{h.rank} {h.tier}</p>
                           {h.isPeak && <Trophy size={12} className="text-yellow-500" />}
                         </div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{new Date(h.timestamp).toLocaleString()}</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                          {new Date(h.timestamp).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   </div>

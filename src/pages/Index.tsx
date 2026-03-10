@@ -8,12 +8,11 @@ import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
-import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap, ShieldAlert } from 'lucide-react';
+import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 
 const DEFAULT_LAYOUT: LayoutSection[] = [
-  { id: 'readiness_score', label: 'Combat Readiness', enabled: true },
   { id: 'quick_stats', label: 'Quick Stats', enabled: true },
   { id: 'active_operations', label: 'Active Operations', enabled: true },
   { id: 'session_tracker', label: 'Session Tracker', enabled: true },
@@ -37,7 +36,6 @@ const Index = () => {
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
 
-    // Initialize stat configs
     const savedStats = JSON.parse(localStorage.getItem('combat_stat_configs') || 'null');
     if (savedStats) {
       setStatConfigs(savedStats);
@@ -104,28 +102,6 @@ const Index = () => {
     if (!section || !section.enabled) return null;
 
     switch (id) {
-      case 'readiness_score':
-        return (
-          <div key="readiness_score" className="mb-10 p-6 rounded-3xl bg-gradient-to-r from-blue-600/20 to-transparent border border-blue-500/20 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="relative w-20 h-20 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90">
-                  <circle cx="40" cy="40" r="36" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-slate-800" />
-                  <circle cx="40" cy="40" r="36" fill="transparent" stroke="currentColor" strokeWidth="8" strokeDasharray="226" strokeDashoffset={226 - (226 * 0.85)} className="text-blue-500" />
-                </svg>
-                <span className="absolute text-xl font-black text-white">85</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-black italic uppercase tracking-tighter text-white">Combat Readiness Score</h3>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Status: Optimal • Performance +12% vs Last Week</p>
-              </div>
-            </div>
-            <div className="hidden md:flex gap-2">
-              <ShieldAlert className="text-yellow-500" size={20} />
-              <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest">Warm-up Recommended</span>
-            </div>
-          </div>
-        );
       case 'quick_stats':
         return (
           <div key="quick_stats" className="mb-10">
@@ -199,7 +175,7 @@ const Index = () => {
     }
   };
 
-  const mainSectionIds = ['readiness_score', 'quick_stats', 'active_operations'];
+  const mainSectionIds = ['quick_stats', 'active_operations'];
   const sidebarSectionIds = ['session_tracker', 'match_history'];
 
   return (
