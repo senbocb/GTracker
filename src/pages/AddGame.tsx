@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Gamepad2, Image as ImageIcon, Trophy, Clock, Target } from 'lucide-react';
+import { ChevronLeft, Gamepad2, Image as ImageIcon, Trophy, Clock, Target, Link as LinkIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ const AddGame = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    showSuccess("Game added to your command center!");
+    showSuccess("Game initialized. Data tracking active.");
     navigate('/');
   };
 
@@ -31,7 +31,7 @@ const AddGame = () => {
 
         <div className="mb-10">
           <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">INITIALIZE NEW TRACKER</h1>
-          <p className="text-slate-400 font-medium">Enter the combat parameters for your new objective.</p>
+          <p className="text-slate-400 font-medium">Configure your combat parameters and external data links.</p>
         </div>
 
         <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl overflow-hidden">
@@ -49,7 +49,7 @@ const AddGame = () => {
                   <Label htmlFor="title" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Game Title</Label>
                   <Input 
                     id="title" 
-                    placeholder="e.g. Overwatch 2, League of Legends" 
+                    placeholder="e.g. Valorant, CS2" 
                     className="bg-slate-950 border-slate-800 h-12 focus:ring-blue-500"
                     required
                   />
@@ -62,7 +62,7 @@ const AddGame = () => {
                       <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                       <Input 
                         id="rank" 
-                        placeholder="e.g. Platinum" 
+                        placeholder="Rank Name" 
                         className="bg-slate-950 border-slate-800 h-12 pl-10"
                         required
                       />
@@ -72,43 +72,33 @@ const AddGame = () => {
                     <Label htmlFor="tier" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Tier / Division</Label>
                     <Input 
                       id="tier" 
-                      placeholder="e.g. II" 
+                      placeholder="e.g. III" 
                       className="bg-slate-950 border-slate-800 h-12"
                     />
                   </div>
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="peak" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Peak Rank (All Time)</Label>
-                  <Input 
-                    id="peak" 
-                    placeholder="e.g. Diamond 1" 
-                    className="bg-slate-950 border-slate-800 h-12"
-                  />
+                  <Label htmlFor="tracker_link" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Tracker.gg Profile Link</Label>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                    <Input 
+                      id="tracker_link" 
+                      placeholder="https://tracker.gg/valorant/profile/..." 
+                      className="bg-slate-950 border-slate-800 h-12 pl-10"
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="winrate" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Win Rate (%)</Label>
-                    <div className="relative">
-                      <Target className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                      <Input 
-                        id="winrate" 
-                        placeholder="50.0" 
-                        className="bg-slate-950 border-slate-800 h-12 pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="hours" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Hours Played</Label>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                      <Input 
-                        id="hours" 
-                        placeholder="100" 
-                        className="bg-slate-950 border-slate-800 h-12 pl-10"
-                      />
-                    </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="evxl_link" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Evxl.app Profile Link</Label>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                    <Input 
+                      id="evxl_link" 
+                      placeholder="https://evxl.app/profile/..." 
+                      className="bg-slate-950 border-slate-800 h-12 pl-10"
+                    />
                   </div>
                 </div>
 
@@ -118,11 +108,10 @@ const AddGame = () => {
                     <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                     <Input 
                       id="image" 
-                      placeholder="https://images.unsplash.com/..." 
+                      placeholder="Direct image link" 
                       className="bg-slate-950 border-slate-800 h-12 pl-10"
                     />
                   </div>
-                  <p className="text-[10px] text-slate-600 italic">Provide a direct link to a high-quality wallpaper or game art.</p>
                 </div>
               </div>
 
