@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,14 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     username: 'UNIDENTIFIED_USER',
-    status: 'New Recruit • Initialize Profile',
     avatar: ''
   });
+
+  // Mock social links
+  const socialLinks = [
+    { name: 'Discord', url: '#' },
+    { name: 'Twitch', url: '#' }
+  ];
 
   const handleSave = () => {
     setIsEditing(false);
@@ -58,17 +63,9 @@ const Profile = () => {
                     onChange={(e) => setProfile({...profile, username: e.target.value})}
                     className="bg-slate-900 border-slate-800 text-white font-black italic"
                   />
-                  <Input 
-                    value={profile.status} 
-                    onChange={(e) => setProfile({...profile, status: e.target.value})}
-                    className="bg-slate-900 border-slate-800 text-slate-400 text-sm"
-                  />
                 </div>
               ) : (
-                <>
-                  <h1 className="text-3xl font-black tracking-tight text-white italic uppercase">{profile.username}</h1>
-                  <p className="text-slate-500 font-medium">{profile.status}</p>
-                </>
+                <h1 className="text-3xl font-black tracking-tight text-white italic uppercase">{profile.username}</h1>
               )}
             </div>
             <div className="pb-2">
@@ -123,14 +120,30 @@ const Profile = () => {
 
           <div className="space-y-6">
             <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800">
-              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Social Links</h3>
-              <div className="space-y-3">
-                <Button variant="outline" className="w-full justify-start border-slate-800 hover:bg-slate-800 text-slate-500">
-                  Connect Discord
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-slate-800 hover:bg-slate-800 text-slate-500">
-                  Connect Twitch
-                </Button>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Social Links</h3>
+                <Link to="/add-social">
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500 hover:text-blue-400">
+                    <Plus size={16} />
+                  </Button>
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {socialLinks.map((link, i) => (
+                  <a 
+                    key={i} 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 transition-colors group"
+                  >
+                    <span className="text-sm font-bold text-slate-300 group-hover:text-white">{link.name}</span>
+                    <ExternalLink size={14} className="text-slate-600 group-hover:text-blue-500" />
+                  </a>
+                ))}
+                {socialLinks.length === 0 && (
+                  <p className="text-xs text-slate-600 italic">No links added yet.</p>
+                )}
               </div>
             </div>
           </div>

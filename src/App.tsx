@@ -8,6 +8,7 @@ import Profile from "./pages/Profile";
 import AddGame from "./pages/AddGame";
 import Settings from "./pages/Settings";
 import History from "./pages/History";
+import AddSocial from "./pages/AddSocial";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/add-game" element={<AddGame />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/history" element={<History />} />
+          <Route path="/add-social" element={<AddSocial />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
