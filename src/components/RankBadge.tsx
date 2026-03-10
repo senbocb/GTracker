@@ -16,6 +16,17 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
 
   const getRankColor = (rankName: string) => {
     const r = rankName.toLowerCase();
+    const t = tier?.toLowerCase() || "";
+    
+    // Faceit specific colors based on level
+    if (t.includes('level')) {
+      const lvl = parseInt(t.replace(/\D/g, ''));
+      if (lvl >= 10) return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
+      if (lvl >= 8) return 'text-red-500 bg-red-500/10 border-red-500/20';
+      if (lvl >= 4) return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+      return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+    }
+
     if (r.includes('iron') || r.includes('bronze')) return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
     if (r.includes('silver')) return 'text-slate-300 bg-slate-300/10 border-slate-300/20';
     if (r.includes('gold')) return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
@@ -43,19 +54,9 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
       return `https://trackercdn.com/cdn/league/ranks/${r}.png`;
     }
 
-    // Apex Legends
-    if (g.includes('apex')) {
-      return `https://trackercdn.com/cdn/apex/ranks/${r}.png`;
-    }
-
-    // Overwatch
-    if (g.includes('overwatch')) {
-      return `https://trackercdn.com/cdn/overwatch/ranks/${r}.png`;
-    }
-
     // CS2 Faceit
-    if (r.includes('level')) {
-      const lvl = r.replace(/\D/g, '');
+    if (t.includes('level')) {
+      const lvl = t.replace(/\D/g, '');
       return `https://trackercdn.com/cdn/faceit/levels/level${lvl}.png`;
     }
 
@@ -64,6 +65,10 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
 
   const iconUrl = getIconUrl(gameTitle, rank, tier);
   const colorClasses = getRankColor(rank);
+
+  // Special formatting for Faceit: "Level X (ELO)"
+  const isFaceit = tier?.toLowerCase().includes('level');
+  const displayLabel = isFaceit ? `${tier} (${rank})` : `${rank} ${tier || ''}`;
 
   return (
     <div className={cn(
@@ -81,7 +86,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
       ) : (
         <Trophy size={12} />
       )}
-      <span>{rank} {tier}</span>
+      <span>{displayLabel}</span>
     </div>
   );
 };
