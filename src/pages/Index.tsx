@@ -11,6 +11,7 @@ import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSett
 import { Plus, LayoutDashboard, History, Settings, User, Bell, Gamepad2, Activity, Target, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 const DEFAULT_LAYOUT: LayoutSection[] = [
   { id: 'quick_stats', label: 'Quick Stats', enabled: true },
@@ -25,6 +26,7 @@ const Index = () => {
   const [layout, setLayout] = useState<LayoutSection[]>(DEFAULT_LAYOUT);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
   const [statConfigs, setStatConfigs] = useState<QuickStatConfig[]>([]);
+  const [isCompact, setIsCompact] = useState(true);
 
   useEffect(() => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -35,6 +37,9 @@ const Index = () => {
 
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
+
+    const savedSettings = JSON.parse(localStorage.getItem('combat_settings') || 'null');
+    if (savedSettings) setIsCompact(savedSettings.compactDashboard);
 
     const savedStats = JSON.parse(localStorage.getItem('combat_stat_configs') || 'null');
     if (savedStats) {
@@ -104,19 +109,19 @@ const Index = () => {
     switch (id) {
       case 'quick_stats':
         return (
-          <div key="quick_stats" className="mb-10">
+          <div key="quick_stats" className={cn("mb-10", isCompact && "mb-6")}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Quick Stats</h2>
               <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} />
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-4", isCompact && "gap-3")}>
               {statConfigs.filter(c => c.enabled).map((config) => (
-                <div key={config.id} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm">
+                <div key={config.id} className={cn("p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 backdrop-blur-sm", isCompact && "p-3")}>
                   <div className="flex items-center gap-3 mb-2">
                     <Activity size={14} className="text-blue-500" />
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{config.label}</span>
                   </div>
-                  <p className="text-2xl font-black text-white">{getStatValue(config)}</p>
+                  <p className={cn("text-2xl font-black text-white", isCompact && "text-xl")}>{getStatValue(config)}</p>
                 </div>
               ))}
             </div>
@@ -130,7 +135,7 @@ const Index = () => {
               ACTIVE OPERATIONS
             </h2>
             {games.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6", isCompact && "gap-4")}>
                 {games.map((game) => (
                   <GameCard key={game.id} {...game} />
                 ))}
@@ -210,8 +215,8 @@ const Index = () => {
         </div>
       </aside>
 
-      <main className="md:ml-20 p-6 md:p-10 max-w-7xl mx-auto">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+      <main className={cn("md:ml-20 p-6 md:p-10 max-w-7xl mx-auto", isCompact && "p-4 md:p-6")}>
+        <header className={cn("flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12", isCompact && "mb-8")}>
           <div>
             <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">
               {profile?.username ? `${profile.username}'S COMMAND CENTER` : 'COMMAND CENTER'}

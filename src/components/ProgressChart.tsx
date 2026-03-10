@@ -5,11 +5,25 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3 } from 'lucide-react';
 
-const ProgressChart = ({ data = [] }: { data?: any[] }) => {
+interface ProgressChartProps {
+  data?: any[];
+  rankNames?: string[];
+}
+
+const ProgressChart = ({ data = [], rankNames = [] }: ProgressChartProps) => {
+  // Custom formatter to show rank names on Y axis if provided
+  const yAxisFormatter = (value: number) => {
+    if (rankNames.length > 0) {
+      const index = Math.floor(value / 100) - 1;
+      return rankNames[index] || value.toString();
+    }
+    return value.toString();
+  };
+
   return (
     <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">Performance Trajectory</CardTitle>
+        <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">Performance Trajectory</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[250px] w-full">
@@ -30,11 +44,13 @@ const ProgressChart = ({ data = [] }: { data?: any[] }) => {
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false}
-                  tickFormatter={(value) => `${value}`}
+                  tickFormatter={yAxisFormatter}
+                  domain={['auto', 'auto']}
                 />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
                   itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  formatter={(value: number) => [yAxisFormatter(value), "Rank"]}
                 />
                 <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em' }} />
                 <Line 

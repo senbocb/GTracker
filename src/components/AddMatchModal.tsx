@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,21 @@ import { showSuccess } from '@/utils/toast';
 
 const AddMatchModal = () => {
   const [open, setOpen] = React.useState(false);
+  const [games, setGames] = useState<any[]>([]);
+  const [selectedGame, setSelectedGame] = useState('valorant');
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('combat_games') || '[]');
+    setGames(saved);
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     showSuccess("Match logged successfully!");
     setOpen(false);
   };
+
+  const isCS2 = selectedGame.toLowerCase().includes('counter-strike') || selectedGame === 'cs2';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -36,7 +45,7 @@ const AddMatchModal = () => {
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-2">
             <Label htmlFor="game" className="text-xs font-bold uppercase text-slate-500">Select Game</Label>
-            <Select defaultValue="valorant">
+            <Select value={selectedGame} onValueChange={setSelectedGame}>
               <SelectTrigger className="bg-slate-900 border-slate-800">
                 <SelectValue placeholder="Select game" />
               </SelectTrigger>
@@ -44,6 +53,9 @@ const AddMatchModal = () => {
                 <SelectItem value="valorant">Valorant</SelectItem>
                 <SelectItem value="cs2">Counter-Strike 2</SelectItem>
                 <SelectItem value="apex">Apex Legends</SelectItem>
+                {games.map(g => (
+                  <SelectItem key={g.id} value={g.id}>{g.title}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -63,8 +75,15 @@ const AddMatchModal = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="rr" className="text-xs font-bold uppercase text-slate-500">RR Change</Label>
-              <Input id="rr" placeholder="+25" className="bg-slate-900 border-slate-800" />
+              <Label htmlFor="rr" className="text-xs font-bold uppercase text-slate-500">
+                {isCS2 ? 'Rating Change' : 'RR Change'}
+              </Label>
+              <Input 
+                id="rr" 
+                type={isCS2 ? "number" : "text"}
+                placeholder={isCS2 ? "+100" : "+25"} 
+                className="bg-slate-900 border-slate-800" 
+              />
             </div>
           </div>
 

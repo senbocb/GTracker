@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Target, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { showSuccess } from '@/utils/toast';
 
 const Settings = () => {
+  const [settings, setSettings] = useState({
+    highContrast: false,
+    compactDashboard: true,
+    rankAlerts: true,
+    sessionReminders: false,
+    seasonGoal: ''
+  });
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('combat_settings') || 'null');
+    if (saved) setSettings(saved);
+  }, []);
+
+  const updateSetting = (key: keyof typeof settings, value: any) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    localStorage.setItem('combat_settings', JSON.stringify(newSettings));
+    
+    if (key === 'highContrast') {
+      document.documentElement.classList.toggle('high-contrast', value);
+    }
+    
+    showSuccess("Configuration updated.");
+  };
+
   const handleSaveGoal = (e: React.FormEvent) => {
     e.preventDefault();
     showSuccess("Season goal updated.");
@@ -46,10 +71,15 @@ const Settings = () => {
                   <Label className="text-xs font-bold uppercase text-slate-500">Target Rank</Label>
                   <div className="relative">
                     <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                    <Input placeholder="e.g. Immortal" className="bg-slate-950 border-slate-800 pl-10" />
+                    <Input 
+                      placeholder="e.g. Immortal" 
+                      className="bg-slate-950 border-slate-800 pl-10" 
+                      value={settings.seasonGoal}
+                      onChange={(e) => updateSetting('seasonGoal', e.target.value)}
+                    />
                   </div>
                 </div>
-                <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-500">
+                <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-500 font-bold">
                   Update Goal
                 </Button>
               </form>
@@ -69,14 +99,20 @@ const Settings = () => {
                   <Label className="text-base font-bold text-white">High Contrast Mode</Label>
                   <p className="text-sm text-slate-500">Enhance visibility for competitive environments.</p>
                 </div>
-                <Switch />
+                <Switch 
+                  checked={settings.highContrast} 
+                  onCheckedChange={(v) => updateSetting('highContrast', v)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-base font-bold text-white">Compact Dashboard</Label>
                   <p className="text-sm text-slate-500">Show more data in less space.</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={settings.compactDashboard} 
+                  onCheckedChange={(v) => updateSetting('compactDashboard', v)} 
+                />
               </div>
             </CardContent>
           </Card>
@@ -94,14 +130,20 @@ const Settings = () => {
                   <Label className="text-base font-bold text-white">Rank Change Alerts</Label>
                   <p className="text-sm text-slate-500">Notify when you promote or demote.</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={settings.rankAlerts} 
+                  onCheckedChange={(v) => updateSetting('rankAlerts', v)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-base font-bold text-white">Session Reminders</Label>
                   <p className="text-sm text-slate-500">Alert after 3 hours of continuous play.</p>
                 </div>
-                <Switch />
+                <Switch 
+                  checked={settings.sessionReminders} 
+                  onCheckedChange={(v) => updateSetting('sessionReminders', v)} 
+                />
               </div>
             </CardContent>
           </Card>

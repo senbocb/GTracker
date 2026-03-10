@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import { showSuccess } from '@/utils/toast';
@@ -21,7 +20,8 @@ const GAME_RANKS: Record<string, { ranks: string[] }> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"] },
   "Apex Legends": { ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"] },
   "Overwatch 2": { ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"] },
-  "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] }
+  "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] },
+  "Counter-Strike 2": { ranks: [] } // CS2 uses numeric rating for Premier
 };
 
 const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`);
@@ -34,7 +34,6 @@ const GameDetail = () => {
   const navigate = useNavigate();
   const [game, setGame] = useState<any>(null);
   const [activeMode, setActiveMode] = useState('');
-  const [notes, setNotes] = useState('');
   const [externalLinks, setExternalLinks] = useState<any[]>([]);
   const [timePeriod, setTimePeriod] = useState('all');
   
@@ -55,7 +54,6 @@ const GameDetail = () => {
     if (found) {
       setGame(found);
       setActiveMode(found.modes[0]?.name || '');
-      setNotes(found.notes || '');
       setExternalLinks(found.externalLinks || []);
     } else {
       navigate('/');
@@ -66,23 +64,33 @@ const GameDetail = () => {
     return game?.modes.find((m: any) => m.name === activeMode);
   }, [game, activeMode]);
 
+  const ranks = useMemo(() => {
+    if (activeMode === 'Faceit') return FACEIT_LEVELS;
+    return GAME_RANKS[game?.title]?.ranks || [];
+  }, [game, activeMode]);
+
+  const compareRanks = (rankA: string, rankB: string) => {
+    if (game?.title === 'Counter-Strike 2' && activeMode === 'Premier') {
+      return parseInt(rankA) - parseInt(rankB);
+    }
+    return ranks.indexOf(rankA) - ranks.indexOf(rankB);
+  };
+
   const sortedHistory = useMemo(() => {
     if (!currentModeData?.history) return [];
-    
-    const ranks = GAME_RANKS[game.title]?.ranks || [];
     
     return [...currentModeData.history].sort((a, b) => {
       let comparison = 0;
       if (sortMetric === 'time') {
         comparison = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
       } else if (sortMetric === 'rank') {
-        comparison = ranks.indexOf(a.rank) - ranks.indexOf(b.rank);
+        comparison = compareRanks(a.rank, b.rank);
       } else if (sortMetric === 'peak') {
         comparison = (a.isPeak ? 1 : 0) - (b.isPeak ? 1 : 0);
       }
       return sortOrder === 'desc' ? -comparison : comparison;
     });
-  }, [currentModeData, sortMetric, sortOrder, game]);
+  }, [currentModeData, sortMetric, sortOrder, game, ranks]);
 
   const chartData = useMemo(() => {
     if (!currentModeData?.history) return [];
@@ -100,39 +108,25 @@ const GameDetail = () => {
       history = history.filter(h => new Date(h.timestamp) >= monthAgo);
     }
 
-    let currentPeak = 0;
-    const ranks = GAME_RANKS[game.title]?.ranks || [];
+    let currentPeakValue = 0;
     
     return history.map((h: any) => {
-      const rankIndex = (ranks.indexOf(h.rank) + 1) * 100 || 0;
-      if (rankIndex > currentPeak) currentPeak = rankIndex;
+      let rankValue = 0;
+      if (game?.title === 'Counter-Strike 2' && activeMode === 'Premier') {
+        rankValue = parseInt(h.rank);
+      } else {
+        rankValue = (ranks.indexOf(h.rank) + 1) * 100;
+      }
+
+      if (rankValue > currentPeakValue) currentPeakValue = rankValue;
+      
       return {
         date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-        current: rankIndex,
-        peak: currentPeak
+        current: rankValue,
+        peak: currentPeakValue
       };
     });
-  }, [currentModeData, timePeriod, game]);
-
-  const handleSaveNotes = () => {
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const updated = savedGames.map((g: any) => g.id === id ? { ...g, notes } : g);
-    localStorage.setItem('combat_games', JSON.stringify(updated));
-    showSuccess("Tactical notes updated.");
-  };
-
-  const handleAddExternalLink = () => {
-    const name = prompt("Enter site name (e.g. Tracker.gg):");
-    const url = prompt("Enter URL:");
-    if (name && url) {
-      const newLinks = [...externalLinks, { name, url: url.startsWith('http') ? url : `https://${url}` }];
-      setExternalLinks(newLinks);
-      const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-      const updated = savedGames.map((g: any) => g.id === id ? { ...g, externalLinks: newLinks } : g);
-      localStorage.setItem('combat_games', JSON.stringify(updated));
-      showSuccess("External tracker added.");
-    }
-  };
+  }, [currentModeData, timePeriod, game, ranks]);
 
   const handleLogRank = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -141,19 +135,22 @@ const GameDetail = () => {
         const modeIdx = g.modes.findIndex((m: any) => m.name === activeMode);
         if (modeIdx === -1) return g;
 
+        const currentPeak = g.modes[modeIdx].peakRank || '0';
+        const isNewPeak = compareRanks(logData.rank, currentPeak) > 0;
+
         const historyEntry = {
           id: Date.now().toString(),
           rank: logData.rank,
           tier: logData.tier,
           timestamp: new Date(logData.timestamp).toISOString(),
-          isPeak: logData.isPeak
+          isPeak: isNewPeak || logData.isPeak
         };
 
         const updatedMode = {
           ...g.modes[modeIdx],
           rank: logData.rank,
           tier: logData.tier,
-          peakRank: logData.isPeak ? logData.rank : g.modes[modeIdx].peakRank,
+          peakRank: isNewPeak ? logData.rank : g.modes[modeIdx].peakRank,
           history: [historyEntry, ...(g.modes[modeIdx].history || [])]
         };
 
@@ -170,6 +167,19 @@ const GameDetail = () => {
     showSuccess("Rank update logged.");
   };
 
+  const handleAddExternalLink = () => {
+    const name = prompt("Enter site name (e.g. Tracker.gg):");
+    const url = prompt("Enter URL:");
+    if (name && url) {
+      const newLinks = [...externalLinks, { name, url: url.startsWith('http') ? url : `https://${url}` }];
+      setExternalLinks(newLinks);
+      const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+      const updated = savedGames.map((g: any) => g.id === id ? { ...g, externalLinks: newLinks } : g);
+      localStorage.setItem('combat_games', JSON.stringify(updated));
+      showSuccess("External tracker added.");
+    }
+  };
+
   const toggleSort = (metric: SortMetric) => {
     if (sortMetric === metric) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -180,6 +190,8 @@ const GameDetail = () => {
   };
 
   if (!game) return null;
+
+  const isCS2Premier = game.title === 'Counter-Strike 2' && activeMode === 'Premier';
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
@@ -194,29 +206,37 @@ const GameDetail = () => {
           <div className="flex gap-2">
             <Dialog open={isLogOpen} onOpenChange={setIsLogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-500">
-                  <Plus size={16} className="mr-2" /> Log Rank Change
+                <Button className="bg-blue-600 hover:bg-blue-500 font-bold">
+                  <Plus size={16} className="mr-2" /> LOG RANK CHANGE
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-slate-950 border-slate-800 text-white">
                 <DialogHeader>
-                  <DialogTitle className="italic uppercase font-black">Log Combat Data: {activeMode}</DialogTitle>
+                  <DialogTitle className="italic uppercase font-black">LOG COMBAT DATA: {activeMode}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6 py-4">
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">New Rank</Label>
-                    <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
-                      <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
-                        <SelectValue placeholder="Select Rank" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {activeMode === 'Faceit' ? (
-                          FACEIT_LEVELS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)
-                        ) : (
-                          GAME_RANKS[game.title]?.ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">New Rank / Rating</Label>
+                    {isCS2Premier ? (
+                      <Input 
+                        type="number" 
+                        min="1" 
+                        max="40000" 
+                        placeholder="Enter Rating (1-40000)"
+                        value={logData.rank}
+                        onChange={(e) => setLogData({...logData, rank: e.target.value})}
+                        className="bg-slate-900 border-slate-800 text-white"
+                      />
+                    ) : (
+                      <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
+                          <SelectValue placeholder="Select Rank" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                          {ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-500">Log Date</Label>
@@ -227,13 +247,9 @@ const GameDetail = () => {
                       className="bg-slate-900 border-slate-800 text-white"
                     />
                   </div>
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Peak Rank?</Label>
-                    <Switch checked={logData.isPeak} onCheckedChange={(v) => setLogData({...logData, isPeak: v})} />
-                  </div>
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleLogRank} className="w-full bg-blue-600 font-black uppercase">Confirm Log</Button>
+                  <Button onClick={handleLogRank} className="w-full bg-blue-600 font-black uppercase py-6">Confirm Log</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -269,24 +285,7 @@ const GameDetail = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">Performance Trajectory</CardTitle>
-                <Select value={timePeriod} onValueChange={setTimePeriod}>
-                  <SelectTrigger className="w-[120px] h-8 bg-slate-950 border-slate-800 text-[10px] font-bold uppercase">
-                    <SelectValue placeholder="Period" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    <SelectItem value="week">Last Week</SelectItem>
-                    <SelectItem value="month">Last Month</SelectItem>
-                    <SelectItem value="all">All Time</SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardHeader>
-              <CardContent>
-                <ProgressChart data={chartData} />
-              </CardContent>
-            </Card>
+            <ProgressChart data={chartData} rankNames={isCS2Premier ? [] : ranks} />
 
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader className="flex flex-row items-center justify-between">
