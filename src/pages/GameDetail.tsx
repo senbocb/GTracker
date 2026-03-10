@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, StickyNote, Save, Trash2 } from 'lucide-react';
+import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import { showSuccess } from '@/utils/toast';
@@ -33,17 +32,13 @@ const GameDetail = () => {
   const [game, setGame] = useState<any>(null);
   const [activeMode, setActiveMode] = useState('');
   const [externalLinks, setExternalLinks] = useState<any[]>([]);
-  const [notes, setNotes] = useState('');
-  const [isSavingNotes, setIsSavingNotes] = useState(false);
   
-  const [sortMetric, setSortMetric] = useState<'time' | 'rank'>('time');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const [logData, setLogData] = useState({
     rank: '',
     tier: '',
-    timestamp: new Date().toISOString().slice(0, 16),
-    isPeak: false
+    timestamp: new Date().toISOString().slice(0, 16)
   });
   const [isLogOpen, setIsLogOpen] = useState(false);
 
@@ -54,7 +49,6 @@ const GameDetail = () => {
       setGame(found);
       setActiveMode(found.modes[0]?.name || '');
       setExternalLinks(found.externalLinks || []);
-      setNotes(found.notes || '');
     } else {
       navigate('/');
     }
@@ -69,25 +63,50 @@ const GameDetail = () => {
     return GAME_RANKS[game?.title]?.ranks || [];
   }, [game, activeMode]);
 
-  const sortedHistory = useMemo(() => {
-    if (!currentModeData?.history) return [];
-    return [...currentModeData.history].sort((a, b) => {
+  // Helper to compare rank values for Peak calculation
+  const getRankValue = (rankName: string, tierName?: string) => {
+    if (!rankName) return 0;
+    
+    // Handle numeric ratings (like CS2 Premier)
+    const numeric = parseInt(rankName.replace(/\D/g, ''));
+    if (!isNaN(numeric) && !ranks.includes(rankName)) return numeric;
+
+    const rankIdx = ranks.indexOf(rankName);
+    if (rankIdx === -1) return 0;
+
+    // Add tier value (e.g. Gold 3 > Gold 1)
+    const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
+    return (rankIdx + 1) * 10 + tierValue;
+  };
+
+  const { sortedHistory, currentId, peakId } = useMemo(() => {
+    if (!currentModeData?.history || currentModeData.history.length === 0) {
+      return { sortedHistory: [], currentId: null, peakId: null };
+    }
+
+    const history = [...currentModeData.history];
+    
+    // 1. Find Current (Latest by timestamp)
+    const current = history.reduce((prev, curr) => 
+      new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
+    );
+
+    // 2. Find Peak (Highest rank value)
+    const peak = history.reduce((prev, curr) => {
+      const valPrev = getRankValue(prev.rank, prev.tier);
+      const valCurr = getRankValue(curr.rank, curr.tier);
+      return valCurr > valPrev ? curr : prev;
+    });
+
+    // 3. Sort for display
+    const sorted = history.sort((a, b) => {
       const timeA = new Date(a.timestamp).getTime();
       const timeB = new Date(b.timestamp).getTime();
       return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     });
-  }, [currentModeData, sortOrder]);
 
-  const handleSaveNotes = () => {
-    setIsSavingNotes(true);
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const updated = savedGames.map((g: any) => g.id === id ? { ...g, notes } : g);
-    localStorage.setItem('combat_games', JSON.stringify(updated));
-    setTimeout(() => {
-      setIsSavingNotes(false);
-      showSuccess("Tactical notes updated.");
-    }, 500);
-  };
+    return { sortedHistory: sorted, currentId: current.id, peakId: peak.id };
+  }, [currentModeData, sortOrder, ranks]);
 
   const handleLogRank = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -100,14 +119,15 @@ const GameDetail = () => {
           id: Date.now().toString(),
           rank: logData.rank,
           tier: logData.tier,
-          timestamp: new Date(logData.timestamp).toISOString(),
-          isPeak: logData.isPeak
+          timestamp: new Date(logData.timestamp).toISOString()
         };
 
         const newModes = [...g.modes];
         newModes[modeIdx] = {
           ...g.modes[modeIdx],
+          // The actual current rank in the mode object should always be the latest one
           rank: logData.rank,
+          tier: logData.tier,
           history: [historyEntry, ...(g.modes[modeIdx].history || [])]
         };
         return { ...g, modes: newModes };
@@ -211,13 +231,24 @@ const GameDetail = () => {
                         <td className="px-6 py-4 border-r border-slate-800/50">
                           <div className="flex items-center gap-3">
                             <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
-                            <span className="text-xs font-black text-white uppercase">{h.rank}</span>
+                            <span className="text-xs font-black text-white uppercase">{h.rank} {h.tier}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            {h.isPeak && <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[9px] font-black text-yellow-500 uppercase">Peak</span>}
-                            {idx === 0 && <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase">Current</span>}
+                            {h.id === peakId && (
+                              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[9px] font-black text-yellow-500 uppercase">
+                                <Trophy size={10} /> Peak
+                              </span>
+                            )}
+                            {h.id === currentId && (
+                              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase">
+                                <Target size={10} /> Current
+                              </span>
+                            )}
+                            {h.id !== currentId && h.id !== peakId && (
+                              <span className="px-2 py-0.5 text-[9px] font-bold text-slate-600 uppercase tracking-widest">Log</span>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -231,26 +262,6 @@ const GameDetail = () => {
           </div>
 
           <div className="space-y-6">
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader className="flex items-center justify-between flex-row">
-                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                  <StickyNote size={14} className="text-indigo-500" />
-                  TACTICAL NOTES
-                </CardTitle>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 hover:text-indigo-400" onClick={handleSaveNotes} disabled={isSavingNotes}>
-                  <Save size={16} className={cn(isSavingNotes && "animate-pulse")} />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Textarea 
-                  placeholder="Enter strategies, agent notes, or map reminders..." 
-                  className="bg-slate-950 border-slate-800 min-h-[200px] text-xs font-medium leading-relaxed resize-none focus:ring-indigo-500"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </CardContent>
-            </Card>
-
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader><CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">External Trackers</CardTitle></CardHeader>
               <CardContent className="space-y-3">
