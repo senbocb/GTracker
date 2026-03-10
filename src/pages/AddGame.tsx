@@ -104,10 +104,10 @@ const AddGame = () => {
           <p className="text-slate-400 font-medium">Select your combat environment from the unified deployment list.</p>
         </div>
 
-        <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl overflow-hidden">
+        <Card className="bg-slate-900 border-slate-800 shadow-2xl overflow-hidden">
           <div className="h-2 w-full bg-blue-600" />
           <CardHeader>
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <CardTitle className="text-xl font-bold flex items-center gap-2 text-white">
               <Gamepad2 className="text-blue-500" />
               DEPLOYMENT CONFIG
             </CardTitle>
@@ -116,14 +116,14 @@ const AddGame = () => {
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-6">
                 <div className="grid gap-2">
-                  <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Select Game</Label>
+                  <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Game</Label>
                   <Select onValueChange={(v) => { setSelectedGame(v); setSelectedMode(''); }} required>
-                    <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base">
+                    <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base text-white">
                       <SelectValue placeholder="Choose an operation..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
                       {gameOptions.map(game => (
-                        <SelectItem key={game} value={game} className="py-3">{game}</SelectItem>
+                        <SelectItem key={game} value={game} className="py-3 focus:bg-blue-600 focus:text-white">{game}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -131,14 +131,14 @@ const AddGame = () => {
 
                 {modeOptions.length > 0 && (
                   <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
-                    <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Select Mode</Label>
+                    <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Mode</Label>
                     <Select onValueChange={setSelectedMode} required>
-                      <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base">
+                      <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base text-white">
                         <SelectValue placeholder="Choose a mode..." />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         {modeOptions.map(mode => (
-                          <SelectItem key={mode} value={mode} className="py-3">{mode}</SelectItem>
+                          <SelectItem key={mode} value={mode} className="py-3 focus:bg-blue-600 focus:text-white">{mode}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -146,13 +146,13 @@ const AddGame = () => {
                 )}
 
                 <div className="grid gap-2">
-                  <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Cover Image</Label>
+                  <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-300 tracking-widest">Cover Image</Label>
                   <div className="space-y-4">
                     <Input 
                       id="image" 
                       type="file"
                       accept="image/*"
-                      className="bg-slate-950 border-slate-800 h-12"
+                      className="bg-slate-950 border-slate-800 h-12 text-white file:text-white file:font-bold"
                       onChange={handleImageUpload}
                     />
                     {imageUrl && (

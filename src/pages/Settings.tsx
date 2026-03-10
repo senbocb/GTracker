@@ -80,17 +80,17 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2"><Palette className="text-indigo-500" size={20} /> CUSTOMIZATION</CardTitle></CardHeader>
+          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-indigo-500" size={20} /> CUSTOMIZATION</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-base font-bold text-white">Background Color</Label>
-                    <p className="text-sm text-slate-500">Set a custom base color for the interface.</p>
+                    <p className="text-sm text-slate-400">Set a custom base color for the interface.</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-slate-500 uppercase">{customization.bgColor}</span>
+                    <span className="text-xs font-mono text-slate-300 uppercase">{customization.bgColor}</span>
                     <Input 
                       type="color" 
                       value={customization.bgColor} 
@@ -104,7 +104,7 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label className="text-base font-bold text-white">Background Image</Label>
-                      <p className="text-sm text-slate-500">Upload a PNG or JPEG to use as a global background.</p>
+                      <p className="text-sm text-slate-400">Upload a PNG or JPEG to use as a global background.</p>
                     </div>
                     <div className="flex gap-2">
                       {customization.bgImage && (
@@ -120,7 +120,7 @@ const Settings = () => {
                       <Button 
                         variant="outline" 
                         onClick={() => fileInputRef.current?.click()}
-                        className="border-slate-800 bg-slate-950 text-slate-400 hover:text-white"
+                        className="border-slate-800 bg-slate-950 text-slate-300 hover:text-white"
                       >
                         <ImageIcon className="mr-2" size={16} />
                         {customization.bgImage ? 'Change Image' : 'Upload Image'}
@@ -139,7 +139,7 @@ const Settings = () => {
                     <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
                       <img src={customization.bgImage} alt="Background Preview" className="w-full h-full object-cover opacity-50" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Background Active</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Background Active</span>
                       </div>
                     </div>
                   )}
@@ -148,33 +148,33 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2"><Monitor className="text-indigo-500" size={20} /> INTERFACE</CardTitle></CardHeader>
+          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Monitor className="text-indigo-500" size={20} /> INTERFACE</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-base font-bold text-white">Tactical Overlay</Label>
-                  <p className="text-sm text-slate-500">Apply scanlines and CRT effects for a command center vibe.</p>
+                  <p className="text-sm text-slate-400">Apply scanlines and CRT effects for a command center vibe.</p>
                 </div>
                 <Switch checked={settings.tacticalOverlay} onCheckedChange={(v) => updateSetting('tacticalOverlay', v)} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-base font-bold text-white">Compact Dashboard</Label>
-                  <p className="text-sm text-slate-500">Show more data in less space.</p>
+                  <p className="text-sm text-slate-400">Show more data in less space.</p>
                 </div>
                 <Switch checked={settings.compactDashboard} onCheckedChange={(v) => updateSetting('compactDashboard', v)} />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2"><Bell className="text-indigo-500" size={20} /> NOTIFICATIONS</CardTitle></CardHeader>
+          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Bell className="text-indigo-500" size={20} /> NOTIFICATIONS</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="text-base font-bold text-white">Rank Change Alerts</Label>
-                  <p className="text-sm text-slate-500">Notify when you promote or demote.</p>
+                  <p className="text-sm text-slate-400">Notify when you promote or demote.</p>
                 </div>
                 <Switch checked={settings.rankAlerts} onCheckedChange={(v) => updateSetting('rankAlerts', v)} />
               </div>

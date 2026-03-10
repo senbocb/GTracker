@@ -39,10 +39,10 @@ const AddSocial = () => {
           <p className="text-slate-400 font-medium">Link your external platforms to your command profile.</p>
         </div>
 
-        <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl overflow-hidden">
+        <Card className="bg-slate-900 border-slate-800 shadow-2xl overflow-hidden">
           <div className="h-2 w-full bg-blue-600" />
           <CardHeader>
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <CardTitle className="text-xl font-bold flex items-center gap-2 text-white">
               <Globe className="text-blue-500" />
               LINK SPECIFICATIONS
             </CardTitle>
@@ -51,11 +51,11 @@ const AddSocial = () => {
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="site" className="text-xs font-bold uppercase text-slate-500 tracking-widest">Website Name</Label>
+                  <Label htmlFor="site" className="text-xs font-bold uppercase text-slate-300 tracking-widest">Website Name</Label>
                   <Input 
                     id="site" 
                     placeholder="e.g. Twitter, Discord, Portfolio" 
-                    className="bg-slate-950 border-slate-800 h-12 focus:ring-blue-500"
+                    className="bg-slate-950 border-slate-800 h-12 text-white placeholder:text-slate-600 focus:ring-blue-500"
                     value={siteName}
                     onChange={(e) => setSiteName(e.target.value)}
                     required
@@ -63,13 +63,13 @@ const AddSocial = () => {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="url" className="text-xs font-bold uppercase text-slate-500 tracking-widest">URL / Hyperlink</Label>
+                  <Label htmlFor="url" className="text-xs font-bold uppercase text-slate-300 tracking-widest">URL / Hyperlink</Label>
                   <div className="relative">
                     <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                     <Input 
                       id="url" 
                       placeholder="https://..." 
-                      className="bg-slate-950 border-slate-800 h-12 pl-10"
+                      className="bg-slate-950 border-slate-800 h-12 pl-10 text-white placeholder:text-slate-600"
                       value={url}
                       onChange={(e) => setUrl(e.target.value)}
                       required

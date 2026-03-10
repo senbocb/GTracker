@@ -170,7 +170,7 @@ const AddMatchModal = () => {
       <DialogContent className="bg-slate-950 border-slate-800 text-slate-200 sm:max-w-[450px] p-0 overflow-hidden">
         <div className="bg-slate-900 p-6 border-b border-slate-800">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black italic tracking-tighter flex items-center gap-3 uppercase">
+            <DialogTitle className="text-2xl font-black italic tracking-tighter flex items-center gap-3 uppercase text-white">
               <Activity className="text-indigo-500" />
               Combat Logger
             </DialogTitle>
@@ -179,14 +179,14 @@ const AddMatchModal = () => {
           <div className="flex p-1 bg-slate-950 rounded-xl mt-6 border border-slate-800">
             <Button 
               variant="ghost" 
-              className={cn("flex-1 text-[10px] font-black uppercase tracking-widest h-10 rounded-lg", mode === 'quick' ? "bg-indigo-600 text-white" : "text-slate-500")}
+              className={cn("flex-1 text-[10px] font-black uppercase tracking-widest h-10 rounded-lg", mode === 'quick' ? "bg-indigo-600 text-white" : "text-slate-400")}
               onClick={() => setMode('quick')}
             >
               <Zap size={14} className="mr-2" /> Quick Rank
             </Button>
             <Button 
               variant="ghost" 
-              className={cn("flex-1 text-[10px] font-black uppercase tracking-widest h-10 rounded-lg", mode === 'detailed' ? "bg-indigo-600 text-white" : "text-slate-500")}
+              className={cn("flex-1 text-[10px] font-black uppercase tracking-widest h-10 rounded-lg", mode === 'detailed' ? "bg-indigo-600 text-white" : "text-slate-400")}
               onClick={() => setMode('detailed')}
             >
               <Swords size={14} className="mr-2" /> Detailed Log
@@ -197,25 +197,25 @@ const AddMatchModal = () => {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500">Operation</Label>
+              <Label className="text-[10px] font-bold uppercase text-slate-300">Operation</Label>
               <Select value={formData.gameId} onValueChange={handleGameChange}>
                 <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                   <SelectValue placeholder="Select Game" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                  {games.map(g => <SelectItem key={g.id} value={g.id}>{g.title}</SelectItem>)}
+                  {games.map(g => <SelectItem key={g.id} value={g.id} className="focus:bg-indigo-600">{g.title}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500">Mode</Label>
+              <Label className="text-[10px] font-bold uppercase text-slate-300">Mode</Label>
               <Select value={formData.gameMode} onValueChange={(v) => setFormData({...formData, gameMode: v, rank: '', tier: ''})}>
                 <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                   <SelectValue placeholder="Select Mode" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
                   {selectedGameObj?.modes.map((m: any) => (
-                    <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
+                    <SelectItem key={m.name} value={m.name} className="focus:bg-indigo-600">{m.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -224,7 +224,7 @@ const AddMatchModal = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-500">
+              <Label className="text-[10px] font-bold uppercase text-slate-300">
                 {isCS2Premier ? 'Rating (1-40,000)' : isCS2Faceit ? 'Faceit ELO' : 'Rank'}
               </Label>
               {isCS2Premier || isCS2Faceit ? (
@@ -233,7 +233,7 @@ const AddMatchModal = () => {
                   value={formData.rank} 
                   onChange={(e) => setFormData({...formData, rank: e.target.value})}
                   placeholder={isCS2Faceit ? "e.g. 1250" : "e.g. 15400"} 
-                  className="bg-slate-900 border-slate-800 text-white" 
+                  className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-600" 
                   required
                 />
               ) : (
@@ -242,7 +242,7 @@ const AddMatchModal = () => {
                     <SelectValue placeholder="Select Rank" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    {metadata.ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    {metadata.ranks.map(r => <SelectItem key={r} value={r} className="focus:bg-indigo-600">{r}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
@@ -250,14 +250,14 @@ const AddMatchModal = () => {
 
             {!isCS2Premier && !isCS2Faceit && metadata.tierCount > 0 && !metadata.noTierRanks.includes(formData.rank) && (
               <div className="space-y-2 animate-in fade-in slide-in-from-left-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Tier (1-{metadata.tierCount})</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-300">Tier (1-{metadata.tierCount})</Label>
                 <Select value={formData.tier} onValueChange={(v) => setFormData({...formData, tier: v})}>
                   <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                     <SelectValue placeholder="Tier" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
                     {Array.from({ length: metadata.tierCount }, (_, i) => (i + 1).toString()).map(t => (
-                      <SelectItem key={t} value={t}>Tier {t}</SelectItem>
+                      <SelectItem key={t} value={t} className="focus:bg-indigo-600">Tier {t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -266,15 +266,15 @@ const AddMatchModal = () => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold uppercase text-slate-500">Rank Status</Label>
+            <Label className="text-[10px] font-bold uppercase text-slate-300">Rank Status</Label>
             <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v})}>
               <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                <SelectItem value="update">Standard Update</SelectItem>
-                <SelectItem value="current">Set as Current Rank</SelectItem>
-                <SelectItem value="peak">Set as New Peak</SelectItem>
+                <SelectItem value="update" className="focus:bg-indigo-600">Standard Update</SelectItem>
+                <SelectItem value="current" className="focus:bg-indigo-600">Set as Current Rank</SelectItem>
+                <SelectItem value="peak" className="focus:bg-indigo-600">Set as New Peak</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -282,27 +282,27 @@ const AddMatchModal = () => {
           {mode === 'detailed' && (
             <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Map / Arena</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-300">Map / Arena</Label>
                 <div className="relative">
                   <MapIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
                   <Input 
                     value={formData.map} 
                     onChange={(e) => setFormData({...formData, map: e.target.value})}
                     placeholder="e.g. Ascent" 
-                    className="bg-slate-900 border-slate-800 pl-10 text-white" 
+                    className="bg-slate-900 border-slate-800 pl-10 text-white placeholder:text-slate-600" 
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Result</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-300">Result</Label>
                 <Select value={formData.result} onValueChange={(v) => setFormData({...formData, result: v})}>
                   <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    <SelectItem value="win">Victory</SelectItem>
-                    <SelectItem value="loss">Defeat</SelectItem>
-                    <SelectItem value="draw">Draw</SelectItem>
+                    <SelectItem value="win" className="focus:bg-indigo-600">Victory</SelectItem>
+                    <SelectItem value="loss" className="focus:bg-indigo-600">Defeat</SelectItem>
+                    <SelectItem value="draw" className="focus:bg-indigo-600">Draw</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -310,7 +310,7 @@ const AddMatchModal = () => {
           )}
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold uppercase text-slate-500">Timestamp</Label>
+            <Label className="text-[10px] font-bold uppercase text-slate-300">Timestamp</Label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
               <Input 
@@ -323,7 +323,7 @@ const AddMatchModal = () => {
           </div>
 
           <DialogFooter className="pt-4">
-            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 font-black uppercase py-8 rounded-2xl text-lg">
+            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase py-8 rounded-2xl text-lg">
               CONFIRM LOG
             </Button>
           </DialogFooter>
