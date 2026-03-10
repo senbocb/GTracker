@@ -4,13 +4,15 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const profile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
+  const [isToolsOpen, setIsToolsOpen] = React.useState(false);
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
@@ -39,7 +41,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                   </Link>
                 </div>
                 
-                <nav className="flex-1 p-4 space-y-2">
+                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                   {navItems.map((item) => (
                     <Link key={item.path} to={item.path}>
                       <Button 
@@ -54,6 +56,36 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                       </Button>
                     </Link>
                   ))}
+
+                  {/* Nested Tools Dropdown */}
+                  <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen} className="w-full">
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-between gap-4 h-14 font-black uppercase italic tracking-tight text-sm text-slate-400 hover:text-white hover-highlight"
+                      >
+                        <div className="flex items-center gap-4">
+                          <Zap size={20} />
+                          Tactical Tools
+                        </div>
+                        <ChevronDown className={cn("transition-transform", isToolsOpen && "rotate-180")} size={16} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-1 pl-4 mt-1">
+                      <Link to="/timer">
+                        <Button 
+                          variant="ghost" 
+                          className={cn(
+                            "w-full justify-start gap-4 h-12 font-bold uppercase tracking-widest text-[10px]",
+                            location.pathname === '/timer' ? "text-indigo-400" : "text-slate-500 hover:text-white"
+                          )}
+                        >
+                          <Timer size={16} />
+                          Combat Timer
+                        </Button>
+                      </Link>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </nav>
 
                 <div className="p-4 border-t border-slate-900">
