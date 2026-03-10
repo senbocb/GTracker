@@ -3,13 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, ExternalLink, Trash2, Target, Zap, Trophy, Calendar, Plus, History } from 'lucide-react';
+import { ChevronLeft, Trash2, Zap, History, Plus, Calendar, Clock, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import { showSuccess } from '@/utils/toast';
@@ -28,7 +30,15 @@ const GameDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [game, setGame] = useState<any>(null);
-  const [newRank, setNewRank] = useState({ rank: '', tier: '' });
+  const [activeMode, setActiveMode] = useState('');
+  const [timeFrame, setTimeFrame] = useState('week');
+  
+  const [logData, setLogData] = useState({
+    rank: '',
+    tier: '',
+    timestamp: new Date().toISOString().slice(0, 16),
+    isPeak: false
+  });
   const [isLogOpen, setIsLogOpen] = useState(false);
 
   useEffect(() => {
@@ -36,7 +46,7 @@ const GameDetail = () => {
     const found = savedGames.find((g: any) => g.id === id);
     if (found) {
       setGame(found);
-      setNewRank({ rank: found.rank, tier: found.tier || '' });
+      setActiveMode(found.modes[0]?.name || '');
     } else {
       navigate('/');
     }
@@ -46,19 +56,31 @@ const GameDetail = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const updatedGames = savedGames.map((g: any) => {
       if (g.id === id) {
+        const modeIdx = g.modes.findIndex((m: any) => m.name === activeMode);
+        if (modeIdx === -1) return g;
+
         const historyEntry = {
           id: Date.now().toString(),
-          rank: newRank.rank,
-          tier: newRank.tier,
-          timestamp: new Date().toISOString(),
-          numericValue: g.mode === 'Premier' ? parseInt(newRank.rank) || 0 : 0 // Simplified
+          rank: logData.rank,
+          tier: logData.tier,
+          timestamp: new Date(logData.timestamp).toISOString(),
+          isPeak: logData.isPeak,
+          numericValue: activeMode === 'Premier' ? parseInt(logData.rank) || 0 : 0
         };
-        return {
-          ...g,
-          rank: newRank.rank,
-          tier: newRank.tier,
-          history: [historyEntry, ...(g.history || [])]
+
+        const updatedMode = {
+          ...g.modes[modeIdx],
+          rank: logData.rank,
+          tier: logData.tier,
+          peakRank: logData.isPeak ? logData.rank : g.modes[modeIdx].peakRank,
+          history: [historyEntry, ...(g.modes[modeIdx].history || [])].sort((a, b) => 
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          )
         };
+
+        const newModes = [...g.modes];
+        newModes[modeIdx] = updatedMode;
+        return { ...g, modes: newModes };
       }
       return g;
     });
@@ -79,13 +101,31 @@ const GameDetail = () => {
 
   if (!game) return null;
 
-  const chartData = (game.history || [])
-    .slice()
-    .reverse()
-    .map((h: any) => ({
-      date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit' }),
-      rr: game.mode === 'Premier' ? parseInt(h.rank) : (GAME_RANKS[game.title]?.ranks.indexOf(h.rank) + 1) * 100 || 0
-    }));
+  const currentModeData = game.modes.find((m: any) => m.name === activeMode);
+  
+  const getFilteredChartData = () => {
+    if (!currentModeData?.history) return [];
+    
+    const now = new Date();
+    const filterDate = new Date();
+    
+    if (timeFrame === 'day') filterDate.setDate(now.getDate() - 1);
+    else if (timeFrame === 'week') filterDate.setDate(now.getDate() - 7);
+    else if (timeFrame === 'month') filterDate.setMonth(now.getMonth() - 1);
+    else if (timeFrame === 'year') filterDate.setFullYear(now.getFullYear() - 1);
+    else return currentModeData.history.map((h: any) => ({
+      date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+      rr: activeMode === 'Premier' ? parseInt(h.rank) : (GAME_RANKS[game.title]?.ranks.indexOf(h.rank) + 1) * 100 || 0
+    })).reverse();
+
+    return currentModeData.history
+      .filter((h: any) => new Date(h.timestamp) >= filterDate)
+      .map((h: any) => ({
+        date: new Date(h.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        rr: activeMode === 'Premier' ? parseInt(h.rank) : (GAME_RANKS[game.title]?.ranks.indexOf(h.rank) + 1) * 100 || 0
+      }))
+      .reverse();
+  };
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
@@ -106,25 +146,25 @@ const GameDetail = () => {
               </DialogTrigger>
               <DialogContent className="bg-slate-950 border-slate-800 text-white">
                 <DialogHeader>
-                  <DialogTitle>LOG RANK UPDATE</DialogTitle>
+                  <DialogTitle className="italic uppercase font-black">Log Combat Data: {activeMode}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="space-y-6 py-4">
                   <div className="grid gap-2">
-                    <Label>New Rank</Label>
-                    {game.mode === 'Premier' ? (
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">New Rank</Label>
+                    {activeMode === 'Premier' ? (
                       <Input 
                         type="number" 
-                        value={newRank.rank} 
-                        onChange={(e) => setNewRank({...newRank, rank: e.target.value})}
+                        value={logData.rank} 
+                        onChange={(e) => setLogData({...logData, rank: e.target.value})}
                         className="bg-slate-900 border-slate-800"
                       />
                     ) : (
-                      <Select onValueChange={(v) => setNewRank({...newRank, rank: v})} value={newRank.rank}>
+                      <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
                         <SelectTrigger className="bg-slate-900 border-slate-800">
                           <SelectValue placeholder="Select Rank" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                          {game.mode === 'Faceit' ? (
+                          {activeMode === 'Faceit' ? (
                             FACEIT_LEVELS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)
                           ) : (
                             GAME_RANKS[game.title]?.ranks.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)
@@ -133,22 +173,28 @@ const GameDetail = () => {
                       </Select>
                     )}
                   </div>
-                  {!(game.mode === 'Premier' || game.mode === 'Faceit') && (
+                  
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label>Tier</Label>
-                      <Select onValueChange={(v) => setNewRank({...newRank, tier: v})} value={newRank.tier}>
-                        <SelectTrigger className="bg-slate-900 border-slate-800">
-                          <SelectValue placeholder="Select Tier" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                          {TIERS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Timestamp</Label>
+                      <Input 
+                        type="datetime-local" 
+                        value={logData.timestamp}
+                        onChange={(e) => setLogData({...logData, timestamp: e.target.value})}
+                        className="bg-slate-900 border-slate-800"
+                      />
                     </div>
-                  )}
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">Peak Rank?</Label>
+                      <Switch 
+                        checked={logData.isPeak}
+                        onCheckedChange={(v) => setLogData({...logData, isPeak: v})}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleLogRank} className="w-full bg-blue-600">Confirm Update</Button>
+                  <Button onClick={handleLogRank} className="w-full bg-blue-600 font-black uppercase">Confirm Log</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -165,13 +211,26 @@ const GameDetail = () => {
             <div className="w-full h-full bg-slate-900" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#020617] to-transparent" />
-          <div className="absolute bottom-8 left-8">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-5xl font-black italic uppercase tracking-tighter text-white">{game.title}</h1>
-              {game.mode && <span className="px-3 py-1 rounded-full bg-blue-600/20 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-widest">{game.mode}</span>}
+          <div className="absolute bottom-8 left-8 right-8 flex items-end justify-between">
+            <div>
+              <h1 className="text-5xl font-black italic uppercase tracking-tighter text-white mb-4">{game.title}</h1>
+              <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full">
+                <TabsList className="bg-slate-950/50 border border-slate-800 p-1 h-auto">
+                  {game.modes.map((m: any) => (
+                    <TabsTrigger 
+                      key={m.name} 
+                      value={m.name}
+                      className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                    >
+                      {m.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
-            <div className="flex items-center gap-4">
-              <RankBadge rank={game.rank} tier={game.tier} className="scale-110" />
+            <div className="flex flex-col items-end gap-2">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Current Status</p>
+              <RankBadge rank={currentModeData?.rank} tier={currentModeData?.tier} className="scale-110" />
             </div>
           </div>
         </div>
@@ -179,14 +238,26 @@ const GameDetail = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
             <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <Zap className="text-blue-500" size={20} />
-                  RANK PROGRESSION
+                  PERFORMANCE ANALYTICS
                 </CardTitle>
+                <Select value={timeFrame} onValueChange={setTimeFrame}>
+                  <SelectTrigger className="w-[120px] bg-slate-950 border-slate-800 h-8 text-[10px] font-bold uppercase">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="day">Last 24h</SelectItem>
+                    <SelectItem value="week">Last 7 Days</SelectItem>
+                    <SelectItem value="month">Last 30 Days</SelectItem>
+                    <SelectItem value="year">Last Year</SelectItem>
+                    <SelectItem value="all">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardHeader>
               <CardContent>
-                <ProgressChart data={chartData} />
+                <ProgressChart data={getFilteredChartData()} />
               </CardContent>
             </Card>
 
@@ -194,29 +265,35 @@ const GameDetail = () => {
               <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <History className="text-blue-500" size={20} />
-                  RANK CHANGE LOG
+                  COMBAT LOGS
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {(game.history || []).map((h: any) => (
-                  <div key={h.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-800">
+                {(currentModeData?.history || []).map((h: any) => (
+                  <div key={h.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-800 group">
                     <div className="flex items-center gap-4">
-                      <div className="w-1 h-8 bg-blue-600 rounded-full" />
+                      <div className={`w-1 h-8 rounded-full ${h.isPeak ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'bg-blue-600'}`} />
                       <div>
-                        <p className="font-black text-white uppercase">{h.rank} {h.tier}</p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                          {new Date(h.timestamp).toLocaleString()}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-white uppercase">{h.rank} {h.tier}</p>
+                          {h.isPeak && <Trophy size={12} className="text-yellow-500" />}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                          <Calendar size={10} />
+                          {new Date(h.timestamp).toLocaleDateString()}
+                          <Clock size={10} className="ml-1" />
+                          {new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Logged</span>
+                    <div className="text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="sm" className="text-slate-500 hover:text-white">Edit</Button>
                     </div>
                   </div>
                 ))}
-                {(!game.history || game.history.length === 0) && (
+                {(!currentModeData?.history || currentModeData.history.length === 0) && (
                   <div className="text-center py-12">
-                    <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">No rank changes logged</p>
+                    <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">No combat data logged for this mode</p>
                   </div>
                 )}
               </CardContent>
@@ -226,12 +303,12 @@ const GameDetail = () => {
           <div className="space-y-6">
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader>
-                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">Combat Stats</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">Operational Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
                   <span className="text-xs font-bold text-slate-500 uppercase">Peak Rank</span>
-                  <span className="font-black text-white">{game.peakRank || 'N/A'}</span>
+                  <span className="font-black text-yellow-500">{currentModeData?.peakRank || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 rounded-xl bg-slate-950 border border-slate-800">
                   <span className="text-xs font-bold text-slate-500 uppercase">Win Rate</span>

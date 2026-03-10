@@ -3,24 +3,27 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import RankBadge from './RankBadge';
-import { MoreVertical, Target, Zap, ExternalLink, Globe } from 'lucide-react';
+import { MoreVertical, Target, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
+
+interface GameMode {
+  name: string;
+  rank: string;
+  tier?: string;
+  peakRank?: string;
+}
 
 interface GameCardProps {
   id: string;
   title: string;
-  rank: string;
-  tier?: string;
-  peakRank?: string;
+  modes: GameMode[];
   winRate?: string;
   hoursPlayed?: string;
   image?: string;
-  trackerLink?: string;
-  evxlLink?: string;
 }
 
-const GameCard = ({ id, title, rank, tier, peakRank, winRate, hoursPlayed, image, trackerLink, evxlLink }: GameCardProps) => {
+const GameCard = ({ id, title, modes = [], winRate, hoursPlayed, image }: GameCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -46,36 +49,30 @@ const GameCard = ({ id, title, rank, tier, peakRank, winRate, hoursPlayed, image
           </Button>
         </div>
       </div>
-      <CardContent className="p-5 space-y-6">
-        <div className="flex items-end justify-between">
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Current Rank</p>
-            <RankBadge rank={rank || "Unranked"} tier={tier} />
-          </div>
-          <div className="text-right space-y-1">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Peak</p>
-            <p className="text-sm font-bold text-slate-300">{peakRank || "N/A"}</p>
-          </div>
+      <CardContent className="p-5 space-y-4">
+        <div className="space-y-3">
+          {modes.map((mode, idx) => (
+            <div key={idx} className="flex items-center justify-between border-b border-slate-800/50 pb-2 last:border-0 last:pb-0">
+              <div className="space-y-0.5">
+                <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">{mode.name}</p>
+                <RankBadge rank={mode.rank} tier={mode.tier} className="scale-90 origin-left" />
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Peak</p>
+                <p className="text-xs font-bold text-slate-300">{mode.peakRank || "N/A"}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-2">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-              <Target size={16} />
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase">Win Rate</p>
-              <p className="text-sm font-bold text-white">{winRate || "0%"}</p>
-            </div>
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
+            <Target size={12} className="text-emerald-400" />
+            <p className="text-[10px] font-bold text-white">{winRate || "0%"}</p>
           </div>
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-              <Zap size={16} />
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase">Playtime</p>
-              <p className="text-sm font-bold text-white">{hoursPlayed || "0h"}</p>
-            </div>
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
+            <Zap size={12} className="text-blue-400" />
+            <p className="text-[10px] font-bold text-white">{hoursPlayed || "0h"}</p>
           </div>
         </div>
       </CardContent>
