@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Globe, Link as LinkIcon, Plus } from 'lucide-react';
+import { ChevronLeft, Globe, Link as LinkIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,9 @@ const AddSocial = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const existingSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
+    const newSocial = { name: siteName, url: url.startsWith('http') ? url : `https://${url}` };
+    localStorage.setItem('combat_socials', JSON.stringify([...existingSocials, newSocial]));
     showSuccess(`${siteName} link added to profile.`);
     navigate('/profile');
   };
