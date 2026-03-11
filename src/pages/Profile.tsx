@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -66,7 +66,7 @@ const INITIAL_CATEGORIES = [
 const DEFAULT_PROFILE_LAYOUT: LayoutSection[] = [
   { id: 'career_overview', label: 'Career Overview', enabled: true },
   { id: 'medals', label: 'Medals & Achievements', enabled: true },
-  { id: 'profile_gallery', label: 'Combat Gallery', enabled: true },
+  { id: 'profile_gallery', label: 'Screenshots & Gallery', enabled: true },
   { id: 'profile_stats', label: 'Profile Stats', enabled: true },
 ];
 
@@ -80,7 +80,9 @@ const Profile = () => {
     createdAt: new Date().toISOString(),
     xp: 0,
     country: 'United States',
-    countryFlag: '🇺🇸'
+    countryFlag: '🇺🇸',
+    sensitivity: '',
+    age: ''
   });
   const [socials, setSocials] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>(INITIAL_CATEGORIES);
@@ -380,6 +382,14 @@ const Profile = () => {
                 </span>
               </div>
               <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-300 uppercase">Age</span>
+                <span className="text-sm font-black text-white">{profile.age || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-300 uppercase">Sensitivity</span>
+                <span className="text-sm font-black text-indigo-400">{profile.sensitivity ? `${profile.sensitivity} cm/360` : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-300 uppercase">Total XP</span>
                 <span className="text-sm font-black text-indigo-400">{profile.xp}</span>
               </div>
@@ -421,29 +431,56 @@ const Profile = () => {
             
             <div className="pb-4 flex-1 min-w-0">
               {isEditing ? (
-                <div className="space-y-3 max-w-xs animate-in fade-in slide-in-from-left-2">
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Username</Label>
-                    <Input 
-                      value={profile.username} 
-                      onChange={(e) => setProfile({...profile, username: e.target.value})} 
-                      className="bg-slate-900 border-slate-800 text-white font-black italic h-10" 
-                    />
+                <div className="space-y-3 max-w-md animate-in fade-in slide-in-from-left-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Username</Label>
+                      <Input 
+                        value={profile.username} 
+                        onChange={(e) => setProfile({...profile, username: e.target.value})} 
+                        className="bg-slate-900 border-slate-800 text-white font-black italic h-10" 
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Country</Label>
+                      <Select onValueChange={handleCountryChange} value={profile.country}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800 text-white h-10">
+                          <SelectValue placeholder="Select Country" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                          {COUNTRIES.map(c => (
+                            <SelectItem key={c.name} value={c.name} className="focus:bg-indigo-600">
+                              <span className="mr-2">{c.flag}</span> {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Country</Label>
-                    <Select onValueChange={handleCountryChange} value={profile.country}>
-                      <SelectTrigger className="bg-slate-900 border-slate-800 text-white h-10">
-                        <SelectValue placeholder="Select Country" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {COUNTRIES.map(c => (
-                          <SelectItem key={c.name} value={c.name} className="focus:bg-indigo-600">
-                            <span className="mr-2">{c.flag}</span> {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Age</Label>
+                      <Input 
+                        type="number"
+                        value={profile.age} 
+                        onChange={(e) => setProfile({...profile, age: e.target.value})} 
+                        className="bg-slate-900 border-slate-800 text-white h-10" 
+                        placeholder="e.g. 24"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Sens (cm/360)</Label>
+                      <div className="relative">
+                        <MousePointer2 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                        <Input 
+                          type="number"
+                          value={profile.sensitivity} 
+                          onChange={(e) => setProfile({...profile, sensitivity: e.target.value})} 
+                          className="bg-slate-900 border-slate-800 text-white h-10 pl-10" 
+                          placeholder="e.g. 45.5"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-500 font-bold">
