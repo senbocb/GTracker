@@ -60,6 +60,30 @@ const GAME_METADATA: Record<string, any> = {
     tierCount: 0,
     tierDirection: 'desc',
     noTierRanks: []
+  },
+  "Rainbow Six Siege": {
+    ranks: ["Copper", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Champion"],
+    tierCount: 5,
+    tierDirection: 'desc',
+    noTierRanks: ["Champion"]
+  },
+  "The Finals": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ruby"],
+    tierCount: 4,
+    tierDirection: 'desc',
+    noTierRanks: ["Ruby"]
+  },
+  "Marvel Rivals": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Grandmaster", "Celestial", "Eternity"],
+    tierCount: 3,
+    tierDirection: 'desc',
+    noTierRanks: ["Eternity"]
+  },
+  "Aim Lab": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"],
+    tierCount: 0,
+    tierDirection: 'asc',
+    noTierRanks: []
   }
 };
 

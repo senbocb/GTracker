@@ -32,6 +32,22 @@ const DEFAULT_REGISTRY = {
   "Apex Legends": {
     ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
     modes: ["Battle Royale", "Arenas"]
+  },
+  "Rainbow Six Siege": {
+    ranks: ["Copper", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Champion"],
+    modes: ["Ranked"]
+  },
+  "The Finals": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ruby"],
+    modes: ["World Tour", "Ranked Tournament"]
+  },
+  "Marvel Rivals": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Grandmaster", "Celestial", "Eternity"],
+    modes: ["Competitive"]
+  },
+  "Aim Lab": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"],
+    modes: ["Ranked"]
   }
 };
 

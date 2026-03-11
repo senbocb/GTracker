@@ -52,6 +52,30 @@ const GAME_METADATA: Record<string, any> = {
     ranks: [],
     tierCount: 0,
     stats: ["PP", "Accuracy", "Global Rank", "Play Count"]
+  },
+  "Rainbow Six Siege": {
+    ranks: ["Copper", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Champion"],
+    tierCount: 5,
+    noTierRanks: ["Champion"],
+    stats: ["Kills", "Deaths", "Assists", "KOST"]
+  },
+  "The Finals": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ruby"],
+    tierCount: 4,
+    noTierRanks: ["Ruby"],
+    stats: ["Kills", "Deaths", "Combat Score", "Support Score"]
+  },
+  "Marvel Rivals": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Grandmaster", "Celestial", "Eternity"],
+    tierCount: 3,
+    noTierRanks: ["Eternity"],
+    stats: ["Kills", "Deaths", "Damage", "Healing"]
+  },
+  "Aim Lab": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"],
+    tierCount: 0,
+    noTierRanks: [],
+    stats: ["Score", "Accuracy", "Reaction Time"]
   }
 };
 
@@ -107,6 +131,13 @@ const AddMatchModal = () => {
 
     const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
     return (rankIdx + 1) * 100 + tierValue;
+  };
+
+  const handleStatChange = (stat: string, value: string) => {
+    setFormData({
+      ...formData,
+      stats: { ...formData.stats, [stat]: value }
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
