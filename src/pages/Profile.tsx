@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2 } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,12 @@ const COUNTRIES = [
   { name: "Turkey", flag: "🇹🇷" },
 ];
 
+const CATEGORIES = [
+  { id: 'stat_trackers', label: 'Stat Trackers', icon: <BarChart3 size={14} /> },
+  { id: 'socials', label: 'Socials', icon: <Share2 size={14} /> },
+  { id: 'game_profiles', label: 'Game Profiles', icon: <UserCircle size={14} /> },
+];
+
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingSocial, setIsAddingSocial] = useState(false);
@@ -53,7 +59,7 @@ const Profile = () => {
   const [games, setGames] = useState<any[]>([]);
   const [careerStats, setCareerStats] = useState<any[]>([]);
   
-  const [newSocial, setNewSocial] = useState({ name: '', url: '', icon: '' });
+  const [newSocial, setNewSocial] = useState({ name: '', url: '', icon: '', category: 'socials' });
   
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -130,7 +136,7 @@ const Profile = () => {
     const updatedSocials = [...socials, { ...newSocial, id: Date.now().toString() }];
     setSocials(updatedSocials);
     localStorage.setItem('combat_socials', JSON.stringify(updatedSocials));
-    setNewSocial({ name: '', url: '', icon: '' });
+    setNewSocial({ name: '', url: '', icon: '', category: 'socials' });
     setIsAddingSocial(false);
     showSuccess("Platform linked.");
   };
@@ -174,6 +180,19 @@ const Profile = () => {
     { id: 'legend', label: 'Legend', icon: <Trophy size={20} />, minLevel: 20, color: 'text-yellow-400' },
     ...peakAchievements
   ];
+
+  const groupedSocials = useMemo(() => {
+    const groups: Record<string, any[]> = {
+      stat_trackers: [],
+      socials: [],
+      game_profiles: []
+    };
+    socials.forEach(s => {
+      const cat = s.category || 'socials';
+      if (groups[cat]) groups[cat].push(s);
+    });
+    return groups;
+  }, [socials]);
 
   return (
     <AppLayout>
@@ -245,39 +264,51 @@ const Profile = () => {
                       <Edit2 size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
                     </h1>
                   </div>
-                  
-                  <div className="flex flex-wrap items-center gap-4">
-                    <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Level {level} Operator</p>
-                    
-                    <div className="flex items-center gap-3">
-                      {socials.map((social) => (
-                        <div key={social.id} className="group relative flex items-center">
-                          <a 
-                            href={social.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white uppercase tracking-widest transition-colors"
-                          >
-                            {social.icon ? (
-                              <img src={social.icon} alt={social.name} className="w-4 h-4 object-contain rounded-sm" />
-                            ) : (
-                              <Globe size={14} />
-                            )}
-                            <span className="hidden sm:inline">{social.name}</span>
-                          </a>
-                          <button 
-                            onClick={() => removeSocial(social.id)}
-                            className="ml-1 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 transition-opacity"
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      ))}
-                      
+                  <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Level {level} Operator</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-20 space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-8">
+              {CATEGORIES.map(cat => (
+                <div key={cat.id} className="space-y-3">
+                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] flex items-center gap-2">
+                    {cat.icon}
+                    {cat.label}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {groupedSocials[cat.id].map((social) => (
+                      <div key={social.id} className="group relative">
+                        <a 
+                          href={social.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800 transition-all backdrop-blur-sm"
+                        >
+                          {social.icon ? (
+                            <img src={social.icon} alt={social.name} className="w-4 h-4 object-contain rounded-sm" />
+                          ) : (
+                            <Globe size={14} className="text-slate-400" />
+                          )}
+                          <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{social.name}</span>
+                        </a>
+                        <button 
+                          onClick={() => removeSocial(social.id)}
+                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                    {cat.id === 'socials' && (
                       <Dialog open={isAddingSocial} onOpenChange={setIsAddingSocial}>
                         <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-indigo-500">
-                            <Plus size={14} />
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-slate-900/50 border border-dashed border-slate-800 text-slate-500 hover:text-white hover:border-indigo-500 hover:bg-slate-900">
+                            <Plus size={16} />
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="bg-slate-950 border-slate-800 text-white">
@@ -285,6 +316,19 @@ const Profile = () => {
                             <DialogTitle className="italic uppercase font-black">LINK PLATFORM</DialogTitle>
                           </DialogHeader>
                           <div className="space-y-6 py-4">
+                            <div className="grid gap-2">
+                              <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Category</Label>
+                              <Select onValueChange={(v) => setNewSocial({...newSocial, category: v})} value={newSocial.category}>
+                                <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
+                                  <SelectValue placeholder="Select Category" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                  {CATEGORIES.map(c => (
+                                    <SelectItem key={c.id} value={c.id} className="focus:bg-indigo-600">{c.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                             <div className="grid gap-2">
                               <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Name</Label>
                               <Input 
@@ -336,15 +380,15 @@ const Profile = () => {
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
-                    </div>
+                    )}
                   </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
           <div className="md:col-span-2 space-y-8">
             <section className="space-y-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2"><Shield className="text-indigo-500" size={20} /> CAREER OVERVIEW</h2>
