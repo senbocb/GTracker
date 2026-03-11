@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer } from 'lucide-react';
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer, Library } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navItems = [
     { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
     { label: 'History', path: '/history', icon: <History size={20} /> },
+    { label: 'Registry', path: '/registry', icon: <Library size={20} /> },
   ];
 
   const isCustomizablePage = location.pathname === '/' || location.pathname === '/profile';

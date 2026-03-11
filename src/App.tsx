@@ -11,6 +11,7 @@ import History from "./pages/History";
 import AddSocial from "./pages/AddSocial";
 import GameDetail from "./pages/GameDetail";
 import Timer from "./pages/Timer";
+import GameRegistry from "./pages/GameRegistry";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/add-social" element={<AddSocial />} />
           <Route path="/game/:id" element={<GameDetail />} />
           <Route path="/timer" element={<Timer />} />
+          <Route path="/registry" element={<GameRegistry />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

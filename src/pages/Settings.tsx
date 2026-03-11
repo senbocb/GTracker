@@ -12,18 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { showSuccess, showError } from '@/utils/toast';
 import { processImage } from '@/utils/imageProcessing';
 
-const DEFAULT_GAME_CONFIGS = {
-  "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"] },
-  "Counter-Strike 2": { ranks: [], modes: ["Premier", "Faceit", "Wingman"] },
-  "Apex Legends": { ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"] },
-  "Overwatch 2": { 
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
-    modes: ["Tank", "Damage", "Support"]
-  },
-  "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] },
-  "osu!": { ranks: [], modes: ["osu!standard", "osu!taiko", "osu!catch", "osu!mania"] }
-};
-
 const Settings = () => {
   const [settings, setSettings] = useState({
     highContrast: false,
@@ -39,9 +27,6 @@ const Settings = () => {
     bgImage: ''
   });
 
-  const [gameRegistry, setGameRegistry] = useState<any>(DEFAULT_GAME_CONFIGS);
-  const [newGameName, setNewGameName] = useState('');
-
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -50,9 +35,6 @@ const Settings = () => {
 
     const savedCustom = JSON.parse(localStorage.getItem('combat_customization') || 'null');
     if (savedCustom) setCustomization(savedCustom);
-
-    const savedRegistry = JSON.parse(localStorage.getItem('combat_game_registry') || 'null');
-    if (savedRegistry) setGameRegistry(savedRegistry);
   }, []);
 
   const updateSetting = (key: keyof typeof settings, value: any) => {
@@ -87,23 +69,6 @@ const Settings = () => {
     }
   };
 
-  const addGameToRegistry = () => {
-    if (!newGameName) return;
-    const updated = { ...gameRegistry, [newGameName]: { ranks: [], modes: [] } };
-    setGameRegistry(updated);
-    localStorage.setItem('combat_game_registry', JSON.stringify(updated));
-    setNewGameName('');
-    showSuccess(`${newGameName} added to registry.`);
-  };
-
-  const removeGameFromRegistry = (name: string) => {
-    const updated = { ...gameRegistry };
-    delete updated[name];
-    setGameRegistry(updated);
-    localStorage.setItem('combat_game_registry', JSON.stringify(updated));
-    showSuccess(`${name} removed from registry.`);
-  };
-
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
       <main className="max-w-3xl mx-auto p-6 md:p-10">
@@ -115,41 +80,6 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Shield className="text-indigo-500" size={20} /> GAME REGISTRY</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="New Game Name..." 
-                  value={newGameName} 
-                  onChange={(e) => setNewGameName(e.target.value)}
-                  className="bg-slate-950 border-slate-800"
-                />
-                <Button onClick={addGameToRegistry} className="bg-indigo-600 hover:bg-indigo-500">
-                  <Plus size={18} />
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {Object.keys(gameRegistry).map(game => (
-                  <div key={game} className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 group">
-                    <div className="flex items-center gap-3">
-                      <GripVertical size={14} className="text-slate-700" />
-                      <span className="text-sm font-bold uppercase tracking-tight">{game}</span>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeGameFromRegistry(game)}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="bg-slate-900 border-slate-800 shadow-2xl">
             <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-indigo-500" size={20} /> CUSTOMIZATION</CardTitle></CardHeader>
             <CardContent className="space-y-6">

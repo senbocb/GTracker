@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -12,29 +12,23 @@ import { showSuccess, showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { processImage } from '@/utils/imageProcessing';
 
-const GAME_CONFIGS: Record<string, { ranks: string[], modes?: string[] }> = {
-  "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"] },
-  "Counter-Strike 2": { ranks: [], modes: ["Premier", "Faceit", "Wingman"] },
-  "Apex Legends": { ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"] },
-  "Overwatch 2": { 
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
-    modes: ["Tank", "Damage", "Support"]
-  },
-  "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] },
-  "osu!": { ranks: [], modes: ["osu!standard", "osu!taiko", "osu!catch", "osu!mania"] }
-};
-
 const AddGame = () => {
   const navigate = useNavigate();
+  const [registry, setRegistry] = useState<any>({});
   const [selectedGame, setSelectedGame] = useState('');
   const [selectedMode, setSelectedMode] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
-  const gameOptions = Object.keys(GAME_CONFIGS);
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
+    setRegistry(saved);
+  }, []);
+
+  const gameOptions = Object.keys(registry);
   const modeOptions = useMemo(() => {
-    if (!selectedGame) return [];
-    return GAME_CONFIGS[selectedGame].modes || [];
-  }, [selectedGame]);
+    if (!selectedGame || !registry[selectedGame]) return [];
+    return registry[selectedGame].modes || [];
+  }, [selectedGame, registry]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,6 +48,7 @@ const AddGame = () => {
     if (!selectedGame) return;
 
     const finalModeName = selectedMode || 'Standard';
+    const gameDef = registry[selectedGame];
     
     const existingGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const existingGameIndex = existingGames.findIndex((g: any) => g.title === selectedGame);
@@ -78,7 +73,7 @@ const AddGame = () => {
       existingGames.push({
         id: Date.now().toString(),
         title: selectedGame,
-        image: imageUrl,
+        image: imageUrl || gameDef.image,
         modes: [newMode],
         winRate: '0%',
         hoursPlayed: '0h'
@@ -102,7 +97,7 @@ const AddGame = () => {
 
         <div className="mb-10">
           <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">INITIALIZE TRACKER</h1>
-          <p className="text-slate-400 font-medium">Select your combat environment from the unified deployment list.</p>
+          <p className="text-slate-400 font-medium">Select your combat environment from your custom registry.</p>
         </div>
 
         <Card className="bg-slate-900 border-slate-800 shadow-2xl overflow-hidden">
@@ -147,7 +142,7 @@ const AddGame = () => {
                 )}
 
                 <div className="grid gap-2">
-                  <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-300 tracking-widest">Cover Image</Label>
+                  <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-300 tracking-widest">Override Cover Image</Label>
                   <div className="space-y-4">
                     <Input 
                       id="image" 
