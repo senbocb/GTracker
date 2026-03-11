@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Minus, Swords, Activity } from 'lucide-react';
+import RankBadge from './RankBadge';
+import { Swords, Activity } from 'lucide-react';
 
 interface Match {
   id: number;
@@ -39,7 +40,7 @@ const MatchHistory = ({ matches = [] }: { matches?: Match[] }) => {
               </div>
               <div className="text-right">
                 <div className="flex items-center gap-1 font-mono font-black text-xs text-indigo-400">
-                  {match.change}
+                  <RankBadge rank={match.change} gameTitle={match.game} className="scale-75 origin-right" />
                 </div>
                 <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">{match.date}</p>
               </div>
