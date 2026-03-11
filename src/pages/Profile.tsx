@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import AppLayout from '@/components/AppLayout';
 import { processImage } from '@/utils/imageProcessing';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
+import ProfileGallery from '@/components/ProfileGallery';
 
 // DnD Kit Imports
 import {
@@ -65,6 +66,7 @@ const INITIAL_CATEGORIES = [
 const DEFAULT_PROFILE_LAYOUT: LayoutSection[] = [
   { id: 'career_overview', label: 'Career Overview', enabled: true },
   { id: 'medals', label: 'Medals & Achievements', enabled: true },
+  { id: 'profile_gallery', label: 'Combat Gallery', enabled: true },
   { id: 'profile_stats', label: 'Profile Stats', enabled: true },
 ];
 
@@ -359,6 +361,8 @@ const Profile = () => {
             </div>
           </section>
         );
+      case 'profile_gallery':
+        return <ProfileGallery key="profile_gallery" />;
       case 'profile_stats':
         return (
           <section key="profile_stats" className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-sm">
@@ -529,7 +533,7 @@ const Profile = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
             {profileLayout
-              .filter(s => ['career_overview', 'medals'].includes(s.id))
+              .filter(s => ['career_overview', 'medals', 'profile_gallery'].includes(s.id))
               .map(s => renderSection(s.id))}
           </div>
 
