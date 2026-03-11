@@ -46,6 +46,12 @@ const GAME_METADATA: Record<string, any> = {
     tierCount: 0,
     tierDirection: 'asc',
     noTierRanks: []
+  },
+  "osu!": {
+    ranks: [],
+    tierCount: 0,
+    tierDirection: 'desc', // Lower rank number is better
+    noTierRanks: []
   }
 };
 
@@ -112,6 +118,12 @@ const GameDetail = () => {
     if (!rankName) return 0;
     
     const numeric = parseInt(rankName.replace(/\D/g, ''));
+    
+    // For osu!, lower rank number is better, so we invert it for the chart
+    if (game?.title === 'osu!') {
+      return 10000000 - numeric; // Arbitrary large number to show improvement as upward trend
+    }
+
     if (!isNaN(numeric) && !metadata.ranks.includes(rankName)) return numeric;
 
     const rankIdx = metadata.ranks.indexOf(rankName);
@@ -154,9 +166,10 @@ const GameDetail = () => {
     });
 
     return { sortedHistory: sorted, currentId: current.id, peakId: peak.id };
-  }, [currentModeData, sortOrder, metadata]);
+  }, [currentModeData, sortOrder, metadata, game?.title]);
 
   const isFaceit = activeMode === 'Faceit';
+  const isOsu = game?.title === 'osu!';
 
   const handleEloChange = (val: string) => {
     const elo = parseInt(val);
@@ -262,7 +275,7 @@ const GameDetail = () => {
               <div className="space-y-6 py-4">
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-300">
-                    {isFaceit ? 'Faceit ELO' : 'Rank / Rating'}
+                    {isFaceit ? 'Faceit ELO' : isOsu ? 'Global Rank' : 'Rank / Rating'}
                   </Label>
                   {metadata.ranks.length > 0 ? (
                     <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
@@ -273,7 +286,7 @@ const GameDetail = () => {
                     </Select>
                   ) : (
                     <Input 
-                      placeholder={isFaceit ? "Enter ELO (e.g. 1250)" : "Enter Rating"} 
+                      placeholder={isFaceit ? "Enter ELO (e.g. 1250)" : isOsu ? "e.g. 50000" : "Enter Rating"} 
                       value={logData.rank} 
                       onChange={(e) => isFaceit ? handleEloChange(e.target.value) : setLogData({...logData, rank: e.target.value})}
                       className="bg-slate-900 border-slate-800"
@@ -374,7 +387,9 @@ const GameDetail = () => {
                         <td className="px-6 py-4 border-r border-slate-800/50">
                           <div className="flex items-center gap-3">
                             <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
-                            <span className="text-xs font-black text-white uppercase">{h.rank} {h.tier}</span>
+                            <span className="text-xs font-black text-white uppercase">
+                              {isOsu ? `#${Number(h.rank).toLocaleString()}` : `${h.rank} ${h.tier}`}
+                            </span>
                           </div>
                         </td>
                         <td className="px-6 py-4">

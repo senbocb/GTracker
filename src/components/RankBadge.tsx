@@ -26,6 +26,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     if (g.includes('apex') && r === 'apex predator') return true;
     if (g.includes('counter-strike') && t.includes('level 10')) return true;
     if (g.includes('counter-strike') && rankNum >= 30000) return true;
+    if (g.includes('osu!') && rankNum > 0 && rankNum <= 100) return true;
     
     return false;
   };
@@ -35,7 +36,12 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
 
     const r = rankName?.toLowerCase() || "";
     const t = tier?.toLowerCase() || "";
+    const g = gameTitle?.toLowerCase() || "";
     
+    if (g.includes('osu!')) {
+      return 'text-pink-400 bg-pink-400/10 border-pink-400/20';
+    }
+
     if (t.includes('level')) {
       const lvl = parseInt(t.replace(/\D/g, ''));
       if (lvl >= 10) return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
@@ -80,9 +86,12 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
   const iconUrl = getIconUrl(gameTitle, rank, tier);
   const colorClasses = getRankColor(rank);
   const isFaceit = tier?.toLowerCase().includes('level');
+  const isOsu = gameTitle?.toLowerCase().includes('osu!');
   
-  // Clean display: "Gold 3" instead of "Gold Tier 3"
-  const displayLabel = isFaceit ? `${tier} (${rank})` : `${rank} ${tier || ''}`.trim();
+  let displayLabel = isFaceit ? `${tier} (${rank})` : `${rank} ${tier || ''}`.trim();
+  if (isOsu && rank && rank !== 'Unranked') {
+    displayLabel = `#${Number(rank).toLocaleString()}`;
+  }
 
   return (
     <div className={cn(

@@ -40,6 +40,11 @@ const GAME_METADATA: Record<string, any> = {
     ranks: [], 
     tierCount: 0,
     stats: ["Kills", "Deaths", "ADR"]
+  },
+  "osu!": {
+    ranks: [],
+    tierCount: 0,
+    stats: ["PP", "Accuracy", "Global Rank", "Play Count"]
   }
 };
 
@@ -106,7 +111,6 @@ const AddMatchModal = () => {
         const newModes = [...g.modes];
         newModes[modeIdx] = {
           ...g.modes[modeIdx],
-          // Only update current rank if it's a quick rank update or a match result
           rank: formData.rank || g.modes[modeIdx].rank,
           tier: formData.tier || g.modes[modeIdx].tier,
           history: [historyEntry, ...(g.modes[modeIdx].history || [])]
@@ -189,7 +193,9 @@ const AddMatchModal = () => {
             <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-300">New Rank</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-300">
+                    {selectedGameObj?.title === 'osu!' ? 'Global Rank' : 'New Rank'}
+                  </Label>
                   {metadata.ranks.length > 0 ? (
                     <Select value={formData.rank} onValueChange={(v) => setFormData({...formData, rank: v})}>
                       <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
@@ -202,7 +208,7 @@ const AddMatchModal = () => {
                   ) : (
                     <Input 
                       type="number" 
-                      placeholder="Rating" 
+                      placeholder={selectedGameObj?.title === 'osu!' ? "e.g. 50000" : "Rating"} 
                       className="bg-slate-900 border-slate-800"
                       value={formData.rank}
                       onChange={(e) => setFormData({...formData, rank: e.target.value})}
@@ -283,7 +289,7 @@ const AddMatchModal = () => {
                     <div key={stat} className="space-y-1.5">
                       <Label className="text-[9px] font-bold uppercase text-slate-500">{stat}</Label>
                       <Input 
-                        type="number" 
+                        type="text" 
                         placeholder="0" 
                         className="bg-slate-900 border-slate-800 h-9"
                         value={formData.stats[stat] || ''}

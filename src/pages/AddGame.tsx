@@ -20,7 +20,8 @@ const GAME_CONFIGS: Record<string, { ranks: string[], modes?: string[] }> = {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
     modes: ["Tank", "Damage", "Support"]
   },
-  "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] }
+  "League of Legends": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"] },
+  "osu!": { ranks: [], modes: ["osu!standard", "osu!taiko", "osu!catch", "osu!mania"] }
 };
 
 const AddGame = () => {
