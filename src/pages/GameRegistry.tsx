@@ -84,8 +84,14 @@ const GameRegistry = () => {
   }, []);
 
   const startEditing = (name: string) => {
+    const gameData = registry[name] || { ranks: [], modes: [], image: '' };
     setEditingGame(name);
-    setTempGame({ name, ...registry[name] });
+    setTempGame({ 
+      name, 
+      ranks: gameData.ranks || [], 
+      modes: gameData.modes || [], 
+      image: gameData.image || '' 
+    });
   };
 
   const createNewGame = () => {
@@ -139,7 +145,6 @@ const GameRegistry = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Add New Game Card */}
           <button 
             onClick={createNewGame}
             className="h-64 rounded-3xl border-2 border-dashed border-slate-800 bg-slate-900/20 hover:bg-slate-900/40 hover:border-indigo-500/50 transition-all flex flex-col items-center justify-center gap-4 group"
@@ -150,7 +155,6 @@ const GameRegistry = () => {
             <span className="text-xs font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-300">Initialize New Game</span>
           </button>
 
-          {/* Existing Games */}
           {Object.entries(registry).map(([name, data]: [string, any]) => (
             <Card 
               key={name} 
@@ -186,7 +190,6 @@ const GameRegistry = () => {
           ))}
         </div>
 
-        {/* Editor Dialog */}
         <Dialog open={!!editingGame} onOpenChange={(v) => !v && setEditingGame(null)}>
           <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-[600px] p-0 overflow-hidden">
             {tempGame && (
@@ -229,14 +232,14 @@ const GameRegistry = () => {
                         value={newRank} 
                         onChange={(e) => setNewRank(e.target.value)}
                         className="bg-slate-900 border-slate-800 h-10"
-                        onKeyDown={(e) => e.key === 'Enter' && (setTempGame({ ...tempGame, ranks: [...tempGame.ranks, newRank] }), setNewRank(''))}
+                        onKeyDown={(e) => e.key === 'Enter' && (setTempGame({ ...tempGame, ranks: [...(tempGame.ranks || []), newRank] }), setNewRank(''))}
                       />
-                      <Button onClick={() => { setTempGame({ ...tempGame, ranks: [...tempGame.ranks, newRank] }); setNewRank(''); }} className="bg-indigo-600"><Plus size={18} /></Button>
+                      <Button onClick={() => { setTempGame({ ...tempGame, ranks: [...(tempGame.ranks || []), newRank] }); setNewRank(''); }} className="bg-indigo-600"><Plus size={18} /></Button>
                     </div>
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                      <SortableContext items={tempGame.ranks} strategy={verticalListSortingStrategy}>
+                      <SortableContext items={tempGame.ranks || []} strategy={verticalListSortingStrategy}>
                         <div className="space-y-2">
-                          {tempGame.ranks.map((rank: string) => (
+                          {(tempGame.ranks || []).map((rank: string) => (
                             <SortableRankItem 
                               key={rank} 
                               id={rank} 
@@ -259,12 +262,12 @@ const GameRegistry = () => {
                         value={newMode} 
                         onChange={(e) => setNewMode(e.target.value)}
                         className="bg-slate-900 border-slate-800 h-10"
-                        onKeyDown={(e) => e.key === 'Enter' && (setTempGame({ ...tempGame, modes: [...tempGame.modes, newMode] }), setNewMode(''))}
+                        onKeyDown={(e) => e.key === 'Enter' && (setTempGame({ ...tempGame, modes: [...(tempGame.modes || []), newMode] }), setNewMode(''))}
                       />
-                      <Button onClick={() => { setTempGame({ ...tempGame, modes: [...tempGame.modes, newMode] }); setNewMode(''); }} className="bg-indigo-600"><Plus size={18} /></Button>
+                      <Button onClick={() => { setTempGame({ ...tempGame, modes: [...(tempGame.modes || []), newMode] }); setNewMode(''); }} className="bg-indigo-600"><Plus size={18} /></Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {tempGame.modes.map((mode: string) => (
+                      {(tempGame.modes || []).map((mode: string) => (
                         <div key={mode} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 group">
                           <span className="text-xs font-bold uppercase">{mode}</span>
                           <button onClick={() => setTempGame({ ...tempGame, modes: tempGame.modes.filter((m: string) => m !== mode) })} className="text-slate-600 hover:text-red-400">

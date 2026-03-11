@@ -9,7 +9,7 @@ import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
-import { Plus, Gamepad2, Activity, LayoutGrid, List } from 'lucide-react';
+import { Plus, Gamepad2, Activity, LayoutGrid, List, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -28,10 +28,14 @@ const Index = () => {
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
   const [statConfigs, setStatConfigs] = useState<QuickStatConfig[]>([]);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  const [registry, setRegistry] = useState<any>({});
 
   useEffect(() => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
+
+    const savedRegistry = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
+    setRegistry(savedRegistry);
 
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
@@ -46,13 +50,9 @@ const Index = () => {
         { id: 'avg_winrate', label: 'Avg Win Rate', enabled: true, type: 'common' },
         { id: 'op_status', label: 'Operational Status', enabled: true, type: 'common' },
       ];
-      savedGames.forEach((g: any) => {
-        initial.push({ id: `peak_${g.id}`, label: `${g.title} Peak`, enabled: false, type: 'game', gameId: g.id });
-      });
       setStatConfigs(initial);
     }
 
-    // Calculate recent matches from all games
     const allMatches: any[] = [];
     savedGames.forEach((game: any) => {
       game.modes.forEach((mode: any) => {
@@ -60,7 +60,7 @@ const Index = () => {
           allMatches.push({
             id: log.id,
             game: game.title,
-            result: log.isPeak ? 'Peak Reached' : 'Rank Update',
+            result: 'Rank Update',
             change: log.rank,
             map: mode.name,
             score: log.tier || '',
@@ -83,6 +83,12 @@ const Index = () => {
     localStorage.setItem('combat_stat_configs', JSON.stringify(newConfigs));
   };
 
+  const getRankValue = (gameTitle: string, rankName: string) => {
+    const gameDef = registry[gameTitle];
+    if (!gameDef || !gameDef.ranks) return 0;
+    return gameDef.ranks.indexOf(rankName);
+  };
+
   const getStatValue = (config: QuickStatConfig) => {
     if (config.id === 'active_trackers') return games.length.toString();
     if (config.id === 'total_logs') return games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0).toString();
@@ -91,9 +97,21 @@ const Index = () => {
       return `${avg}%`;
     }
     if (config.id === 'op_status') return 'Active';
-    if (config.type === 'game') {
+    
+    if (config.type === 'game' && config.gameId && config.modeName) {
       const game = games.find(g => g.id === config.gameId);
-      return game?.modes[0]?.peakRank || 'N/A';
+      if (!game) return 'N/A';
+      
+      const mode = game.modes.find((m: any) => m.name === config.modeName);
+      if (!mode || !mode.history || mode.history.length === 0) return 'N/A';
+      
+      const peak = mode.history.reduce((prev: any, curr: any) => {
+        const valPrev = getRankValue(game.title, prev.rank);
+        const valCurr = getRankValue(game.title, curr.rank);
+        return valCurr >= valPrev ? curr : prev;
+      });
+      
+      return peak.rank;
     }
     return 'N/A';
   };
@@ -115,11 +133,18 @@ const Index = () => {
                 <div key={config.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800/50 backdrop-blur-md group hover:border-indigo-500/30 transition-all hover-highlight">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                      <Activity size={12} className="text-indigo-500" />
+                      {config.type === 'game' ? <Trophy size={12} className="text-yellow-500" /> : <Activity size={12} className="text-indigo-500" />}
                     </div>
-                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{config.label}</span>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{config.label}</span>
+                      {config.type === 'game' && (
+                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                          {games.find(g => g.id === config.gameId)?.title}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-2xl font-black text-white tabular-nums">{getStatValue(config)}</p>
+                  <p className="text-2xl font-black text-white tabular-nums truncate">{getStatValue(config)}</p>
                 </div>
               ))}
             </div>
