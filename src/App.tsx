@@ -12,6 +12,8 @@ import AddSocial from "./pages/AddSocial";
 import GameDetail from "./pages/GameDetail";
 import Timer from "./pages/Timer";
 import GameRegistry from "./pages/GameRegistry";
+import CrosshairManager from "./pages/CrosshairManager";
+import ConfigManager from "./pages/ConfigManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
           <Route path="/game/:id" element={<GameDetail />} />
           <Route path="/timer" element={<Timer />} />
           <Route path="/registry" element={<GameRegistry />} />
+          <Route path="/crosshairs" element={<CrosshairManager />} />
+          <Route path="/configs" element={<ConfigManager />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

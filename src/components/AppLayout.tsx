@@ -5,14 +5,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer, Library } from 'lucide-react';
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer, Library, Target, FileCode } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [profile, setProfile] = useState<any>(null);
-  const [isToolsOpen, setIsToolsOpen] = React.useState(false);
+  const [isToolsOpen, setIsToolsOpen] = React.useState(true);
   const [customization, setCustomization] = useState({ bgColor: '#020617', bgImage: '' });
 
   useEffect(() => {
@@ -27,6 +27,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
     { label: 'History', path: '/history', icon: <History size={20} /> },
     { label: 'Registry', path: '/registry', icon: <Library size={20} /> },
+  ];
+
+  const tacticalTools = [
+    { label: 'Combat Timer', path: '/timer', icon: <Timer size={18} /> },
+    { label: 'Crosshair Vault', path: '/crosshairs', icon: <Target size={18} /> },
+    { label: 'Config Archive', path: '/configs', icon: <FileCode size={18} /> },
   ];
 
   const isCustomizablePage = location.pathname === '/' || location.pathname === '/profile';
@@ -94,18 +100,20 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-1 pl-4 mt-1">
-                      <Link to="/timer">
-                        <Button 
-                          variant="ghost" 
-                          className={cn(
-                            "w-full justify-start gap-4 h-12 font-bold uppercase tracking-widest text-[10px]",
-                            location.pathname === '/timer' ? "text-indigo-400" : "text-slate-400 hover:text-white"
-                          )}
-                        >
-                          <Timer size={16} />
-                          Combat Timer
-                        </Button>
-                      </Link>
+                      {tacticalTools.map((tool) => (
+                        <Link key={tool.path} to={tool.path}>
+                          <Button 
+                            variant="ghost" 
+                            className={cn(
+                              "w-full justify-start gap-4 h-12 font-bold uppercase tracking-widest text-[10px]",
+                              location.pathname === tool.path ? "text-indigo-400" : "text-slate-400 hover:text-white"
+                            )}
+                          >
+                            {tool.icon}
+                            {tool.label}
+                          </Button>
+                        </Link>
+                      ))}
                     </CollapsibleContent>
                   </Collapsible>
                 </nav>
