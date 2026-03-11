@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2 } from 'lucide-react';
+import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,11 +50,12 @@ const GAME_METADATA: Record<string, any> = {
   "osu!": {
     ranks: [],
     tierCount: 0,
-    tierDirection: 'desc', // Lower rank number is better
+    tierDirection: 'desc',
     noTierRanks: []
   }
 };
 
+const OSU_MODS = ["HDHR", "HD", "HR", "DT", "HDDT", "EZ", "HT"];
 const OW2_ROLE_ORDER = ["Tank", "Damage", "Support"];
 const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => (i + 1).toString());
 
@@ -78,6 +79,7 @@ const GameDetail = () => {
   const [game, setGame] = useState<any>(null);
   const [activeMode, setActiveMode] = useState('');
   const [externalLinks, setExternalLinks] = useState<any[]>([]);
+  const [playStyles, setPlayStyles] = useState<string[]>([]);
   
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -101,6 +103,7 @@ const GameDetail = () => {
       setGame(found);
       setActiveMode(found.modes[0]?.name || '');
       setExternalLinks(found.externalLinks || []);
+      setPlayStyles(found.playStyles || []);
     } else {
       navigate('/');
     }
@@ -119,9 +122,8 @@ const GameDetail = () => {
     
     const numeric = parseInt(rankName.replace(/\D/g, ''));
     
-    // For osu!, lower rank number is better, so we invert it for the chart
     if (game?.title === 'osu!') {
-      return 10000000 - numeric; // Arbitrary large number to show improvement as upward trend
+      return 10000000 - numeric;
     }
 
     if (!isNaN(numeric) && !metadata.ranks.includes(rankName)) return numeric;
@@ -170,6 +172,24 @@ const GameDetail = () => {
 
   const isFaceit = activeMode === 'Faceit';
   const isOsu = game?.title === 'osu!';
+
+  const handleToggleTag = (tag: string) => {
+    const newStyles = playStyles.includes(tag) 
+      ? playStyles.filter(s => s !== tag)
+      : [...playStyles, tag];
+    
+    setPlayStyles(newStyles);
+    
+    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+    const updatedGames = savedGames.map((g: any) => {
+      if (g.id === id) {
+        return { ...g, playStyles: newStyles };
+      }
+      return g;
+    });
+    localStorage.setItem('combat_games', JSON.stringify(updatedGames));
+    showSuccess(`Play style updated: ${tag}`);
+  };
 
   const handleEloChange = (val: string) => {
     const elo = parseInt(val);
@@ -430,6 +450,38 @@ const GameDetail = () => {
           </div>
 
           <div className="space-y-6">
+            {isOsu && (
+              <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
+                <CardHeader className="bg-slate-900/80 border-b border-slate-800">
+                  <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 flex items-center gap-2">
+                    <Zap size={14} />
+                    Play Style Mods
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {OSU_MODS.map(mod => (
+                      <button
+                        key={mod}
+                        onClick={() => handleToggleTag(mod)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border",
+                          playStyles.includes(mod)
+                            ? "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20 scale-105"
+                            : "bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700"
+                        )}
+                      >
+                        {mod}
+                      </button>
+                    ))}
+                  </div>
+                  {playStyles.length === 0 && (
+                    <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4 text-center">No mods selected</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader><CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest">External Trackers</CardTitle></CardHeader>
               <CardContent className="space-y-3">
