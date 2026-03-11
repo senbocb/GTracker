@@ -12,6 +12,29 @@ import { showSuccess, showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { processImage } from '@/utils/imageProcessing';
 
+const DEFAULT_REGISTRY = {
+  "Valorant": { 
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
+    modes: ["Competitive", "Premier"]
+  },
+  "Counter-Strike 2": { 
+    ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
+    modes: ["Premier", "Competitive", "Wingman", "Faceit"]
+  },
+  "Overwatch 2": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
+    modes: ["Tank", "Damage", "Support", "Open Queue"]
+  },
+  "League of Legends": {
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
+    modes: ["Ranked Solo/Duo", "Ranked Flex"]
+  },
+  "Apex Legends": {
+    ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
+    modes: ["Battle Royale", "Arenas"]
+  }
+};
+
 const AddGame = () => {
   const navigate = useNavigate();
   const [registry, setRegistry] = useState<any>({});
@@ -20,8 +43,13 @@ const AddGame = () => {
   const [imageUrl, setImageUrl] = useState('');
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
-    setRegistry(saved);
+    const saved = JSON.parse(localStorage.getItem('combat_game_registry') || 'null');
+    if (saved && Object.keys(saved).length > 0) {
+      setRegistry(saved);
+    } else {
+      localStorage.setItem('combat_game_registry', JSON.stringify(DEFAULT_REGISTRY));
+      setRegistry(DEFAULT_REGISTRY);
+    }
   }, []);
 
   const gameOptions = Object.keys(registry);
@@ -48,7 +76,7 @@ const AddGame = () => {
     if (!selectedGame) return;
 
     const finalModeName = selectedMode || 'Standard';
-    const gameDef = registry[selectedGame];
+    const gameDef = registry[selectedGame] || { image: '', modes: [] };
     
     const existingGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const existingGameIndex = existingGames.findIndex((g: any) => g.title === selectedGame);
@@ -73,7 +101,7 @@ const AddGame = () => {
       existingGames.push({
         id: Date.now().toString(),
         title: selectedGame,
-        image: imageUrl || gameDef.image,
+        image: imageUrl || gameDef.image || '',
         modes: [newMode],
         winRate: '0%',
         hoursPlayed: '0h'

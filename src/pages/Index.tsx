@@ -38,7 +38,14 @@ const Index = () => {
     setRegistry(savedRegistry);
 
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
-    if (savedLayout) setLayout(savedLayout);
+    if (savedLayout) {
+      // Merge saved layout with defaults to ensure new sections are included
+      const mergedLayout = DEFAULT_LAYOUT.map(def => {
+        const saved = savedLayout.find((s: any) => s.id === def.id);
+        return saved ? { ...def, ...saved } : def;
+      });
+      setLayout(mergedLayout);
+    }
 
     const savedStats = JSON.parse(localStorage.getItem('combat_stat_configs') || 'null');
     if (savedStats) {
