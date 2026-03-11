@@ -10,7 +10,7 @@ import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
 import SortableGameWrapper from '@/components/SortableGameWrapper';
-import { Plus, Gamepad2, Activity, LayoutGrid, List, SortAsc, GripVertical } from 'lucide-react';
+import { Plus, Gamepad2, Activity, LayoutGrid, List, SortAsc, GripVertical, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -37,8 +37,8 @@ import {
 const DEFAULT_LAYOUT: LayoutSection[] = [
   { id: 'quick_stats', label: 'Quick Stats', enabled: true },
   { id: 'active_operations', label: 'Games', enabled: true },
-  { id: 'session_tracker', label: 'Session Tracker', enabled: true },
-  { id: 'match_history', label: 'Match History', enabled: true },
+  { id: 'session_tracker', label: 'Live Intel', enabled: true },
+  { id: 'match_history', label: 'Recent Changes', enabled: true },
 ];
 
 const Index = () => {
@@ -117,6 +117,7 @@ const Index = () => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    // If user drags while in 'name' sort, we force switch to 'custom' to preserve the new order
     if (sortMethod === 'name') {
       setSortMethod('custom');
       localStorage.setItem('combat_game_sort', 'custom');
@@ -289,7 +290,7 @@ const Index = () => {
       case 'match_history':
         return (
           <div key="match_history" className="space-y-4">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Recent Engagements</h2>
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Recent Changes</h2>
             <MatchHistory matches={recentMatches} />
           </div>
         );
