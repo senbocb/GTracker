@@ -16,6 +16,13 @@ import ProgressChart from '@/components/ProgressChart';
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
+const CS_LEGACY_RANKS = [
+  "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master",
+  "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master",
+  "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian",
+  "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
+];
+
 const GAME_METADATA: Record<string, any> = {
   "Valorant": { 
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
@@ -111,8 +118,12 @@ const GameDetail = () => {
   }, [game, activeMode]);
 
   const metadata = useMemo(() => {
-    return GAME_METADATA[game?.title] || { ranks: [], tierCount: 0, tierDirection: 'asc', noTierRanks: [] };
-  }, [game]);
+    const base = GAME_METADATA[game?.title] || { ranks: [], tierCount: 0, tierDirection: 'asc', noTierRanks: [] };
+    if (game?.title === 'Counter-Strike 2' && activeMode === 'Wingman') {
+      return { ...base, ranks: CS_LEGACY_RANKS };
+    }
+    return base;
+  }, [game, activeMode]);
 
   const getRankValue = (rankName: string, tierName?: string) => {
     if (!rankName) return 0;
@@ -121,6 +132,10 @@ const GameDetail = () => {
     
     if (game?.title === 'osu!') {
       return 10000000 - numeric;
+    }
+
+    if (game?.title === 'Counter-Strike 2' && activeMode === 'Wingman') {
+      return CS_LEGACY_RANKS.indexOf(rankName) + 1;
     }
 
     if (!isNaN(numeric) && !metadata.ranks.includes(rankName)) return numeric;
@@ -165,7 +180,7 @@ const GameDetail = () => {
     });
 
     return { sortedHistory: sorted, currentId: current.id, peakId: peak.id };
-  }, [currentModeData, sortOrder, metadata, game?.title]);
+  }, [currentModeData, sortOrder, metadata, game?.title, activeMode]);
 
   const isFaceit = activeMode === 'Faceit';
   const isOsu = game?.title === 'osu!';
