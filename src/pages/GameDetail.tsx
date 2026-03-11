@@ -137,6 +137,10 @@ const GameDetail = () => {
       return 10000000 - numeric;
     }
 
+    if (game?.title === 'Counter-Strike 2' && activeMode !== 'Wingman') {
+      return numeric;
+    }
+
     if (game?.title === 'Counter-Strike 2' && activeMode === 'Wingman') {
       return CS_LEGACY_RANKS.indexOf(rankName) + 1;
     }
@@ -239,10 +243,17 @@ const GameDetail = () => {
           new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
         );
 
+        const peak = history.reduce((prev, curr) => {
+          const valPrev = getRankValue(prev.rank, prev.tier);
+          const valCurr = getRankValue(curr.rank, curr.tier);
+          return valCurr > valPrev ? curr : prev;
+        });
+
         newModes[modeIdx] = {
           ...g.modes[modeIdx],
           rank: newest.rank,
           tier: newest.tier,
+          peakRank: `${peak.rank} ${peak.tier || ''}`.trim(),
           history: history
         };
         return { ...g, modes: newModes };
@@ -286,6 +297,8 @@ const GameDetail = () => {
   };
 
   if (!game) return null;
+
+  const activeBanner = currentModeData?.image || game.image;
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
@@ -370,7 +383,7 @@ const GameDetail = () => {
         </div>
 
         <div className="relative h-64 rounded-3xl overflow-hidden border border-slate-800 mb-10">
-          {game.image ? <img src={game.image} alt={game.title} className="w-full h-full object-cover opacity-50" /> : <div className="w-full h-full bg-slate-900" />}
+          {activeBanner ? <img src={activeBanner} alt={game.title} className="w-full h-full object-cover opacity-50" /> : <div className="w-full h-full bg-slate-900" />}
           <div className="absolute inset-0 bg-gradient-to-t from-[#020617] to-transparent" />
           <div className="absolute bottom-8 left-8 right-8 flex items-end justify-between">
             <div>

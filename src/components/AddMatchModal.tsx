@@ -94,11 +94,19 @@ const AddMatchModal = () => {
     return base;
   }, [selectedGameObj, formData.gameMode]);
 
-  const handleStatChange = (stat: string, value: string) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      stats: { ...prev.stats, [stat]: value }
-    }));
+  const getRankValue = (gameTitle: string, rankName: string, tierName?: string) => {
+    if (!rankName) return 0;
+    const numeric = parseInt(rankName.replace(/\D/g, ''));
+    
+    if (gameTitle === 'osu!') return 10000000 - numeric;
+    if (gameTitle === 'Counter-Strike 2' && formData.gameMode !== 'Wingman') return numeric;
+    
+    const meta = GAME_METADATA[gameTitle] || { ranks: [] };
+    const rankIdx = meta.ranks.indexOf(rankName);
+    if (rankIdx === -1) return numeric || 0;
+
+    const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
+    return (rankIdx + 1) * 100 + tierValue;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -109,6 +117,14 @@ const AddMatchModal = () => {
       if (g.id === formData.gameId) {
         const modeIdx = g.modes.findIndex((m: any) => m.name === formData.gameMode);
         if (modeIdx === -1) return g;
+
+        const currentMode = g.modes[modeIdx];
+        const newRankVal = getRankValue(g.title, formData.rank, formData.tier);
+        const peakRankVal = getRankValue(g.title, currentMode.peakRank?.split(' ')[0] || '', currentMode.peakRank?.split(' ')[1] || '');
+        
+        const newPeakRank = newRankVal > peakRankVal 
+          ? `${formData.rank} ${formData.tier || ''}`.trim() 
+          : currentMode.peakRank;
 
         const historyEntry = {
           id: Date.now().toString(),
@@ -127,6 +143,7 @@ const AddMatchModal = () => {
           ...g.modes[modeIdx],
           rank: formData.rank || g.modes[modeIdx].rank,
           tier: formData.tier || g.modes[modeIdx].tier,
+          peakRank: newPeakRank,
           history: [historyEntry, ...(g.modes[modeIdx].history || [])]
         };
         return { ...g, modes: newModes };

@@ -1,10 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import RankBadge from './RankBadge';
 import { MoreVertical, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 interface GameMode {
   name: string;
@@ -22,6 +23,18 @@ interface GameListItemProps {
 
 const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
   const navigate = useNavigate();
+  const [currentModeIdx, setCurrentModeIdx] = useState(0);
+
+  useEffect(() => {
+    if (modes.length > 3) {
+      const interval = setInterval(() => {
+        setCurrentModeIdx((prev) => (prev + 1) % modes.length);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [modes.length]);
+
+  const displayedModes = modes.length > 3 ? [modes[currentModeIdx]] : modes;
 
   return (
     <div 
@@ -39,19 +52,32 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
         <div>
           <h3 className="text-sm font-black text-white uppercase italic tracking-tight">{title}</h3>
           <div className="flex gap-2 mt-1">
-            {modes.map((mode, idx) => (
-              <span key={idx} className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                {mode.name}{idx < modes.length - 1 ? ' • ' : ''}
-              </span>
-            ))}
+            {modes.length > 3 ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">
+                  {modes[currentModeIdx].name}
+                </span>
+                <div className="flex gap-0.5">
+                  {modes.map((_, i) => (
+                    <div key={i} className={cn("w-1 h-1 rounded-full", i === currentModeIdx ? "bg-indigo-500" : "bg-slate-700")} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              modes.map((mode, idx) => (
+                <span key={idx} className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  {mode.name}{idx < modes.length - 1 ? ' • ' : ''}
+                </span>
+              ))
+            )}
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-6">
         <div className="hidden sm:flex gap-4">
-          {modes.map((mode, idx) => (
-            <div key={idx} className="flex flex-col items-end">
+          {displayedModes.map((mode, idx) => (
+            <div key={idx} className="flex flex-col items-end animate-in fade-in slide-in-from-right-1">
               <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">{mode.name}</p>
               <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-75 origin-right" />
             </div>
