@@ -1,11 +1,13 @@
 "use client";
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import RankBadge from './RankBadge';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Camera } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
+import { processImage } from '@/utils/imageProcessing';
+import { showSuccess, showError } from '@/utils/toast';
 
 interface GameMode {
   name: string;
@@ -23,6 +25,25 @@ interface GameCardProps {
 
 const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const processed = await processImage(file, 800, 450, 0.7);
+        const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+        const updatedGames = savedGames.map((g: any) => 
+          g.id === id ? { ...g, image: processed } : g
+        );
+        localStorage.setItem('combat_games', JSON.stringify(updatedGames));
+        showSuccess(`${title} banner updated.`);
+        window.location.reload();
+      } catch (err) {
+        showError("Failed to process banner.");
+      }
+    }
+  };
 
   return (
     <Card 
@@ -42,9 +63,29 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
           <h3 className="text-xl font-black italic tracking-tighter text-white uppercase">{title}</h3>
-          <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white h-8 w-8" onClick={(e) => e.stopPropagation()}>
-            <MoreVertical size={16} />
-          </Button>
+          <div className="flex gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-slate-300 hover:text-white h-8 w-8 bg-slate-950/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+            >
+              <Camera size={14} />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white h-8 w-8" onClick={(e) => e.stopPropagation()}>
+              <MoreVertical size={16} />
+            </Button>
+          </div>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={handleBannerUpload} 
+          />
         </div>
       </div>
       <CardContent className="p-5 space-y-4">

@@ -9,30 +9,11 @@ import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
-import SortableGameWrapper from '@/components/SortableGameWrapper';
-import { Plus, Gamepad2, Activity, LayoutGrid, List, SortAsc, GripVertical, Zap } from 'lucide-react';
+import { Plus, Gamepad2, Activity, LayoutGrid, List } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/components/AppLayout';
-
-// DnD Kit Imports
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  rectSortingStrategy,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable';
 
 const DEFAULT_LAYOUT: LayoutSection[] = [
   { id: 'quick_stats', label: 'Quick Stats', enabled: true },
@@ -47,18 +28,6 @@ const Index = () => {
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
   const [statConfigs, setStatConfigs] = useState<QuickStatConfig[]>([]);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
-  const [sortMethod, setSortMethod] = useState<'custom' | 'name'>('custom');
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   useEffect(() => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -66,9 +35,6 @@ const Index = () => {
 
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) setLayout(savedLayout);
-
-    const savedSort = localStorage.getItem('combat_game_sort') as 'custom' | 'name' || 'custom';
-    setSortMethod(savedSort);
 
     const savedStats = JSON.parse(localStorage.getItem('combat_stat_configs') || 'null');
     if (savedStats) {
@@ -86,6 +52,7 @@ const Index = () => {
       setStatConfigs(initial);
     }
 
+    // Calculate recent matches from all games
     const allMatches: any[] = [];
     savedGames.forEach((game: any) => {
       game.modes.forEach((mode: any) => {
@@ -105,38 +72,6 @@ const Index = () => {
     
     setRecentMatches(allMatches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5));
   }, []);
-
-  const sortedGames = useMemo(() => {
-    if (sortMethod === 'name') {
-      return [...games].sort((a, b) => a.title.localeCompare(b.title));
-    }
-    return games;
-  }, [games, sortMethod]);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    // If user drags while in 'name' sort, we force switch to 'custom' to preserve the new order
-    if (sortMethod === 'name') {
-      setSortMethod('custom');
-      localStorage.setItem('combat_game_sort', 'custom');
-    }
-
-    setGames((items) => {
-      const oldIndex = items.findIndex(i => i.id === active.id);
-      const newIndex = items.findIndex(i => i.id === over.id);
-      const newItems = arrayMove(items, oldIndex, newIndex);
-      localStorage.setItem('combat_games', JSON.stringify(newItems));
-      return newItems;
-    });
-  };
-
-  const toggleSortMethod = () => {
-    const next = sortMethod === 'custom' ? 'name' : 'custom';
-    setSortMethod(next);
-    localStorage.setItem('combat_game_sort', next);
-  };
 
   const updateLayout = (newLayout: LayoutSection[]) => {
     setLayout(newLayout);
@@ -173,7 +108,7 @@ const Index = () => {
           <div key="quick_stats" className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Tactical Overview</h2>
-              <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} />
+              <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} games={games} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {statConfigs.filter(c => c.enabled).map((config) => (
@@ -199,17 +134,6 @@ const Index = () => {
                 Games
               </h2>
               <div className="flex items-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={toggleSortMethod}
-                  className={cn(
-                    "text-[10px] font-bold uppercase tracking-widest hover-highlight",
-                    sortMethod === 'name' ? "text-indigo-400" : "text-slate-400"
-                  )}
-                >
-                  <SortAsc size={14} className="mr-1" /> {sortMethod === 'name' ? 'Sorted by Name' : 'Custom Order'}
-                </Button>
                 <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg p-1">
                   <Button 
                     variant="ghost" 
@@ -236,31 +160,17 @@ const Index = () => {
               </div>
             </div>
             {games.length > 0 ? (
-              <DndContext 
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext 
-                  items={sortedGames.map(g => g.id)} 
-                  strategy={viewMode === 'card' ? rectSortingStrategy : verticalListSortingStrategy}
-                >
-                  <div className={cn(
-                    viewMode === 'card' 
-                      ? "grid grid-cols-1 md:grid-cols-2 gap-6" 
-                      : "flex flex-col gap-3"
-                  )}>
-                    {sortedGames.map((game) => (
-                      <SortableGameWrapper key={game.id} id={game.id} disabled={sortMethod === 'name'}>
-                        {viewMode === 'card' 
-                          ? <GameCard {...game} />
-                          : <GameListItem {...game} />
-                        }
-                      </SortableGameWrapper>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+              <div className={cn(
+                viewMode === 'card' 
+                  ? "grid grid-cols-1 md:grid-cols-2 gap-6" 
+                  : "flex flex-col gap-3"
+              )}>
+                {games.map((game) => (
+                  viewMode === 'card' 
+                    ? <GameCard key={game.id} {...game} />
+                    : <GameListItem key={game.id} {...game} />
+                ))}
+              </div>
             ) : (
               <div className="p-16 rounded-[2rem] border-2 border-dashed border-slate-800/50 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/40 backdrop-blur-sm">
                 <div className="w-20 h-20 rounded-3xl bg-slate-900 flex items-center justify-center text-slate-600 shadow-inner">
