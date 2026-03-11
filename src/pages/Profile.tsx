@@ -14,6 +14,25 @@ import { cn } from "@/lib/utils";
 import AppLayout from '@/components/AppLayout';
 import { processImage } from '@/utils/imageProcessing';
 
+// DnD Kit Imports
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable';
+import SortableCategory from '@/components/SortableCategory';
+
 const COUNTRIES = [
   { name: "United States", flag: "🇺🇸" },
   { name: "United Kingdom", flag: "🇬🇧" },
@@ -37,7 +56,7 @@ const COUNTRIES = [
   { name: "Turkey", flag: "🇹🇷" },
 ];
 
-const CATEGORIES = [
+const INITIAL_CATEGORIES = [
   { id: 'stat_trackers', label: 'Stats', icon: <BarChart3 size={12} /> },
   { id: 'socials', label: 'Socials', icon: <Share2 size={12} /> },
   { id: 'game_profiles', label: 'Profiles', icon: <UserCircle size={12} /> },
@@ -56,6 +75,7 @@ const Profile = () => {
     countryFlag: '🇺🇸'
   });
   const [socials, setSocials] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>(INITIAL_CATEGORIES);
   const [games, setGames] = useState<any[]>([]);
   const [careerStats, setCareerStats] = useState<any[]>([]);
   
@@ -64,6 +84,18 @@ const Profile = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const socialIconRef = useRef<HTMLInputElement>(null);
+
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
@@ -78,6 +110,17 @@ const Profile = () => {
     }
     const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
     setSocials(savedSocials);
+    
+    const savedCategories = JSON.parse(localStorage.getItem('combat_categories') || 'null');
+    if (savedCategories) {
+      // Re-attach icons to saved categories
+      const withIcons = savedCategories.map((sc: any) => ({
+        ...sc,
+        icon: INITIAL_CATEGORIES.find(ic => ic.id === sc.id)?.icon
+      }));
+      setCategories(withIcons);
+    }
+
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
     const savedStats = JSON.parse(localStorage.getItem('combat_career_stats') || '[]');
@@ -146,6 +189,34 @@ const Profile = () => {
     setSocials(updated);
     localStorage.setItem('combat_socials', JSON.stringify(updated));
     showSuccess("Platform removed.");
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    if (active.id !== over.id) {
+      // Check if we are dragging a category
+      const isActiveCategory = categories.some(c => c.id === active.id);
+      if (isActiveCategory) {
+        setCategories((items) => {
+          const oldIndex = items.findIndex(i => i.id === active.id);
+          const newIndex = items.findIndex(i => i.id === over.id);
+          const newItems = arrayMove(items, oldIndex, newIndex);
+          localStorage.setItem('combat_categories', JSON.stringify(newItems.map(({id, label}) => ({id, label}))));
+          return newItems;
+        });
+      } else {
+        // Dragging a social link
+        setSocials((items) => {
+          const oldIndex = items.findIndex(i => i.id === active.id);
+          const newIndex = items.findIndex(i => i.id === over.id);
+          const newItems = arrayMove(items, oldIndex, newIndex);
+          localStorage.setItem('combat_socials', JSON.stringify(newItems));
+          return newItems;
+        });
+      }
+    }
   };
 
   const level = Math.floor(profile.xp / 100) + 1;
@@ -267,118 +338,100 @@ const Profile = () => {
                   <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">Level {level} Operator</p>
                   
                   <div className="flex flex-wrap items-start gap-6 max-w-full overflow-hidden">
-                    {CATEGORIES.map(cat => {
-                      const items = groupedSocials[cat.id];
-                      if (items.length === 0 && cat.id !== 'socials') return null;
-                      
-                      return (
-                        <div key={cat.id} className="space-y-1.5">
-                          <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">{cat.label}</p>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {items.map((social) => (
-                              <div key={social.id} className="group relative">
-                                <a 
-                                  href={social.url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/90 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800 transition-all backdrop-blur-sm"
-                                >
-                                  {social.icon ? (
-                                    <img src={social.icon} alt={social.name} className="w-3.5 h-3.5 object-contain rounded-sm" />
-                                  ) : (
-                                    <Globe size={12} className="text-slate-400" />
-                                  )}
-                                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{social.name}</span>
-                                </a>
-                                <button 
-                                  onClick={() => removeSocial(social.id)}
-                                  className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                >
-                                  <X size={8} />
-                                </button>
-                              </div>
-                            ))}
-                            {cat.id === 'socials' && (
-                              <Dialog open={isAddingSocial} onOpenChange={setIsAddingSocial}>
-                                <DialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg bg-slate-900/50 border border-dashed border-slate-800 text-slate-500 hover:text-white hover:border-indigo-500">
-                                    <Plus size={14} />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="bg-slate-950 border-slate-800 text-white">
-                                  <DialogHeader>
-                                    <DialogTitle className="italic uppercase font-black">LINK PLATFORM</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-6 py-4">
-                                    <div className="grid gap-2">
-                                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Category</Label>
-                                      <Select onValueChange={(v) => setNewSocial({...newSocial, category: v})} value={newSocial.category}>
-                                        <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
-                                          <SelectValue placeholder="Select Category" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                          {CATEGORIES.map(c => (
-                                            <SelectItem key={c.id} value={c.id} className="focus:bg-indigo-600">{c.label}</SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Name</Label>
-                                      <Input 
-                                        placeholder="e.g. Twitter, Discord, Twitch" 
-                                        value={newSocial.name}
-                                        onChange={(e) => setNewSocial({...newSocial, name: e.target.value})}
-                                        className="bg-slate-900 border-slate-800"
-                                      />
-                                    </div>
-                                    <div className="grid gap-2">
-                                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile URL</Label>
-                                      <Input 
-                                        placeholder="https://..." 
-                                        value={newSocial.url}
-                                        onChange={(e) => setNewSocial({...newSocial, url: e.target.value})}
-                                        className="bg-slate-900 border-slate-800"
-                                      />
-                                    </div>
-                                    <div className="grid gap-2">
-                                      <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Icon (PNG/JPEG)</Label>
-                                      <div className="flex items-center gap-4">
-                                        <Button 
-                                          variant="outline" 
-                                          onClick={() => socialIconRef.current?.click()}
-                                          className="bg-slate-900 border-slate-800 text-slate-300"
-                                        >
-                                          <Camera size={16} className="mr-2" />
-                                          Upload Icon
-                                        </Button>
-                                        {newSocial.icon && (
-                                          <div className="w-10 h-10 rounded bg-slate-900 border border-slate-800 p-1">
-                                            <img src={newSocial.icon} alt="Preview" className="w-full h-full object-contain" />
-                                          </div>
-                                        )}
-                                      </div>
-                                      <input 
-                                        type="file" 
-                                        ref={socialIconRef} 
-                                        className="hidden" 
-                                        accept="image/*" 
-                                        onChange={(e) => handleImageUpload(e, 'social')} 
-                                      />
-                                    </div>
-                                  </div>
-                                  <DialogFooter>
-                                    <Button onClick={handleAddSocial} className="w-full bg-indigo-600 font-black uppercase py-6">
-                                      ATTACH LINK
-                                    </Button>
-                                  </DialogFooter>
-                                </DialogContent>
-                              </Dialog>
-                            )}
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                        {categories.map(cat => {
+                          const items = groupedSocials[cat.id];
+                          if (items.length === 0 && cat.id !== 'socials') return null;
+                          
+                          return (
+                            <SortableCategory 
+                              key={cat.id}
+                              category={cat}
+                              items={items}
+                              onRemoveSocial={removeSocial}
+                              onAddClick={() => setIsAddingSocial(true)}
+                              showAddButton={cat.id === 'socials'}
+                            />
+                          );
+                        })}
+                      </SortableContext>
+                    </DndContext>
+
+                    <Dialog open={isAddingSocial} onOpenChange={setIsAddingSocial}>
+                      <DialogContent className="bg-slate-950 border-slate-800 text-white">
+                        <DialogHeader>
+                          <DialogTitle className="italic uppercase font-black">LINK PLATFORM</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-6 py-4">
+                          <div className="grid gap-2">
+                            <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Category</Label>
+                            <Select onValueChange={(v) => setNewSocial({...newSocial, category: v})} value={newSocial.category}>
+                              <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
+                                <SelectValue placeholder="Select Category" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                {INITIAL_CATEGORIES.map(c => (
+                                  <SelectItem key={c.id} value={c.id} className="focus:bg-indigo-600">{c.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Name</Label>
+                            <Input 
+                              placeholder="e.g. Twitter, Discord, Twitch" 
+                              value={newSocial.name}
+                              onChange={(e) => setNewSocial({...newSocial, name: e.target.value})}
+                              className="bg-slate-900 border-slate-800"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile URL</Label>
+                            <Input 
+                              placeholder="https://..." 
+                              value={newSocial.url}
+                              onChange={(e) => setNewSocial({...newSocial, url: e.target.value})}
+                              className="bg-slate-900 border-slate-800"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Icon (PNG/JPEG)</Label>
+                            <div className="flex items-center gap-4">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => socialIconRef.current?.click()}
+                                className="bg-slate-900 border-slate-800 text-slate-300"
+                              >
+                                <Camera size={16} className="mr-2" />
+                                Upload Icon
+                              </Button>
+                              {newSocial.icon && (
+                                <div className="w-10 h-10 rounded bg-slate-900 border border-slate-800 p-1">
+                                  <img src={newSocial.icon} alt="Preview" className="w-full h-full object-contain" />
+                                </div>
+                              )}
+                            </div>
+                            <input 
+                              type="file" 
+                              ref={socialIconRef} 
+                              className="hidden" 
+                              accept="image/*" 
+                              onChange={(e) => handleImageUpload(e, 'social')} 
+                            />
                           </div>
                         </div>
-                      );
-                    })}
+                        <DialogFooter>
+                          <Button onClick={handleAddSocial} className="w-full bg-indigo-600 font-black uppercase py-6">
+                            ATTACH LINK
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               )}
