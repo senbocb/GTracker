@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer, Library, Target, FileCode } from 'lucide-react';
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer, Library, Target, FileCode, Award } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 
@@ -33,6 +33,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     { label: 'Combat Timer', path: '/timer', icon: <Timer size={18} /> },
     { label: 'Crosshair Vault', path: '/crosshairs', icon: <Target size={18} /> },
     { label: 'Config Archive', path: '/configs', icon: <FileCode size={18} /> },
+    { label: 'Achievements', path: '/achievements', icon: <Award size={18} /> },
   ];
 
   const isCustomizablePage = location.pathname === '/' || location.pathname === '/profile';
@@ -192,7 +193,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
       <div className="fixed bottom-8 left-8 z-50">
         <Link to="/settings">
-          <Button size="icon" className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-indigo-500 shadow-2xl transition-all hover:scale-110">
+          <Button size="icon" className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover-border-indigo-500 shadow-2xl transition-all hover:scale-110">
             <Settings size={24} />
           </Button>
         </Link>

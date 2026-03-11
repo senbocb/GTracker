@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from "@/lib/utils";
 import AppLayout from '@/components/AppLayout';
 import { processImage } from '@/utils/imageProcessing';
+import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 
 // DnD Kit Imports
 import {
@@ -61,6 +62,12 @@ const INITIAL_CATEGORIES = [
   { id: 'game_profiles', label: 'Profiles', icon: <UserCircle size={12} /> },
 ];
 
+const DEFAULT_PROFILE_LAYOUT: LayoutSection[] = [
+  { id: 'career_overview', label: 'Career Overview', enabled: true },
+  { id: 'medals', label: 'Medals & Achievements', enabled: true },
+  { id: 'profile_stats', label: 'Profile Stats', enabled: true },
+];
+
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingSocial, setIsAddingSocial] = useState(false);
@@ -77,6 +84,10 @@ const Profile = () => {
   const [categories, setCategories] = useState<any[]>(INITIAL_CATEGORIES);
   const [games, setGames] = useState<any[]>([]);
   const [careerStats, setCareerStats] = useState<any[]>([]);
+  const [profileLayout, setProfileLayout] = useState<LayoutSection[]>(DEFAULT_PROFILE_LAYOUT);
+  
+  const [achievementSearch, setAchievementSearch] = useState('');
+  const [achievementSort, setAchievementSort] = useState('newest');
   
   const [newSocial, setNewSocial] = useState({ name: '', url: '', icon: '', category: 'socials' });
   
@@ -97,11 +108,6 @@ const Profile = () => {
         ...savedProfile,
         createdAt: savedProfile.createdAt || prev.createdAt
       }));
-    } else {
-      // First time setup
-      const initialProfile = { ...profile, createdAt: new Date().toISOString() };
-      localStorage.setItem('combat_profile', JSON.stringify(initialProfile));
-      setProfile(initialProfile);
     }
 
     const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
@@ -118,14 +124,20 @@ const Profile = () => {
 
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
-    const savedStats = JSON.parse(localStorage.getItem('combat_career_stats') || '[]');
-    setCareerStats(savedStats);
+    
+    const savedLayout = JSON.parse(localStorage.getItem('combat_profile_layout') || 'null');
+    if (savedLayout) setProfileLayout(savedLayout);
   }, []);
 
   const handleSave = () => {
     localStorage.setItem('combat_profile', JSON.stringify(profile));
     setIsEditing(false);
     showSuccess("Profile updated.");
+  };
+
+  const updateProfileLayout = (newLayout: LayoutSection[]) => {
+    setProfileLayout(newLayout);
+    localStorage.setItem('combat_profile_layout', JSON.stringify(newLayout));
   };
 
   const handleCountryChange = (countryName: string) => {
@@ -210,65 +222,38 @@ const Profile = () => {
   const formattedCreationDate = creationDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
   const peakAchievements = useMemo(() => {
-    return games.filter(game => {
-      return game.modes.some((mode: any) => {
-        const r = mode.peakRank?.toLowerCase() || "";
-        const t = mode.tier?.toLowerCase() || "";
-        const g = game.title?.toLowerCase() || "";
-
-        // Only award badges for preset rank names, not numeric ratings
-        if (g.includes('valorant') && r === 'radiant') return true;
-        if (g.includes('overwatch') && r === 'top 500') return true;
-        if (g.includes('league') && r === 'challenger') return true;
-        if (g.includes('apex') && r === 'apex predator') return true;
-        if (g.includes('counter-strike') && t.includes('level 10')) return true;
-        return false;
-      });
-    }).map(game => ({
-      id: `master_${game.id}`,
-      label: `${game.title} Master`,
-      icon: <Trophy size={20} />,
-      unlocked: true,
-      color: 'text-indigo-400 rainbow-gradient',
-      date: 'Peak Achieved'
-    }));
+    return games.flatMap(game => 
+      game.modes.filter((m: any) => {
+        const r = m.peakRank?.toLowerCase() || "";
+        return r === 'radiant' || r === 'top 500' || r === 'challenger' || r === 'apex predator';
+      }).map((m: any) => ({
+        id: `master_${game.id}_${m.name}`,
+        label: `${game.title} Master`,
+        icon: <Trophy size={20} />,
+        unlocked: true,
+        color: 'text-indigo-400 rainbow-gradient',
+        date: 'Peak Achieved'
+      }))
+    );
   }, [games]);
 
-  const accountAchievements = useMemo(() => {
-    const achievements = [
-      { 
-        id: 'account_created', 
-        label: 'Service Commenced', 
-        icon: <Calendar size={20} />, 
-        unlocked: true, 
-        color: 'text-emerald-400',
-        date: formattedCreationDate
-      }
+  const medals = useMemo(() => {
+    const base = [
+      { id: 'recruit', label: 'Recruit', icon: <User size={20} />, minLevel: 1, color: 'text-slate-300' },
+      { id: 'veteran', label: 'Veteran', icon: <Shield size={20} />, minLevel: 5, color: 'text-blue-400' },
+      { id: 'elite', label: 'Elite', icon: <Star size={20} />, minLevel: 10, color: 'text-indigo-400' },
+      { id: 'legend', label: 'Legend', icon: <Trophy size={20} />, minLevel: 20, color: 'text-yellow-400' },
+      ...peakAchievements
     ];
 
-    const yearsActive = new Date().getFullYear() - creationDate.getFullYear();
-    if (yearsActive >= 1) {
-      achievements.push({
-        id: 'yearly_veteran',
-        label: `${yearsActive} Year Veteran`,
-        icon: <Shield size={20} />,
-        unlocked: true,
-        color: 'text-blue-400',
-        date: new Date(creationDate.setFullYear(creationDate.getFullYear() + yearsActive)).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+    return base
+      .filter(m => m.label.toLowerCase().includes(achievementSearch.toLowerCase()))
+      .sort((a, b) => {
+        if (achievementSort === 'newest') return -1;
+        if (achievementSort === 'oldest') return 1;
+        return 0;
       });
-    }
-
-    return achievements;
-  }, [profile.createdAt]);
-
-  const medals = [
-    ...accountAchievements,
-    { id: 'recruit', label: 'Recruit', icon: <User size={20} />, minLevel: 1, color: 'text-slate-300' },
-    { id: 'veteran', label: 'Veteran', icon: <Shield size={20} />, minLevel: 5, color: 'text-blue-400' },
-    { id: 'elite', label: 'Elite', icon: <Star size={20} />, minLevel: 10, color: 'text-indigo-400' },
-    { id: 'legend', label: 'Legend', icon: <Trophy size={20} />, minLevel: 20, color: 'text-yellow-400' },
-    ...peakAchievements
-  ];
+  }, [peakAchievements, level, achievementSearch, achievementSort]);
 
   const groupedSocials = useMemo(() => {
     const groups: Record<string, any[]> = { stat_trackers: [], socials: [], game_profiles: [] };
@@ -278,6 +263,101 @@ const Profile = () => {
     });
     return groups;
   }, [socials]);
+
+  const renderSection = (id: string) => {
+    const section = profileLayout.find(s => s.id === id);
+    if (!section || !section.enabled) return null;
+
+    switch (id) {
+      case 'career_overview':
+        return (
+          <section key="career_overview" className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2"><Shield className="text-indigo-500" size={20} /> CAREER OVERVIEW</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {careerStats.length > 0 ? careerStats.map((stat) => (
+                <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 group relative hover:border-indigo-500/30 transition-colors backdrop-blur-sm">
+                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1">{stat.label}</p>
+                  <p className="text-xl font-black text-white">---</p>
+                </div>
+              )) : <div className="col-span-full p-8 text-center border border-dashed border-slate-800 rounded-2xl text-slate-400 text-xs font-bold uppercase bg-slate-900/40 backdrop-blur-sm">No stats pinned to overview.</div>}
+            </div>
+          </section>
+        );
+      case 'medals':
+        return (
+          <section key="medals" className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Medal className="text-yellow-500" size={20} /> MEDALS & ACHIEVEMENTS</h2>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                  <Input 
+                    placeholder="Search..." 
+                    value={achievementSearch}
+                    onChange={(e) => setAchievementSearch(e.target.value)}
+                    className="bg-slate-900 border-slate-800 h-8 pl-8 text-[10px] w-32"
+                  />
+                </div>
+                <Select value={achievementSort} onValueChange={setAchievementSort}>
+                  <SelectTrigger className="bg-slate-900 border-slate-800 h-8 text-[10px] w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {medals.map((medal: any) => {
+                const isUnlocked = medal.unlocked || level >= medal.minLevel;
+                return (
+                  <div key={medal.id} className={cn("p-4 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all backdrop-blur-sm", isUnlocked ? "bg-slate-900/90 border-slate-800" : "bg-slate-950/40 border-slate-900 opacity-30 grayscale")}>
+                    <div className={cn("w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center shadow-lg", isUnlocked ? medal.color : "text-slate-700")}>{medal.icon}</div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                        {isUnlocked ? (medal.date || 'Unlocked') : `Level ${medal.minLevel}`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      case 'profile_stats':
+        return (
+          <section key="profile_stats" className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-sm">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Profile Stats</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-300 uppercase">Joined</span>
+                <span className="text-sm font-black text-white">{new Date(profile.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-300 uppercase">Country</span>
+                <span className="text-sm font-black text-white flex items-center gap-2">
+                  <span>{profile.countryFlag}</span>
+                  <span>{profile.country}</span>
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-300 uppercase">Total XP</span>
+                <span className="text-sm font-black text-indigo-400">{profile.xp}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-300 uppercase">Games Tracked</span>
+                <span className="text-sm font-black text-white">{games.length}</span>
+              </div>
+            </div>
+          </section>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <AppLayout>
@@ -410,66 +490,21 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
-          <div className="md:col-span-2 space-y-8">
-            <section className="space-y-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Shield className="text-indigo-500" size={20} /> CAREER OVERVIEW</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {careerStats.length > 0 ? careerStats.map((stat) => (
-                  <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 group relative hover:border-indigo-500/30 transition-colors backdrop-blur-sm">
-                    <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1">{stat.label}</p>
-                    <p className="text-xl font-black text-white">---</p>
-                  </div>
-                )) : <div className="col-span-full p-8 text-center border border-dashed border-slate-800 rounded-2xl text-slate-400 text-xs font-bold uppercase bg-slate-900/40 backdrop-blur-sm">No stats pinned to overview.</div>}
-              </div>
-            </section>
+        <div className="flex justify-end mb-8 mt-16">
+          <LayoutSettings sections={profileLayout} onUpdate={updateProfileLayout} />
+        </div>
 
-            <section className="space-y-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Medal className="text-yellow-500" size={20} /> MEDALS & ACHIEVEMENTS</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {medals.map((medal: any) => {
-                  const isUnlocked = medal.unlocked || level >= medal.minLevel;
-                  return (
-                    <div key={medal.id} className={cn("p-4 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all backdrop-blur-sm", isUnlocked ? "bg-slate-900/90 border-slate-800" : "bg-slate-950/40 border-slate-900 opacity-30 grayscale")}>
-                      <div className={cn("w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center shadow-lg", isUnlocked ? medal.color : "text-slate-700")}>{medal.icon}</div>
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                          {isUnlocked ? (medal.date || 'Unlocked') : `Level ${medal.minLevel}`}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-2 space-y-8">
+            {profileLayout
+              .filter(s => ['career_overview', 'medals'].includes(s.id))
+              .map(s => renderSection(s.id))}
           </div>
 
           <div className="space-y-6">
-            <section className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-sm">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Profile Stats</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-300 uppercase">Joined</span>
-                  <span className="text-sm font-black text-white">{new Date(profile.createdAt).toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-300 uppercase">Country</span>
-                  <span className="text-sm font-black text-white flex items-center gap-2">
-                    <span>{profile.countryFlag}</span>
-                    <span>{profile.country}</span>
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-300 uppercase">Total XP</span>
-                  <span className="text-sm font-black text-indigo-400">{profile.xp}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-300 uppercase">Games Tracked</span>
-                  <span className="text-sm font-black text-white">{games.length}</span>
-                </div>
-              </div>
-            </section>
+            {profileLayout
+              .filter(s => ['profile_stats'].includes(s.id))
+              .map(s => renderSection(s.id))}
           </div>
         </div>
         <footer className="mt-20 pb-10 border-t border-slate-800 pt-10"><MadeWithDyad /></footer>

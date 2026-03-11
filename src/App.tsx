@@ -14,6 +14,7 @@ import Timer from "./pages/Timer";
 import GameRegistry from "./pages/GameRegistry";
 import CrosshairManager from "./pages/CrosshairManager";
 import ConfigManager from "./pages/ConfigManager";
+import Achievements from "./pages/Achievements";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/registry" element={<GameRegistry />} />
           <Route path="/crosshairs" element={<CrosshairManager />} />
           <Route path="/configs" element={<ConfigManager />} />
+          <Route path="/achievements" element={<Achievements />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
