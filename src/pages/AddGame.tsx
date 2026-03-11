@@ -14,7 +14,7 @@ import { processImage } from '@/utils/imageProcessing';
 
 const GAME_CONFIGS: Record<string, { ranks: string[], modes?: string[] }> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"] },
-  "Counter-Strike 2": { ranks: [], modes: ["Premier", "Faceit"] },
+  "Counter-Strike 2": { ranks: [], modes: ["Premier", "Faceit", "Wingman"] },
   "Apex Legends": { ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"] },
   "Overwatch 2": { 
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],

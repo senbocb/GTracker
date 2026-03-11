@@ -24,7 +24,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     if (g.includes('overwatch') && r === 'top 500') return true;
     if (g.includes('league') && r === 'challenger') return true;
     if (g.includes('apex') && r === 'apex predator') return true;
-    if (g.includes('counter-strike') && t.includes('level 10')) return true;
+    if (g.includes('counter-strike') && (t.includes('level 10') || r.includes('global elite'))) return true;
     if (g.includes('counter-strike') && rankNum >= 30000) return true;
     if (g.includes('osu!') && rankNum > 0 && rankNum <= 100) return true;
     
@@ -48,6 +48,14 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
       if (lvl >= 8) return 'text-red-500 bg-red-500/10 border-red-500/20';
       if (lvl >= 4) return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
       return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+    }
+
+    // CS Legacy Ranks
+    if (g.includes('counter-strike')) {
+      if (r.includes('silver')) return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+      if (r.includes('gold nova')) return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+      if (r.includes('guardian')) return 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20';
+      if (r.includes('eagle') || r.includes('supreme')) return 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
     }
 
     if (r.includes('iron') || r.includes('bronze')) return 'text-orange-400 bg-orange-400/10 border-orange-400/20';

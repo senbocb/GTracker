@@ -10,6 +10,13 @@ import { Swords, Plus, Zap, Trophy, Target, Calendar, Map as MapIcon, Activity, 
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
+const CS_LEGACY_RANKS = [
+  "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master",
+  "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master",
+  "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian",
+  "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
+];
+
 const GAME_METADATA: Record<string, any> = {
   "Valorant": { 
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
@@ -78,7 +85,14 @@ const AddMatchModal = () => {
   }, [open]);
 
   const selectedGameObj = useMemo(() => games.find(g => g.id === formData.gameId), [games, formData.gameId]);
-  const metadata = useMemo(() => GAME_METADATA[selectedGameObj?.title] || { ranks: [], tierCount: 0, stats: [] }, [selectedGameObj]);
+  
+  const metadata = useMemo(() => {
+    const base = GAME_METADATA[selectedGameObj?.title] || { ranks: [], tierCount: 0, stats: [] };
+    if (selectedGameObj?.title === 'Counter-Strike 2' && formData.gameMode === 'Wingman') {
+      return { ...base, ranks: CS_LEGACY_RANKS };
+    }
+    return base;
+  }, [selectedGameObj, formData.gameMode]);
 
   const handleStatChange = (stat: string, value: string) => {
     setFormData((prev: any) => ({
