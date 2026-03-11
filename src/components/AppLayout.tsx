@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer, Library, Target, FileCode, Award } from 'lucide-react';
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award, Pin, X, Maximize2, Minimize2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<any>(null);
   const [isToolsOpen, setIsToolsOpen] = React.useState(true);
   const [customization, setCustomization] = useState({ bgColor: '#020617', bgImage: '' });
+  
+  // Floating Timer State
+  const [isTimerPinned, setIsTimerPinned] = useState(false);
+  const [showFloatingTimer, setShowFloatingTimer] = useState(false);
 
   useEffect(() => {
     const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
@@ -21,6 +25,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
     const savedCustom = JSON.parse(localStorage.getItem('combat_customization') || 'null');
     if (savedCustom) setCustomization(savedCustom);
+
+    // Check if timer should be floating
+    const timerState = localStorage.getItem('timer_floating_active');
+    setShowFloatingTimer(timerState === 'true');
+    const pinnedState = localStorage.getItem('timer_pinned');
+    setIsTimerPinned(pinnedState === 'true');
   }, [location.pathname]);
 
   const navItems = [
@@ -31,7 +41,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   ];
 
   const tacticalTools = [
-    { label: 'Combat Timer', path: '/timer', icon: <Timer size={18} /> },
+    { label: 'Timer', path: '/timer', icon: <TimerIcon size={18} /> },
     { label: 'Crosshair Vault', path: '/crosshairs', icon: <Target size={18} /> },
     { label: 'Config Archive', path: '/configs', icon: <FileCode size={18} /> },
   ];
@@ -49,19 +59,19 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div 
-      className="min-h-screen text-slate-200 font-sans selection:bg-indigo-500/30 transition-colors duration-500"
+      className="min-h-screen text-slate-200 font-sans selection:bg-indigo-500/30 transition-colors duration-500 overflow-x-hidden"
       style={bgStyle}
     >
       <header className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4 sm:gap-6">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white hover-highlight">
                   <Menu size={24} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-1/4 bg-slate-950 border-r border-slate-800 p-0 flex flex-col">
+              <SheetContent side="left" className="w-full sm:w-80 bg-slate-950 border-r border-slate-800 p-0 flex flex-col">
                 <div className="p-8 border-b border-slate-900">
                   <Link to="/" className="flex items-center gap-3 group">
                     <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20">
@@ -144,7 +154,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             </Link>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-slate-800">
               <Search size={14} className="text-slate-400" />
               <input 
@@ -161,7 +171,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
             <Link to="/profile">
               <div className="relative flex items-center gap-3 pl-4 border-l border-slate-800 group cursor-pointer hover-highlight rounded-r-xl py-2 pr-2 overflow-hidden">
-                {/* Banner Integration */}
                 {profile?.banner && (
                   <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity">
                     <img src={profile.banner} alt="" className="w-full h-full object-cover" />
@@ -185,11 +194,60 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </header>
 
-      <div className="flex">
-        <main className="flex-1">
+      <div className="flex flex-col min-h-[calc(100vh-5rem)]">
+        <main className="flex-1 container mx-auto px-4 sm:px-6 py-6">
           {children}
         </main>
       </div>
+
+      {/* Floating Timer Overlay */}
+      {showFloatingTimer && location.pathname !== '/timer' && (
+        <div 
+          className={cn(
+            "fixed z-[100] transition-all duration-300",
+            isTimerPinned ? "bottom-8 right-8" : "top-24 right-8"
+          )}
+        >
+          <div className="bg-slate-950/90 border border-indigo-500/50 backdrop-blur-xl rounded-2xl shadow-2xl p-4 w-64 group">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <TimerIcon size={14} className="text-indigo-500" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-white">Timer</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn("h-6 w-6", isTimerPinned ? "text-indigo-500" : "text-slate-500")}
+                  onClick={() => {
+                    const newState = !isTimerPinned;
+                    setIsTimerPinned(newState);
+                    localStorage.setItem('timer_pinned', newState.toString());
+                  }}
+                >
+                  <Pin size={12} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 text-slate-500 hover:text-red-500"
+                  onClick={() => {
+                    setShowFloatingTimer(false);
+                    localStorage.setItem('timer_floating_active', 'false');
+                  }}
+                >
+                  <X size={12} />
+                </Button>
+              </div>
+            </div>
+            <Link to="/timer" className="block text-center py-2 hover:bg-white/5 rounded-lg transition-colors">
+              <span className="text-2xl font-black font-mono text-white tracking-tighter">
+                {localStorage.getItem('timer_display_value') || '00:00:00'}
+              </span>
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="fixed bottom-8 left-8 z-50">
         <Link to="/settings">

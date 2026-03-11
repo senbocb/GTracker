@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Timer as TimerIcon, Play, Pause, RotateCcw, Bell, BellOff, Maximize2, Minimize2, Volume2, VolumeX } from 'lucide-react';
+import { Timer as TimerIcon, Play, Pause, RotateCcw, Bell, BellOff, Maximize2, Minimize2, Volume2, VolumeX, Pin } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
@@ -18,9 +18,12 @@ const Timer = () => {
   const [isAlarmMuted, setIsAlarmMuted] = useState(false);
   const [volume, setVolume] = useState(50);
   const [isWindowed, setIsWindowed] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 600, height: 500 });
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const resizableRef = useRef<HTMLDivElement>(null);
+
+  // Direct editing state
+  const [editingPart, setEditingPart] = useState<'h' | 'm' | 's' | null>(null);
 
   const startTimer = () => {
     if (timeLeft === 0) {
@@ -32,6 +35,7 @@ const Timer = () => {
       setTimeLeft(totalSeconds);
     }
     setIsActive(true);
+    localStorage.setItem('timer_floating_active', 'true');
   };
 
   const pauseTimer = () => setIsActive(false);
@@ -39,16 +43,22 @@ const Timer = () => {
   const resetTimer = () => {
     setIsActive(false);
     setTimeLeft(0);
+    localStorage.setItem('timer_floating_active', 'false');
   };
 
   useEffect(() => {
     if (isActive && timeLeft > 0) {
       timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+        setTimeLeft((prev) => {
+          const next = prev - 1;
+          localStorage.setItem('timer_display_value', formatTime(next));
+          return next;
+        });
       }, 1000);
     } else if (timeLeft === 0 && isActive) {
       setIsActive(false);
       triggerAlarm();
+      localStorage.setItem('timer_floating_active', 'false');
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
@@ -82,29 +92,60 @@ const Timer = () => {
 
   const setPreset = (m: number) => {
     resetTimer();
-    setTimeLeft(m * 60);
+    const total = m * 60;
+    setTimeLeft(total);
+    setInputTime({ h: Math.floor(m / 60), m: m % 60, s: 0 });
     startTimer();
+  };
+
+  const handleNumberEdit = (part: 'h' | 'm' | 's', value: string) => {
+    const num = parseInt(value) || 0;
+    const max = part === 'h' ? 99 : 59;
+    const clamped = Math.min(Math.max(0, num), max);
+    
+    const newInput = { ...inputTime, [part]: clamped };
+    setInputTime(newInput);
+    
+    if (!isActive) {
+      setTimeLeft(newInput.h * 3600 + newInput.m * 60 + newInput.s);
+    }
+  };
+
+  const togglePin = () => {
+    const newState = !isPinned;
+    setIsPinned(newState);
+    localStorage.setItem('timer_pinned', newState.toString());
   };
 
   return (
     <AppLayout>
-      <main className="max-w-5xl mx-auto p-6 md:p-10">
-        <div className="mb-10 flex items-center justify-between">
+      <main className="max-w-5xl mx-auto p-4 sm:p-6 md:p-10">
+        <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase flex items-center gap-4">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-2 italic uppercase flex items-center gap-4">
               <TimerIcon className="text-indigo-500" size={36} />
-              Tactical Timer
+              Timer
             </h1>
-            <p className="text-slate-400 font-medium">Precision countdown for training sessions and operational breaks.</p>
+            <p className="text-slate-400 font-medium text-sm sm:text-base">Precision countdown for training sessions and operational breaks.</p>
           </div>
-          <Button 
-            variant="outline" 
-            className="border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white"
-            onClick={() => setIsWindowed(!isWindowed)}
-          >
-            {isWindowed ? <Minimize2 className="mr-2" size={18} /> : <Maximize2 className="mr-2" size={18} />}
-            {isWindowed ? 'Standard View' : 'Windowed Mode'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className={cn("border-slate-800 bg-slate-900/50", isPinned ? "text-indigo-500 border-indigo-500/50" : "text-slate-400")}
+              onClick={togglePin}
+            >
+              <Pin className="mr-2" size={18} />
+              {isPinned ? 'Pinned' : 'Pin Window'}
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white"
+              onClick={() => setIsWindowed(!isWindowed)}
+            >
+              {isWindowed ? <Minimize2 className="mr-2" size={18} /> : <Maximize2 className="mr-2" size={18} />}
+              {isWindowed ? 'Standard' : 'Windowed'}
+            </Button>
+          </div>
         </div>
 
         <div className={cn(
@@ -112,7 +153,6 @@ const Timer = () => {
           isWindowed ? "flex items-center justify-center min-h-[60vh]" : ""
         )}>
           <Card 
-            ref={resizableRef}
             style={isWindowed ? { 
               width: `${windowSize.width}px`, 
               height: `${windowSize.height}px`,
@@ -126,14 +166,77 @@ const Timer = () => {
           >
             <div className={cn("h-1 w-full transition-all duration-1000", isActive ? "bg-indigo-500 animate-pulse" : "bg-slate-800")} />
             <CardContent className={cn(
-              "p-10 flex flex-col items-center justify-center h-full",
+              "p-6 sm:p-10 flex flex-col items-center justify-center h-full",
               isWindowed ? "p-6" : ""
             )}>
+              {/* HH:MM:SS Labels */}
+              <div className="flex gap-4 sm:gap-8 mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 w-16 sm:w-24 text-center">Hours</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 w-16 sm:w-24 text-center">Minutes</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 w-16 sm:w-24 text-center">Seconds</span>
+              </div>
+
+              {/* Direct Editable Numbers */}
               <div className={cn(
-                "font-black text-white tabular-nums tracking-tighter mb-10 font-mono",
-                isWindowed ? "text-5xl md:text-7xl" : "text-7xl md:text-9xl"
+                "font-black text-white tabular-nums tracking-tighter mb-10 font-mono flex items-center gap-2",
+                isWindowed ? "text-4xl sm:text-6xl" : "text-6xl sm:text-8xl md:text-9xl"
               )}>
-                {formatTime(timeLeft || (inputTime.h * 3600 + inputTime.m * 60 + inputTime.s))}
+                <div className="flex flex-col items-center">
+                  {editingPart === 'h' ? (
+                    <input 
+                      autoFocus
+                      className="bg-indigo-600/20 border-b-2 border-indigo-500 outline-none w-16 sm:w-24 text-center"
+                      value={inputTime.h}
+                      onChange={(e) => handleNumberEdit('h', e.target.value)}
+                      onBlur={() => setEditingPart(null)}
+                    />
+                  ) : (
+                    <span 
+                      className="cursor-pointer hover:text-indigo-400 transition-colors w-16 sm:w-24 text-center"
+                      onClick={() => !isActive && setEditingPart('h')}
+                    >
+                      {Math.floor(timeLeft / 3600).toString().padStart(2, '0')}
+                    </span>
+                  )}
+                </div>
+                <span className="text-slate-700">:</span>
+                <div className="flex flex-col items-center">
+                  {editingPart === 'm' ? (
+                    <input 
+                      autoFocus
+                      className="bg-indigo-600/20 border-b-2 border-indigo-500 outline-none w-16 sm:w-24 text-center"
+                      value={inputTime.m}
+                      onChange={(e) => handleNumberEdit('m', e.target.value)}
+                      onBlur={() => setEditingPart(null)}
+                    />
+                  ) : (
+                    <span 
+                      className="cursor-pointer hover:text-indigo-400 transition-colors w-16 sm:w-24 text-center"
+                      onClick={() => !isActive && setEditingPart('m')}
+                    >
+                      {Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0')}
+                    </span>
+                  )}
+                </div>
+                <span className="text-slate-700">:</span>
+                <div className="flex flex-col items-center">
+                  {editingPart === 's' ? (
+                    <input 
+                      autoFocus
+                      className="bg-indigo-600/20 border-b-2 border-indigo-500 outline-none w-16 sm:w-24 text-center"
+                      value={inputTime.s}
+                      onChange={(e) => handleNumberEdit('s', e.target.value)}
+                      onBlur={() => setEditingPart(null)}
+                    />
+                  ) : (
+                    <span 
+                      className="cursor-pointer hover:text-indigo-400 transition-colors w-16 sm:w-24 text-center"
+                      onClick={() => !isActive && setEditingPart('s')}
+                    >
+                      {(timeLeft % 60).toString().padStart(2, '0')}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className={cn("flex flex-wrap justify-center gap-4 mb-10", isWindowed ? "mb-6" : "")}>
@@ -141,7 +244,7 @@ const Timer = () => {
                   size="lg" 
                   onClick={isActive ? pauseTimer : startTimer}
                   className={cn(
-                    "h-16 px-8 rounded-2xl font-black uppercase italic tracking-tight text-lg", 
+                    "h-14 sm:h-16 px-6 sm:px-8 rounded-2xl font-black uppercase italic tracking-tight text-base sm:text-lg", 
                     isActive ? "bg-slate-800 hover:bg-slate-700 text-white" : "bg-indigo-600 hover:bg-indigo-500 text-white",
                     isWindowed ? "h-12 px-6 text-base" : ""
                   )}
@@ -154,7 +257,7 @@ const Timer = () => {
                   size="lg" 
                   onClick={resetTimer}
                   className={cn(
-                    "h-16 px-8 rounded-2xl border-slate-800 text-slate-400 hover:text-white hover-highlight",
+                    "h-14 sm:h-16 px-6 sm:px-8 rounded-2xl border-slate-800 text-slate-400 hover:text-white hover-highlight",
                     isWindowed ? "h-12 px-6 text-base" : ""
                   )}
                 >
@@ -168,7 +271,7 @@ const Timer = () => {
                     onClick={() => setIsAlarmMuted(!isAlarmMuted)}
                     className="text-slate-500 hover:text-white"
                   >
-                    {isAlarmMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    {isAlarmMuted ? <BellOff size={20} /> : <Volume2 size={20} />}
                   </Button>
                   <div className="w-24">
                     <Slider 
@@ -176,48 +279,11 @@ const Timer = () => {
                       onValueChange={(v) => setVolume(v[0])} 
                       max={100} 
                       step={1} 
-                      className="cursor-pointer"
+                      className="cursor-pointer [&_[data-orientation=horizontal]]:h-2 [&_.relative]:bg-black [&_.absolute]:bg-white"
                     />
                   </div>
                 </div>
               </div>
-
-              {!isWindowed && (
-                <div className="grid grid-cols-3 gap-4 w-full max-w-md">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Hours</Label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      value={inputTime.h} 
-                      onChange={(e) => setInputTime({...inputTime, h: parseInt(e.target.value) || 0})}
-                      className="bg-slate-950 border-slate-800 h-12 text-center font-bold"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Minutes</Label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      max="59"
-                      value={inputTime.m} 
-                      onChange={(e) => setInputTime({...inputTime, m: parseInt(e.target.value) || 0})}
-                      className="bg-slate-950 border-slate-800 h-12 text-center font-bold"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Seconds</Label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      max="59"
-                      value={inputTime.s} 
-                      onChange={(e) => setInputTime({...inputTime, s: parseInt(e.target.value) || 0})}
-                      className="bg-slate-950 border-slate-800 h-12 text-center font-bold"
-                    />
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
