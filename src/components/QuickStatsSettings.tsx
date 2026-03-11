@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Settings2, ChevronRight, Gamepad2, Trophy } from 'lucide-react';
+import { Settings2, ChevronRight, Gamepad2, Trophy, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface QuickStatConfig {
