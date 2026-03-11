@@ -32,7 +32,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy
-} from '@at-dnd-kit/sortable';
+} from '@dnd-kit/sortable';
 import SortableCategory from '@/components/SortableCategory';
 
 const COUNTRIES = [
