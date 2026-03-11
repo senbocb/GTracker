@@ -298,15 +298,15 @@ const GameDetail = () => {
 
                 {showTierSelect && !isFaceit && (
                   <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-300">Tier (1-{metadata.tierCount})</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-300">Tier</Label>
                     <Select 
                       onValueChange={(v) => setLogData({...logData, tier: v})} 
                       value={logData.tier}
                     >
-                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Tier" /></SelectTrigger>
+                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         {Array.from({ length: metadata.tierCount }, (_, i) => (i + 1).toString()).map(t => (
-                          <SelectItem key={t} value={t}>Tier {t}</SelectItem>
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

@@ -25,7 +25,6 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     if (g.includes('league') && r === 'challenger') return true;
     if (g.includes('apex') && r === 'apex predator') return true;
     if (g.includes('counter-strike') && t.includes('level 10')) return true;
-    // CS2 Premier Peak Logic
     if (g.includes('counter-strike') && rankNum >= 30000) return true;
     
     return false;
@@ -81,7 +80,9 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
   const iconUrl = getIconUrl(gameTitle, rank, tier);
   const colorClasses = getRankColor(rank);
   const isFaceit = tier?.toLowerCase().includes('level');
-  const displayLabel = isFaceit ? `${tier} (${rank})` : `${rank} ${tier || ''}`;
+  
+  // Clean display: "Gold 3" instead of "Gold Tier 3"
+  const displayLabel = isFaceit ? `${tier} (${rank})` : `${rank} ${tier || ''}`.trim();
 
   return (
     <div className={cn(
