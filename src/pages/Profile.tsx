@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -28,8 +28,7 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  horizontalListSortingStrategy,
-  verticalListSortingStrategy
+  horizontalListSortingStrategy
 } from '@dnd-kit/sortable';
 import SortableCategory from '@/components/SortableCategory';
 
@@ -69,7 +68,7 @@ const Profile = () => {
     username: 'UNIDENTIFIED_USER',
     avatar: '',
     banner: '',
-    createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    createdAt: new Date().toISOString(),
     xp: 0,
     country: 'United States',
     countryFlag: '🇺🇸'
@@ -85,16 +84,9 @@ const Profile = () => {
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const socialIconRef = useRef<HTMLInputElement>(null);
 
-  // DnD Sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   useEffect(() => {
@@ -103,17 +95,20 @@ const Profile = () => {
       setProfile(prev => ({
         ...prev,
         ...savedProfile,
-        createdAt: savedProfile.createdAt || prev.createdAt,
-        country: savedProfile.country || prev.country,
-        countryFlag: savedProfile.countryFlag || prev.countryFlag
+        createdAt: savedProfile.createdAt || prev.createdAt
       }));
+    } else {
+      // First time setup
+      const initialProfile = { ...profile, createdAt: new Date().toISOString() };
+      localStorage.setItem('combat_profile', JSON.stringify(initialProfile));
+      setProfile(initialProfile);
     }
+
     const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
     setSocials(savedSocials);
     
     const savedCategories = JSON.parse(localStorage.getItem('combat_categories') || 'null');
     if (savedCategories) {
-      // Re-attach icons to saved categories
       const withIcons = savedCategories.map((sc: any) => ({
         ...sc,
         icon: INITIAL_CATEGORIES.find(ic => ic.id === sc.id)?.icon
@@ -146,14 +141,8 @@ const Profile = () => {
       try {
         let maxWidth = 400;
         let maxHeight = 400;
-        
-        if (type === 'banner') {
-          maxWidth = 1200;
-          maxHeight = 600;
-        } else if (type === 'social') {
-          maxWidth = 100;
-          maxHeight = 100;
-        }
+        if (type === 'banner') { maxWidth = 1200; maxHeight = 600; }
+        else if (type === 'social') { maxWidth = 100; maxHeight = 100; }
         
         const processed = await processImage(file, maxWidth, maxHeight, 0.7);
         
@@ -194,9 +183,7 @@ const Profile = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
-
     if (active.id !== over.id) {
-      // Check if we are dragging a category
       const isActiveCategory = categories.some(c => c.id === active.id);
       if (isActiveCategory) {
         setCategories((items) => {
@@ -207,7 +194,6 @@ const Profile = () => {
           return newItems;
         });
       } else {
-        // Dragging a social link
         setSocials((items) => {
           const oldIndex = items.findIndex(i => i.id === active.id);
           const newIndex = items.findIndex(i => i.id === over.id);
@@ -220,7 +206,9 @@ const Profile = () => {
   };
 
   const level = Math.floor(profile.xp / 100) + 1;
-  
+  const creationDate = new Date(profile.createdAt);
+  const formattedCreationDate = creationDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+
   const peakAchievements = useMemo(() => {
     return games.filter(game => {
       return game.modes.some((mode: any) => {
@@ -228,6 +216,7 @@ const Profile = () => {
         const t = mode.tier?.toLowerCase() || "";
         const g = game.title?.toLowerCase() || "";
 
+        // Only award badges for preset rank names, not numeric ratings
         if (g.includes('valorant') && r === 'radiant') return true;
         if (g.includes('overwatch') && r === 'top 500') return true;
         if (g.includes('league') && r === 'challenger') return true;
@@ -240,11 +229,40 @@ const Profile = () => {
       label: `${game.title} Master`,
       icon: <Trophy size={20} />,
       unlocked: true,
-      color: 'text-indigo-400 rainbow-gradient'
+      color: 'text-indigo-400 rainbow-gradient',
+      date: 'Peak Achieved'
     }));
   }, [games]);
 
+  const accountAchievements = useMemo(() => {
+    const achievements = [
+      { 
+        id: 'account_created', 
+        label: 'Service Commenced', 
+        icon: <Calendar size={20} />, 
+        unlocked: true, 
+        color: 'text-emerald-400',
+        date: formattedCreationDate
+      }
+    ];
+
+    const yearsActive = new Date().getFullYear() - creationDate.getFullYear();
+    if (yearsActive >= 1) {
+      achievements.push({
+        id: 'yearly_veteran',
+        label: `${yearsActive} Year Veteran`,
+        icon: <Shield size={20} />,
+        unlocked: true,
+        color: 'text-blue-400',
+        date: new Date(creationDate.setFullYear(creationDate.getFullYear() + yearsActive)).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+      });
+    }
+
+    return achievements;
+  }, [profile.createdAt]);
+
   const medals = [
+    ...accountAchievements,
     { id: 'recruit', label: 'Recruit', icon: <User size={20} />, minLevel: 1, color: 'text-slate-300' },
     { id: 'veteran', label: 'Veteran', icon: <Shield size={20} />, minLevel: 5, color: 'text-blue-400' },
     { id: 'elite', label: 'Elite', icon: <Star size={20} />, minLevel: 10, color: 'text-indigo-400' },
@@ -253,11 +271,7 @@ const Profile = () => {
   ];
 
   const groupedSocials = useMemo(() => {
-    const groups: Record<string, any[]> = {
-      stat_trackers: [],
-      socials: [],
-      game_profiles: []
-    };
+    const groups: Record<string, any[]> = { stat_trackers: [], socials: [], game_profiles: [] };
     socials.forEach(s => {
       const cat = s.category || 'socials';
       if (groups[cat]) groups[cat].push(s);
@@ -326,10 +340,7 @@ const Profile = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div 
-                    onClick={() => setIsEditing(true)} 
-                    className="cursor-pointer group inline-block"
-                  >
+                  <div onClick={() => setIsEditing(true)} className="cursor-pointer group inline-block">
                     <h1 className="text-3xl font-black tracking-tight text-white italic uppercase truncate group-hover:text-indigo-400 transition-colors flex items-center gap-3">
                       {profile.username}
                       <Edit2 size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
@@ -338,16 +349,11 @@ const Profile = () => {
                   <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">Level {level} Operator</p>
                   
                   <div className="flex flex-wrap items-start gap-6 max-w-full overflow-hidden">
-                    <DndContext 
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleDragEnd}
-                    >
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                       <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
                         {categories.map(cat => {
                           const items = groupedSocials[cat.id];
                           if (items.length === 0 && cat.id !== 'socials') return null;
-                          
                           return (
                             <SortableCategory 
                               key={cat.id}
@@ -364,16 +370,12 @@ const Profile = () => {
 
                     <Dialog open={isAddingSocial} onOpenChange={setIsAddingSocial}>
                       <DialogContent className="bg-slate-950 border-slate-800 text-white">
-                        <DialogHeader>
-                          <DialogTitle className="italic uppercase font-black">LINK PLATFORM</DialogTitle>
-                        </DialogHeader>
+                        <DialogHeader><DialogTitle className="italic uppercase font-black">LINK PLATFORM</DialogTitle></DialogHeader>
                         <div className="space-y-6 py-4">
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Category</Label>
                             <Select onValueChange={(v) => setNewSocial({...newSocial, category: v})} value={newSocial.category}>
-                              <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
-                                <SelectValue placeholder="Select Category" />
-                              </SelectTrigger>
+                              <SelectTrigger className="bg-slate-900 border-slate-800 text-white"><SelectValue placeholder="Select Category" /></SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-800 text-white">
                                 {INITIAL_CATEGORIES.map(c => (
                                   <SelectItem key={c.id} value={c.id} className="focus:bg-indigo-600">{c.label}</SelectItem>
@@ -383,53 +385,22 @@ const Profile = () => {
                           </div>
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Name</Label>
-                            <Input 
-                              placeholder="e.g. Twitter, Discord, Twitch" 
-                              value={newSocial.name}
-                              onChange={(e) => setNewSocial({...newSocial, name: e.target.value})}
-                              className="bg-slate-900 border-slate-800"
-                            />
+                            <Input placeholder="e.g. Twitter, Discord, Twitch" value={newSocial.name} onChange={(e) => setNewSocial({...newSocial, name: e.target.value})} className="bg-slate-900 border-slate-800" />
                           </div>
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile URL</Label>
-                            <Input 
-                              placeholder="https://..." 
-                              value={newSocial.url}
-                              onChange={(e) => setNewSocial({...newSocial, url: e.target.value})}
-                              className="bg-slate-900 border-slate-800"
-                            />
+                            <Input placeholder="https://..." value={newSocial.url} onChange={(e) => setNewSocial({...newSocial, url: e.target.value})} className="bg-slate-900 border-slate-800" />
                           </div>
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Icon (PNG/JPEG)</Label>
                             <div className="flex items-center gap-4">
-                              <Button 
-                                variant="outline" 
-                                onClick={() => socialIconRef.current?.click()}
-                                className="bg-slate-900 border-slate-800 text-slate-300"
-                              >
-                                <Camera size={16} className="mr-2" />
-                                Upload Icon
-                              </Button>
-                              {newSocial.icon && (
-                                <div className="w-10 h-10 rounded bg-slate-900 border border-slate-800 p-1">
-                                  <img src={newSocial.icon} alt="Preview" className="w-full h-full object-contain" />
-                                </div>
-                              )}
+                              <Button variant="outline" onClick={() => socialIconRef.current?.click()} className="bg-slate-900 border-slate-800 text-slate-300"><Camera size={16} className="mr-2" /> Upload Icon</Button>
+                              {newSocial.icon && <div className="w-10 h-10 rounded bg-slate-900 border border-slate-800 p-1"><img src={newSocial.icon} alt="Preview" className="w-full h-full object-contain" /></div>}
                             </div>
-                            <input 
-                              type="file" 
-                              ref={socialIconRef} 
-                              className="hidden" 
-                              accept="image/*" 
-                              onChange={(e) => handleImageUpload(e, 'social')} 
-                            />
+                            <input type="file" ref={socialIconRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'social')} />
                           </div>
                         </div>
-                        <DialogFooter>
-                          <Button onClick={handleAddSocial} className="w-full bg-indigo-600 font-black uppercase py-6">
-                            ATTACH LINK
-                          </Button>
-                        </DialogFooter>
+                        <DialogFooter><Button onClick={handleAddSocial} className="w-full bg-indigo-600 font-black uppercase py-6">ATTACH LINK</Button></DialogFooter>
                       </DialogContent>
                     </Dialog>
                   </div>
@@ -463,7 +434,9 @@ const Profile = () => {
                       <div className={cn("w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center shadow-lg", isUnlocked ? medal.color : "text-slate-700")}>{medal.icon}</div>
                       <div>
                         <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{isUnlocked ? 'Unlocked' : `Level ${medal.minLevel}`}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                          {isUnlocked ? (medal.date || 'Unlocked') : `Level ${medal.minLevel}`}
+                        </p>
                       </div>
                     </div>
                   );
@@ -478,7 +451,7 @@ const Profile = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-300 uppercase">Joined</span>
-                  <span className="text-sm font-black text-white">{profile.createdAt}</span>
+                  <span className="text-sm font-black text-white">{new Date(profile.createdAt).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-300 uppercase">Country</span>

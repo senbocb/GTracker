@@ -11,13 +11,16 @@ import { cn } from '@/lib/utils';
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const profile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
+  const [profile, setProfile] = useState<any>(null);
   const [isToolsOpen, setIsToolsOpen] = React.useState(false);
   const [customization, setCustomization] = useState({ bgColor: '#020617', bgImage: '' });
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('combat_customization') || 'null');
-    if (saved) setCustomization(saved);
+    const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
+    setProfile(savedProfile);
+
+    const savedCustom = JSON.parse(localStorage.getItem('combat_customization') || 'null');
+    if (savedCustom) setCustomization(savedCustom);
   }, [location.pathname]);
 
   const navItems = [
@@ -147,12 +150,20 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             </Button>
 
             <Link to="/profile">
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-800 group cursor-pointer hover-highlight rounded-r-xl py-2 pr-2">
-                <div className="text-right hidden sm:block">
+              <div className="relative flex items-center gap-3 pl-4 border-l border-slate-800 group cursor-pointer hover-highlight rounded-r-xl py-2 pr-2 overflow-hidden">
+                {/* Banner Integration */}
+                {profile?.banner && (
+                  <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity">
+                    <img src={profile.banner} alt="" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-l from-slate-950 via-transparent to-slate-950" />
+                  </div>
+                )}
+                
+                <div className="text-right hidden sm:block relative z-10">
                   <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{profile?.username || 'OPERATOR'}</p>
                   <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest leading-none">Level {Math.floor((profile?.xp || 0) / 100) + 1}</p>
                 </div>
-                <Avatar className="w-10 h-10 border-2 border-slate-800 group-hover:border-indigo-500 transition-colors">
+                <Avatar className="w-10 h-10 border-2 border-slate-800 group-hover:border-indigo-500 transition-colors relative z-10">
                   <AvatarImage src={profile?.avatar} />
                   <AvatarFallback className="bg-slate-900 text-slate-300 font-black">
                     {profile?.username?.substring(0, 2).toUpperCase() || 'OP'}
