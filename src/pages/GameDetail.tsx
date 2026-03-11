@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2 } from 'lucide-react';
+import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
+import SeasonManager, { Season } from '@/components/SeasonManager';
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
@@ -85,6 +86,7 @@ const GameDetail = () => {
   const [game, setGame] = useState<any>(null);
   const [activeMode, setActiveMode] = useState('');
   const [externalLinks, setExternalLinks] = useState<any[]>([]);
+  const [seasons, setSeasons] = useState<Season[]>([]);
   
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -108,6 +110,7 @@ const GameDetail = () => {
       setGame(found);
       setActiveMode(found.modes[0]?.name || '');
       setExternalLinks(found.externalLinks || []);
+      setSeasons(found.seasons || []);
     } else {
       navigate('/');
     }
@@ -254,6 +257,17 @@ const GameDetail = () => {
     showSuccess(editingLogId ? "Log entry updated." : "Rank update logged.");
   };
 
+  const updateSeasons = (newSeasons: Season[]) => {
+    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
+    const updatedGames = savedGames.map((g: any) => {
+      if (g.id === id) return { ...g, seasons: newSeasons };
+      return g;
+    });
+    localStorage.setItem('combat_games', JSON.stringify(updatedGames));
+    setSeasons(newSeasons);
+    setGame(updatedGames.find((g: any) => g.id === id));
+  };
+
   const openEditDialog = (log: any) => {
     setEditingLogId(log.id);
     setLogData({
@@ -265,6 +279,11 @@ const GameDetail = () => {
   };
 
   const showTierSelect = metadata.tierCount > 0 && !metadata.noTierRanks.includes(logData.rank);
+
+  const getSeasonForLog = (timestamp: string) => {
+    const logDate = new Date(timestamp);
+    return seasons.find(s => new Date(s.startDate) <= logDate);
+  };
 
   if (!game) return null;
 
@@ -356,15 +375,23 @@ const GameDetail = () => {
           <div className="absolute bottom-8 left-8 right-8 flex items-end justify-between">
             <div>
               <h1 className="text-5xl font-black italic uppercase tracking-tighter text-white mb-4">{game.title}</h1>
-              <Tabs value={activeMode} onValueChange={setActiveMode}>
-                <TabsList className="bg-slate-950/50 border border-slate-800 p-1 h-auto">
-                  {game.modes.map((m: any) => (
-                    <TabsTrigger key={m.name} value={m.name} className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
-                      {m.name}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+              <div className="flex items-center gap-4">
+                <Tabs value={activeMode} onValueChange={setActiveMode}>
+                  <TabsList className="bg-slate-950/50 border border-slate-800 p-1 h-auto">
+                    {game.modes.map((m: any) => (
+                      <TabsTrigger key={m.name} value={m.name} className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
+                        {m.name}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+                {seasons.length > 0 && (
+                  <div className="px-4 py-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center gap-2">
+                    <Trophy size={14} className="text-indigo-400" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">{seasons[0].name}</span>
+                  </div>
+                )}
+              </div>
             </div>
             <RankBadge rank={currentModeData?.rank} tier={currentModeData?.tier} gameTitle={game.title} className="scale-110" />
           </div>
@@ -390,52 +417,58 @@ const GameDetail = () => {
                     <tr className="bg-slate-950/50 border-b border-slate-800">
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-800">Date / Time</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-800">Rank / Rating</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-800">Season</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedHistory.length > 0 ? sortedHistory.map((h: any, idx) => (
-                      <tr key={h.id} className={cn("border-b border-slate-800/50 hover-highlight transition-colors", idx % 2 === 0 ? "bg-slate-900/20" : "bg-transparent")}>
-                        <td className="px-6 py-4 text-xs font-mono text-slate-300 border-r border-slate-800/50">{new Date(h.timestamp).toLocaleString()}</td>
-                        <td className="px-6 py-4 border-r border-slate-800/50">
-                          <div className="flex items-center gap-3">
-                            <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
-                            <span className="text-xs font-black text-white uppercase">
-                              {isOsu ? `#${Number(h.rank).toLocaleString()}` : `${h.rank} ${h.tier}`}
+                    {sortedHistory.length > 0 ? sortedHistory.map((h: any, idx) => {
+                      const season = getSeasonForLog(h.timestamp);
+                      return (
+                        <tr key={h.id} className={cn("border-b border-slate-800/50 hover-highlight transition-colors", idx % 2 === 0 ? "bg-slate-900/20" : "bg-transparent")}>
+                          <td className="px-6 py-4 text-xs font-mono text-slate-300 border-r border-slate-800/50">{new Date(h.timestamp).toLocaleString()}</td>
+                          <td className="px-6 py-4 border-r border-slate-800/50">
+                            <div className="flex items-center gap-3">
+                              <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
+                              <span className="text-xs font-black text-white uppercase">
+                                {isOsu ? `#${Number(h.rank).toLocaleString()}` : `${h.rank} ${h.tier}`}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-800/50">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                              {season?.name || 'Pre-Season'}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            {h.id === peakId && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[9px] font-black text-yellow-500 uppercase">
-                                <Trophy size={10} /> Peak
-                              </span>
-                            )}
-                            {h.id === currentId && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase">
-                                <Target size={10} /> Current
-                              </span>
-                            )}
-                            {h.id !== currentId && h.id !== peakId && (
-                              <span className="px-2 py-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Log</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-slate-400 hover:text-white"
-                            onClick={() => openEditDialog(h)}
-                          >
-                            <Edit2 size={14} />
-                          </Button>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No combat data logged.</td></tr>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              {h.id === peakId && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[9px] font-black text-yellow-500 uppercase">
+                                  <Trophy size={10} /> Peak
+                                </span>
+                              )}
+                              {h.id === currentId && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase">
+                                  <Target size={10} /> Current
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-slate-400 hover:text-white"
+                              onClick={() => openEditDialog(h)}
+                            >
+                              <Edit2 size={14} />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    }) : (
+                      <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No combat data logged.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -444,6 +477,8 @@ const GameDetail = () => {
           </div>
 
           <div className="space-y-6">
+            <SeasonManager gameId={game.id} seasons={seasons} onUpdate={updateSeasons} />
+            
             <Card className="bg-slate-900/50 border-slate-800">
               <CardHeader><CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest">External Trackers</CardTitle></CardHeader>
               <CardContent className="space-y-3">
