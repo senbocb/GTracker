@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2 } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import AppLayout from '@/components/AppLayout';
 import { processImage } from '@/utils/imageProcessing';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import ProfileGallery from '@/components/ProfileGallery';
+import { getIconFromUrl, SOCIAL_PRESETS } from '@/utils/iconFetcher';
 
 // DnD Kit Imports
 import {
@@ -31,7 +32,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy
-} from '@dnd-kit/sortable';
+} from '@at-dnd-kit/sortable';
 import SortableCategory from '@/components/SortableCategory';
 
 const COUNTRIES = [
@@ -187,6 +188,20 @@ const Profile = () => {
         showError(`Failed to process ${type}.`);
       }
     }
+  };
+
+  const handleUrlChange = (url: string) => {
+    const icon = getIconFromUrl(url);
+    setNewSocial({ ...newSocial, url, icon: icon || newSocial.icon });
+  };
+
+  const applyPreset = (preset: typeof SOCIAL_PRESETS[0]) => {
+    setNewSocial({
+      ...newSocial,
+      name: preset.name,
+      url: preset.url,
+      icon: preset.icon
+    });
   };
 
   const handleAddSocial = () => {
@@ -522,9 +537,29 @@ const Profile = () => {
                     </DndContext>
 
                     <Dialog open={isAddingSocial} onOpenChange={setIsAddingSocial}>
-                      <DialogContent className="bg-slate-950 border-slate-800 text-white">
+                      <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-[450px]">
                         <DialogHeader><DialogTitle className="italic uppercase font-black">LINK PLATFORM</DialogTitle></DialogHeader>
                         <div className="space-y-6 py-4">
+                          <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2">
+                              <Sparkles size={12} /> Quick Presets
+                            </Label>
+                            <div className="flex flex-wrap gap-2">
+                              {SOCIAL_PRESETS.map(preset => (
+                                <Button 
+                                  key={preset.name} 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 bg-slate-900 border-slate-800 text-[10px] font-bold uppercase"
+                                  onClick={() => applyPreset(preset)}
+                                >
+                                  <img src={preset.icon} alt="" className="w-3 h-3 mr-2 object-contain" />
+                                  {preset.name}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Category</Label>
                             <Select onValueChange={(v) => setNewSocial({...newSocial, category: v})} value={newSocial.category}>
@@ -542,13 +577,22 @@ const Profile = () => {
                           </div>
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile URL</Label>
-                            <Input placeholder="https://..." value={newSocial.url} onChange={(e) => setNewSocial({...newSocial, url: e.target.value})} className="bg-slate-900 border-slate-800" />
+                            <Input 
+                              placeholder="https://..." 
+                              value={newSocial.url} 
+                              onChange={(e) => handleUrlChange(e.target.value)} 
+                              className="bg-slate-900 border-slate-800" 
+                            />
                           </div>
                           <div className="grid gap-2">
-                            <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Icon (PNG/JPEG)</Label>
+                            <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Icon</Label>
                             <div className="flex items-center gap-4">
-                              <Button variant="outline" onClick={() => socialIconRef.current?.click()} className="bg-slate-900 border-slate-800 text-slate-300"><Camera size={16} className="mr-2" /> Upload Icon</Button>
-                              {newSocial.icon && <div className="w-10 h-10 rounded bg-slate-900 border border-slate-800 p-1"><img src={newSocial.icon} alt="Preview" className="w-full h-full object-contain" /></div>}
+                              <Button variant="outline" onClick={() => socialIconRef.current?.click()} className="bg-slate-900 border-slate-800 text-slate-300"><Camera size={16} className="mr-2" /> Upload Custom</Button>
+                              {newSocial.icon && (
+                                <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 p-2 flex items-center justify-center">
+                                  <img src={newSocial.icon} alt="Preview" className="w-full h-full object-contain" />
+                                </div>
+                              )}
                             </div>
                             <input type="file" ref={socialIconRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'social')} />
                           </div>
