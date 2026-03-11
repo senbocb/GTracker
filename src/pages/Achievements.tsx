@@ -8,19 +8,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
+import { showSuccess } from '@/utils/toast';
 
 const Achievements = () => {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [profile, setProfile] = useState<any>(null);
   const [games, setGames] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   useEffect(() => {
     const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
     setProfile(savedProfile);
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
+    const savedFavs = JSON.parse(localStorage.getItem('combat_achievement_favs') || '[]');
+    setFavorites(savedFavs);
   }, []);
+
+  const toggleFavorite = (id: string) => {
+    const newFavs = favorites.includes(id) 
+      ? favorites.filter(f => f !== id) 
+      : [...favorites, id];
+    setFavorites(newFavs);
+    localStorage.setItem('combat_achievement_favs', JSON.stringify(newFavs));
+    showSuccess(favorites.includes(id) ? "Medal unpinned." : "Medal pinned to top.");
+  };
 
   const level = Math.floor((profile?.xp || 0) / 100) + 1;
 
@@ -53,6 +66,12 @@ const Achievements = () => {
   const filtered = allAchievements
     .filter(a => a.label.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
+      // Favorites always first
+      const aFav = favorites.includes(a.id);
+      const bFav = favorites.includes(b.id);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+
       if (sortBy === 'newest') return -1;
       if (sortBy === 'oldest') return 1;
       return 0;
@@ -94,12 +113,25 @@ const Achievements = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filtered.map((medal: any) => {
             const isUnlocked = medal.unlocked || level >= medal.minLevel;
+            const isFav = favorites.includes(medal.id);
             return (
               <div key={medal.id} className={cn(
                 "p-6 rounded-3xl border flex flex-col items-center text-center gap-4 transition-all backdrop-blur-sm relative overflow-hidden group",
-                isUnlocked ? "bg-slate-900/90 border-slate-800" : "bg-slate-950/40 border-slate-900 opacity-40 grayscale"
+                isUnlocked ? "bg-slate-900/90 border-slate-800" : "bg-slate-950/40 border-slate-900 opacity-40 grayscale",
+                isFav && "border-yellow-500/50 shadow-[0_0_20px_rgba(234,179,8,0.1)]"
               )}>
                 {isUnlocked && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50" />}
+                
+                <button 
+                  onClick={() => toggleFavorite(medal.id)}
+                  className={cn(
+                    "absolute top-4 right-4 transition-all hover:scale-125",
+                    isFav ? "text-yellow-500" : "text-slate-600 hover:text-slate-400"
+                  )}
+                >
+                  <Star size={18} fill={isFav ? "currentColor" : "none"} />
+                </button>
+
                 <div className={cn(
                   "w-16 h-16 rounded-full bg-slate-950 flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110",
                   isUnlocked ? medal.color : "text-slate-700"

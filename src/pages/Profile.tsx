@@ -85,6 +85,7 @@ const Profile = () => {
   const [games, setGames] = useState<any[]>([]);
   const [careerStats, setCareerStats] = useState<any[]>([]);
   const [profileLayout, setProfileLayout] = useState<LayoutSection[]>(DEFAULT_PROFILE_LAYOUT);
+  const [favorites, setFavorites] = useState<string[]>([]);
   
   const [achievementSearch, setAchievementSearch] = useState('');
   const [achievementSort, setAchievementSort] = useState('newest');
@@ -127,12 +128,24 @@ const Profile = () => {
     
     const savedLayout = JSON.parse(localStorage.getItem('combat_profile_layout') || 'null');
     if (savedLayout) setProfileLayout(savedLayout);
+
+    const savedFavs = JSON.parse(localStorage.getItem('combat_achievement_favs') || '[]');
+    setFavorites(savedFavs);
   }, []);
 
   const handleSave = () => {
     localStorage.setItem('combat_profile', JSON.stringify(profile));
     setIsEditing(false);
     showSuccess("Profile updated.");
+  };
+
+  const toggleFavorite = (id: string) => {
+    const newFavs = favorites.includes(id) 
+      ? favorites.filter(f => f !== id) 
+      : [...favorites, id];
+    setFavorites(newFavs);
+    localStorage.setItem('combat_achievement_favs', JSON.stringify(newFavs));
+    showSuccess(favorites.includes(id) ? "Medal unpinned." : "Medal pinned to top.");
   };
 
   const updateProfileLayout = (newLayout: LayoutSection[]) => {
@@ -249,11 +262,16 @@ const Profile = () => {
     return base
       .filter(m => m.label.toLowerCase().includes(achievementSearch.toLowerCase()))
       .sort((a, b) => {
+        const aFav = favorites.includes(a.id);
+        const bFav = favorites.includes(b.id);
+        if (aFav && !bFav) return -1;
+        if (!aFav && bFav) return 1;
+
         if (achievementSort === 'newest') return -1;
         if (achievementSort === 'oldest') return 1;
         return 0;
       });
-  }, [peakAchievements, level, achievementSearch, achievementSort]);
+  }, [peakAchievements, level, achievementSearch, achievementSort, favorites]);
 
   const groupedSocials = useMemo(() => {
     const groups: Record<string, any[]> = { stat_trackers: [], socials: [], game_profiles: [] };
@@ -312,8 +330,22 @@ const Profile = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {medals.map((medal: any) => {
                 const isUnlocked = medal.unlocked || level >= medal.minLevel;
+                const isFav = favorites.includes(medal.id);
                 return (
-                  <div key={medal.id} className={cn("p-4 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all backdrop-blur-sm", isUnlocked ? "bg-slate-900/90 border-slate-800" : "bg-slate-950/40 border-slate-900 opacity-30 grayscale")}>
+                  <div key={medal.id} className={cn(
+                    "p-4 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all backdrop-blur-sm relative group", 
+                    isUnlocked ? "bg-slate-900/90 border-slate-800" : "bg-slate-950/40 border-slate-900 opacity-30 grayscale",
+                    isFav && "border-yellow-500/50"
+                  )}>
+                    <button 
+                      onClick={() => toggleFavorite(medal.id)}
+                      className={cn(
+                        "absolute top-2 right-2 transition-all opacity-0 group-hover:opacity-100",
+                        isFav ? "text-yellow-500 opacity-100" : "text-slate-600 hover:text-slate-400"
+                      )}
+                    >
+                      <Star size={12} fill={isFav ? "currentColor" : "none"} />
+                    </button>
                     <div className={cn("w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center shadow-lg", isUnlocked ? medal.color : "text-slate-700")}>{medal.icon}</div>
                     <div>
                       <p className="text-xs font-black uppercase tracking-tighter text-white">{medal.label}</p>

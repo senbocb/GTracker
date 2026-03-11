@@ -39,7 +39,19 @@ const DEFAULT_REGISTRY = {
   },
   "Counter-Strike 2": { 
     ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
-    modes: ["Premier", "Faceit", "Wingman"]
+    modes: ["Premier", "Competitive", "Wingman", "Faceit"]
+  },
+  "Overwatch 2": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
+    modes: ["Tank", "Damage", "Support", "Open Queue"]
+  },
+  "League of Legends": {
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
+    modes: ["Ranked Solo/Duo", "Ranked Flex"]
+  },
+  "Apex Legends": {
+    ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
+    modes: ["Battle Royale", "Arenas"]
   }
 };
 

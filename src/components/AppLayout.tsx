@@ -26,6 +26,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navItems = [
     { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
     { label: 'History', path: '/history', icon: <History size={20} /> },
+    { label: 'Achievements', path: '/achievements', icon: <Award size={20} /> },
     { label: 'Registry', path: '/registry', icon: <Library size={20} /> },
   ];
 
@@ -33,7 +34,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     { label: 'Combat Timer', path: '/timer', icon: <Timer size={18} /> },
     { label: 'Crosshair Vault', path: '/crosshairs', icon: <Target size={18} /> },
     { label: 'Config Archive', path: '/configs', icon: <FileCode size={18} /> },
-    { label: 'Achievements', path: '/achievements', icon: <Award size={18} /> },
   ];
 
   const isCustomizablePage = location.pathname === '/' || location.pathname === '/profile';
