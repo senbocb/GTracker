@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar, BarChart3 } from 'lucide-react';
+import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar, BarChart3, Map as MapIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import SeasonManager, { Season } from '@/components/SeasonManager';
+import CS2MapRanks from '@/components/CS2MapRanks';
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +23,8 @@ const CS_LEGACY_RANKS = [
   "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian",
   "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
 ];
+
+const CS2_MAPS = ["Mirage", "Inferno", "Dust II", "Nuke", "Vertigo", "Ancient", "Anubis", "Overpass"];
 
 const GAME_METADATA: Record<string, any> = {
   "Valorant": { 
@@ -87,21 +90,6 @@ const GAME_METADATA: Record<string, any> = {
 };
 
 const OW2_ROLE_ORDER = ["Tank", "Damage", "Support"];
-const FACEIT_LEVELS = Array.from({ length: 10 }, (_, i) => (i + 1).toString());
-
-const getFaceitLevel = (elo: number) => {
-  if (elo >= 2001) return "10";
-  if (elo >= 1751) return "9";
-  if (elo >= 1531) return "8";
-  if (elo >= 1351) return "7";
-  if (elo >= 1201) return "6";
-  if (elo >= 1051) return "5";
-  if (elo >= 901) return "4";
-  if (elo >= 751) return "3";
-  if (elo >= 501) return "2";
-  if (elo >= 100) return "1";
-  return "1";
-};
 
 const GameDetail = () => {
   const { id } = useParams();
@@ -117,6 +105,7 @@ const GameDetail = () => {
   const [logData, setLogData] = useState({
     rank: '',
     tier: '',
+    map: '',
     timestamp: new Date().toISOString().slice(0, 16)
   });
   const [isLogOpen, setIsLogOpen] = useState(false);
@@ -150,7 +139,7 @@ const GameDetail = () => {
 
   const metadata = useMemo(() => {
     const base = GAME_METADATA[game?.title] || { ranks: [], tierCount: 0, tierDirection: 'asc', noTierRanks: [] };
-    if (game?.title === 'Counter-Strike 2' && activeMode === 'Wingman') {
+    if (game?.title === 'Counter-Strike 2' && (activeMode === 'Wingman' || activeMode === 'Per-Map Rank')) {
       return { ...base, ranks: CS_LEGACY_RANKS };
     }
     return base;
@@ -158,137 +147,67 @@ const GameDetail = () => {
 
   const getRankValue = (rankName: string, tierName?: string) => {
     if (!rankName) return 0;
-    
     const numeric = parseInt(rankName.replace(/\D/g, ''));
-    
-    if (game?.title === 'osu!') {
-      return 10000000 - numeric;
-    }
-
-    if (game?.title === 'Counter-Strike 2' && activeMode !== 'Wingman') {
-      return numeric;
-    }
-
-    if (game?.title === 'Counter-Strike 2' && activeMode === 'Wingman') {
+    if (game?.title === 'osu!') return 10000000 - numeric;
+    if (game?.title === 'Counter-Strike 2' && activeMode === 'Premier') return numeric;
+    if (game?.title === 'Counter-Strike 2' && (activeMode === 'Wingman' || activeMode === 'Per-Map Rank')) {
       return CS_LEGACY_RANKS.indexOf(rankName) + 1;
     }
-
     if (!isNaN(numeric) && !metadata.ranks.includes(rankName)) return numeric;
-
     const rankIdx = metadata.ranks.indexOf(rankName);
     if (rankIdx === -1) return 0;
-
     const tierValue = tierName ? parseInt(tierName.replace(/\D/g, '')) || 0 : 0;
     const baseValue = (rankIdx + 1) * 100;
-
-    if (metadata.noTierRanks.includes(rankName) || metadata.tierCount === 0) {
-      return baseValue;
-    }
-
-    if (metadata.tierDirection === 'asc') {
-      return baseValue + tierValue;
-    } else {
-      return baseValue + (metadata.tierCount - tierValue + 1);
-    }
+    if (metadata.noTierRanks.includes(rankName) || metadata.tierCount === 0) return baseValue;
+    return metadata.tierDirection === 'asc' ? baseValue + tierValue : baseValue + (metadata.tierCount - tierValue + 1);
   };
 
   const { sortedHistory, currentId, peakId } = useMemo(() => {
     if (!currentModeData?.history || currentModeData.history.length === 0) {
       return { sortedHistory: [], currentId: null, peakId: null };
     }
-
     const history = [...currentModeData.history];
-    const current = history.reduce((prev, curr) => 
-      new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
-    );
-
+    const current = history.reduce((prev, curr) => new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev);
     const peak = history.reduce((prev, curr) => {
       const valPrev = getRankValue(prev.rank, prev.tier);
       const valCurr = getRankValue(curr.rank, curr.tier);
       return valCurr > valPrev ? curr : prev;
     });
-
     const sorted = history.sort((a, b) => {
       const timeA = new Date(a.timestamp).getTime();
       const timeB = new Date(b.timestamp).getTime();
       return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     });
-
     return { sortedHistory: sorted, currentId: current.id, peakId: peak.id };
   }, [currentModeData, sortOrder, metadata, game?.title, activeMode]);
 
-  const isFaceit = activeMode === 'Faceit';
-  const isOsu = game?.title === 'osu!';
-
-  const handleEloChange = (val: string) => {
-    const elo = parseInt(val);
-    if (!isNaN(elo)) {
-      setLogData({
-        ...logData,
-        rank: val,
-        tier: `Level ${getFaceitLevel(elo)}`
-      });
-    } else {
-      setLogData({ ...logData, rank: val });
-    }
-  };
-
   const handleLogRank = () => {
-    if (game?.title === 'Overwatch 2' && !metadata.noTierRanks.includes(logData.rank) && !logData.tier) {
-      alert("Tier selection is mandatory for Overwatch 2.");
-      return;
-    }
-
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const updatedGames = savedGames.map((g: any) => {
       if (g.id === id) {
         const modeIdx = g.modes.findIndex((m: any) => m.name === activeMode);
         if (modeIdx === -1) return g;
-
         const newModes = [...g.modes];
         const history = [...(g.modes[modeIdx].history || [])];
-
         if (editingLogId) {
           const logIdx = history.findIndex(h => h.id === editingLogId);
           if (logIdx > -1) {
-            history[logIdx] = {
-              ...history[logIdx],
-              rank: logData.rank,
-              tier: logData.tier,
-              timestamp: new Date(logData.timestamp).toISOString()
-            };
+            history[logIdx] = { ...history[logIdx], rank: logData.rank, tier: logData.tier, map: logData.map, timestamp: new Date(logData.timestamp).toISOString() };
           }
         } else {
-          history.unshift({
-            id: Date.now().toString(),
-            rank: logData.rank,
-            tier: logData.tier,
-            timestamp: new Date(logData.timestamp).toISOString()
-          });
+          history.unshift({ id: Date.now().toString(), rank: logData.rank, tier: logData.tier, map: logData.map, timestamp: new Date(logData.timestamp).toISOString() });
         }
-
-        const newest = history.reduce((prev, curr) => 
-          new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev
-        );
-
+        const newest = history.reduce((prev, curr) => new Date(curr.timestamp) > new Date(prev.timestamp) ? curr : prev);
         const peak = history.reduce((prev, curr) => {
           const valPrev = getRankValue(prev.rank, prev.tier);
           const valCurr = getRankValue(curr.rank, curr.tier);
           return valCurr > valPrev ? curr : prev;
         });
-
-        newModes[modeIdx] = {
-          ...g.modes[modeIdx],
-          rank: newest.rank,
-          tier: newest.tier,
-          peakRank: `${peak.rank} ${peak.tier || ''}`.trim(),
-          history: history
-        };
+        newModes[modeIdx] = { ...g.modes[modeIdx], rank: newest.rank, tier: newest.tier, peakRank: `${peak.rank} ${peak.tier || ''}`.trim(), history: history };
         return { ...g, modes: newModes };
       }
       return g;
     });
-
     localStorage.setItem('combat_games', JSON.stringify(updatedGames));
     setGame(updatedGames.find((g: any) => g.id === id));
     setIsLogOpen(false);
@@ -296,66 +215,40 @@ const GameDetail = () => {
     showSuccess(editingLogId ? "Log entry updated." : "Rank update logged.");
   };
 
-  const updateSeasons = (newSeasons: Season[]) => {
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const updatedGames = savedGames.map((g: any) => {
-      if (g.id === id) return { ...g, seasons: newSeasons };
-      return g;
-    });
-    localStorage.setItem('combat_games', JSON.stringify(updatedGames));
-    setSeasons(newSeasons);
-    setGame(updatedGames.find((g: any) => g.id === id));
-  };
-
-  const openEditDialog = (log: any) => {
-    setEditingLogId(log.id);
-    setLogData({
-      rank: log.rank,
-      tier: log.tier,
-      timestamp: new Date(log.timestamp).toISOString().slice(0, 16)
-    });
+  const openLogForMap = (mapName: string) => {
+    setLogData({ ...logData, map: mapName, rank: '', tier: '', timestamp: new Date().toISOString().slice(0, 16) });
     setIsLogOpen(true);
   };
 
-  const showTierSelect = metadata.tierCount > 0 && !metadata.noTierRanks.includes(logData.rank);
-
-  const getSeasonForLog = (timestamp: string) => {
-    const logDate = new Date(timestamp);
-    return seasons.find(s => new Date(s.startDate) <= logDate);
-  };
-
   if (!game) return null;
-
   const activeBanner = currentModeData?.image || game.image;
-
-  const allTrackers = [
-    ...externalLinks,
-    ...linkedSocials.map(s => ({ name: s.name, url: s.url, icon: s.icon, isLinked: true }))
-  ];
+  const allTrackers = [...externalLinks, ...linkedSocials.map(s => ({ name: s.name, url: s.url, icon: s.icon, isLinked: true }))];
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
       <main className="max-w-5xl mx-auto p-6 md:p-10">
         <div className="flex items-center justify-between mb-8">
-          <Link to="/">
-            <Button variant="ghost" className="text-slate-300 hover:text-white -ml-4 hover-highlight">
-              <ChevronLeft className="mr-2" size={20} />
-              Back to Dashboard
-            </Button>
-          </Link>
+          <Link to="/"><Button variant="ghost" className="text-slate-300 hover:text-white -ml-4 hover-highlight"><ChevronLeft className="mr-2" size={20} /> Back to Dashboard</Button></Link>
           <Dialog open={isLogOpen} onOpenChange={(v) => { setIsLogOpen(v); if(!v) setEditingLogId(null); }}>
             <DialogTrigger asChild>
-              <Button className="bg-indigo-600 hover:bg-indigo-500 font-bold shadow-lg shadow-indigo-600/20">
-                <Plus size={16} className="mr-2" /> Log Rank Change
-              </Button>
+              <Button className="bg-indigo-600 hover:bg-indigo-500 font-bold shadow-lg shadow-indigo-600/20"><Plus size={16} className="mr-2" /> Log Rank Change</Button>
             </DialogTrigger>
             <DialogContent className="bg-slate-950 border-slate-800 text-white">
               <DialogHeader><DialogTitle className="italic uppercase font-black">{editingLogId ? 'Edit History Entry' : 'Log Rank Change'}</DialogTitle></DialogHeader>
               <div className="space-y-6 py-4">
+                {activeMode === 'Per-Map Rank' && (
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-300">Select Map</Label>
+                    <Select onValueChange={(v) => setLogData({...logData, map: v})} value={logData.map}>
+                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Choose Map" /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {CS2_MAPS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-300">
-                    {isFaceit ? 'Faceit ELO' : isOsu ? 'Global Rank' : 'Rank / Rating'}
-                  </Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-300">Rank / Rating</Label>
                   {metadata.ranks.length > 0 ? (
                     <Select onValueChange={(v) => setLogData({...logData, rank: v})} value={logData.rank}>
                       <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Rank" /></SelectTrigger>
@@ -364,47 +257,9 @@ const GameDetail = () => {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Input 
-                      placeholder={isFaceit ? "Enter ELO (e.g. 1250)" : isOsu ? "e.g. 50000" : "Enter Rating"} 
-                      value={logData.rank} 
-                      onChange={(e) => isFaceit ? handleEloChange(e.target.value) : setLogData({...logData, rank: e.target.value})}
-                      className="bg-slate-900 border-slate-800"
-                    />
+                    <Input placeholder="Enter Rating" value={logData.rank} onChange={(e) => setLogData({...logData, rank: e.target.value})} className="bg-slate-900 border-slate-800" />
                   )}
                 </div>
-                
-                {isFaceit && (
-                  <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-300">Faceit Level</Label>
-                    <Select 
-                      onValueChange={(v) => setLogData({...logData, tier: `Level ${v}`})} 
-                      value={logData.tier.replace('Level ', '')}
-                    >
-                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select Level" /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {FACEIT_LEVELS.map(lvl => <SelectItem key={lvl} value={lvl}>Level {lvl}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {showTierSelect && !isFaceit && (
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-300">Tier</Label>
-                    <Select 
-                      onValueChange={(v) => setLogData({...logData, tier: v})} 
-                      value={logData.tier}
-                    >
-                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {Array.from({ length: metadata.tierCount }, (_, i) => (i + 1).toString()).map(t => (
-                          <SelectItem key={t} value={t}>{t}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-300">Log Date</Label>
                   <Input type="datetime-local" value={logData.timestamp} onChange={(e) => setLogData({...logData, timestamp: e.target.value})} className="bg-slate-900 border-slate-800" />
@@ -421,45 +276,30 @@ const GameDetail = () => {
           <div className="absolute bottom-8 left-8 right-8 flex items-end justify-between">
             <div>
               <h1 className="text-5xl font-black italic uppercase tracking-tighter text-white mb-4">{game.title}</h1>
-              <div className="flex items-center gap-4">
-                <Tabs value={activeMode} onValueChange={setActiveMode}>
-                  <TabsList className="bg-slate-950/50 border border-slate-800 p-1 h-auto">
-                    {game.modes.map((m: any) => (
-                      <TabsTrigger key={m.name} value={m.name} className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
-                        {m.name}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-                {seasons.length > 0 && (
-                  <div className="px-4 py-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center gap-2">
-                    <Trophy size={14} className="text-indigo-400" />
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest">{seasons[0].name}</span>
-                  </div>
-                )}
-              </div>
+              <Tabs value={activeMode} onValueChange={setActiveMode}>
+                <TabsList className="bg-slate-950/50 border border-slate-800 p-1 h-auto">
+                  {game.modes.map((m: any) => (
+                    <TabsTrigger key={m.name} value={m.name} className="px-6 py-2 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
+                      {m.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
-            <RankBadge rank={currentModeData?.rank} tier={currentModeData?.tier} gameTitle={game.title} className="scale-110" />
+            {activeMode !== 'Per-Map Rank' && <RankBadge rank={currentModeData?.rank} tier={currentModeData?.tier} gameTitle={game.title} className="scale-110" />}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
-            <ProgressChart 
-              history={currentModeData?.history} 
-              rankNames={metadata.ranks} 
-              getRankValue={getRankValue}
-            />
+            {activeMode === 'Per-Map Rank' && <CS2MapRanks gameId={game.id} onLogClick={openLogForMap} />}
+            
+            <ProgressChart history={currentModeData?.history} rankNames={metadata.ranks} getRankValue={getRankValue} />
 
             <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between border-b border-slate-800 bg-slate-900/80">
-                <CardTitle className="text-sm font-black italic uppercase tracking-widest flex items-center gap-2">
-                  <TableIcon className="text-indigo-500" size={16} />
-                  Match History
-                </CardTitle>
-                <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase text-slate-400" onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>
-                  Date {sortOrder === 'desc' ? <ArrowDown size={10} /> : <ArrowUp size={10} />}
-                </Button>
+                <CardTitle className="text-sm font-black italic uppercase tracking-widest flex items-center gap-2"><TableIcon className="text-indigo-500" size={16} /> Match History</CardTitle>
+                <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase text-slate-400" onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>Date {sortOrder === 'desc' ? <ArrowDown size={10} /> : <ArrowUp size={10} />}</Button>
               </CardHeader>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -467,59 +307,27 @@ const GameDetail = () => {
                     <tr className="bg-slate-950/50 border-b border-slate-800">
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-800">Date / Time</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-800">Rank / Rating</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-800">Season</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedHistory.length > 0 ? sortedHistory.map((h: any, idx) => {
-                      const season = getSeasonForLog(h.timestamp);
-                      return (
-                        <tr key={h.id} className={cn("border-b border-slate-800/50 hover-highlight transition-colors", idx % 2 === 0 ? "bg-slate-900/20" : "bg-transparent")}>
-                          <td className="px-6 py-4 text-xs font-mono text-slate-300 border-r border-slate-800/50">{new Date(h.timestamp).toLocaleString()}</td>
-                          <td className="px-6 py-4 border-r border-slate-800/50">
-                            <div className="flex items-center gap-3">
-                              <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
-                              <span className="text-xs font-black text-white uppercase">
-                                {isOsu ? `#${Number(h.rank).toLocaleString()}` : `${h.rank} ${h.tier}`}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 border-r border-slate-800/50">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                              {season?.name || 'Pre-Season'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              {h.id === peakId && (
-                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[9px] font-black text-yellow-500 uppercase">
-                                  <Trophy size={10} /> Peak
-                                </span>
-                              )}
-                              {h.id === currentId && (
-                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase">
-                                  <Target size={10} /> Current
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-slate-400 hover:text-white"
-                              onClick={() => openEditDialog(h)}
-                            >
-                              <Edit2 size={14} />
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    }) : (
-                      <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No data logged.</td></tr>
-                    )}
+                    {sortedHistory.length > 0 ? sortedHistory.map((h: any, idx) => (
+                      <tr key={h.id} className={cn("border-b border-slate-800/50 hover-highlight transition-colors", idx % 2 === 0 ? "bg-slate-900/20" : "bg-transparent")}>
+                        <td className="px-6 py-4 text-xs font-mono text-slate-300 border-r border-slate-800/50">{new Date(h.timestamp).toLocaleString()}</td>
+                        <td className="px-6 py-4 border-r border-slate-800/50">
+                          <div className="flex items-center gap-3">
+                            <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
+                            <span className="text-xs font-black text-white uppercase">{h.map ? `${h.map}: ` : ''}{h.rank} {h.tier}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            {h.id === peakId && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[9px] font-black text-yellow-500 uppercase"><Trophy size={10} /> Peak</span>}
+                            {h.id === currentId && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-500 uppercase"><Target size={10} /> Current</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    )) : <tr><td colSpan={3} className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No data logged.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -527,40 +335,19 @@ const GameDetail = () => {
           </div>
 
           <div className="space-y-6">
-            <SeasonManager gameId={game.id} seasons={seasons} onUpdate={updateSeasons} />
-            
+            <SeasonManager gameId={game.id} seasons={seasons} onUpdate={(s) => setSeasons(s)} />
             <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <BarChart3 size={16} className="text-indigo-500" />
-                  External Trackers
-                </CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><BarChart3 size={16} className="text-indigo-500" /> External Trackers</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {allTrackers.length > 0 ? allTrackers.map((link: any, i) => (
-                  <a 
-                    key={i} 
-                    href={link.url.startsWith('http') ? link.url : `https://${link.url}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/50 transition-all group hover-highlight"
-                  >
+                  <a key={i} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/50 transition-all group hover-highlight">
                     <div className="flex items-center gap-3">
-                      {link.icon ? (
-                        <img src={link.icon} alt="" className="w-5 h-5 object-contain rounded" />
-                      ) : (
-                        <ExternalLink size={14} className="text-slate-500" />
-                      )}
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-white uppercase">{link.name}</span>
-                        {link.isLinked && <span className="text-[8px] font-black text-indigo-400 uppercase tracking-tighter">Linked Profile</span>}
-                      </div>
+                      {link.icon ? <img src={link.icon} alt="" className="w-5 h-5 object-contain rounded" /> : <ExternalLink size={14} className="text-slate-500" />}
+                      <div className="flex flex-col"><span className="text-xs font-bold text-white uppercase">{link.name}</span>{link.isLinked && <span className="text-[8px] font-black text-indigo-400 uppercase tracking-tighter">Linked Profile</span>}</div>
                     </div>
                     <ExternalLink size={14} className="text-slate-400 group-hover:text-indigo-400" />
                   </a>
-                )) : (
-                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest text-center py-4">No trackers linked.</p>
-                )}
+                )) : <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest text-center py-4">No trackers linked.</p>}
               </CardContent>
             </Card>
           </div>

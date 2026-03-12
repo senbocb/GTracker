@@ -19,7 +19,7 @@ const DEFAULT_REGISTRY = {
   },
   "Counter-Strike 2": { 
     ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
-    modes: ["Premier", "Competitive", "Wingman", "Faceit"]
+    modes: ["Premier", "Per-Map Rank", "Wingman", "Faceit"]
   },
   "Overwatch 2": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
@@ -141,7 +141,7 @@ const AddGame = () => {
 
         <div className="mb-10">
           <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">INITIALIZE TRACKER</h1>
-          <p className="text-slate-400 font-medium">Select your combat environment from your custom registry.</p>
+          <p className="text-slate-400 font-medium">Select your operation environment from your custom registry.</p>
         </div>
 
         <Card className="bg-slate-900 border-slate-800 shadow-2xl overflow-hidden">
@@ -188,13 +188,22 @@ const AddGame = () => {
                 <div className="grid gap-2">
                   <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-300 tracking-widest">Override Cover Image</Label>
                   <div className="space-y-4">
-                    <Input 
+                    <input 
                       id="image" 
                       type="file"
                       accept="image/*"
-                      className="bg-slate-950 border-slate-800 h-12 text-white file:text-white file:font-bold"
+                      className="hidden"
                       onChange={handleImageUpload}
                     />
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      className="w-full border-dashed border-slate-800 bg-slate-950/50 text-slate-400 hover:text-white h-12"
+                      onClick={() => document.getElementById('image')?.click()}
+                    >
+                      <ImageIcon size={16} className="mr-2" />
+                      {imageUrl ? 'Change Image' : 'Upload Cover Image'}
+                    </Button>
                     {imageUrl && (
                       <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-slate-800">
                         <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
@@ -210,10 +219,6 @@ const AddGame = () => {
             </form>
           </CardContent>
         </Card>
-
-        <footer className="mt-20 pb-10 border-t border-slate-800 pt-10">
-          <MadeWithDyad />
-        </footer>
       </main>
     </div>
   );

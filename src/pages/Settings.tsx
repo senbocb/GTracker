@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet } from 'lucide-react';
+import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet, AlertTriangle, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { showSuccess, showError } from '@/utils/toast';
 import { processImage } from '@/utils/imageProcessing';
 
 const Settings = () => {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
     highContrast: false,
     compactDashboard: true,
@@ -26,6 +28,11 @@ const Settings = () => {
     bgImage: ''
   });
 
+  const [profile, setProfile] = useState<any>(null);
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  const [resetStep, setResetStep] = useState(1);
+  const [confirmUsername, setConfirmUsername] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -34,18 +41,19 @@ const Settings = () => {
 
     const savedCustom = JSON.parse(localStorage.getItem('combat_customization') || 'null');
     if (savedCustom) setCustomization(savedCustom);
+
+    const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
+    setProfile(savedProfile);
   }, []);
 
   const updateSetting = (key: keyof typeof settings, value: any) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     localStorage.setItem('combat_settings', JSON.stringify(newSettings));
-    
     if (key === 'tacticalOverlay') {
       document.body.classList.toggle('tactical-overlay', value);
       document.body.classList.toggle('scanline-effect', value);
     }
-    
     showSuccess("Configuration updated.");
   };
 
@@ -71,10 +79,7 @@ const Settings = () => {
   const exportData = () => {
     try {
       const games = JSON.parse(localStorage.getItem('combat_games') || '[]');
-      const profile = JSON.parse(localStorage.getItem('combat_profile') || '{}');
-      
       let csvContent = "Game,Mode,Rank,Tier,Timestamp\n";
-      
       games.forEach((game: any) => {
         game.modes.forEach((mode: any) => {
           (mode.history || []).forEach((log: any) => {
@@ -82,7 +87,6 @@ const Settings = () => {
           });
         });
       });
-
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -91,11 +95,21 @@ const Settings = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       showSuccess("Data exported successfully.");
     } catch (err) {
       showError("Failed to export data.");
     }
+  };
+
+  const handleFullReset = () => {
+    if (confirmUsername !== profile?.username) {
+      showError("Username mismatch. Reset aborted.");
+      return;
+    }
+    localStorage.clear();
+    showSuccess("All data purged. System reset.");
+    navigate('/');
+    window.location.reload();
   };
 
   return (
@@ -120,15 +134,9 @@ const Settings = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-mono text-slate-300 uppercase">{customization.bgColor}</span>
-                    <Input 
-                      type="color" 
-                      value={customization.bgColor} 
-                      onChange={(e) => updateCustomization('bgColor', e.target.value)}
-                      className="w-12 h-12 p-1 bg-slate-950 border-slate-800 cursor-pointer"
-                    />
+                    <Input type="color" value={customization.bgColor} onChange={(e) => updateCustomization('bgColor', e.target.value)} className="w-12 h-12 p-1 bg-slate-950 border-slate-800 cursor-pointer" />
                   </div>
                 </div>
-
                 <div className="space-y-4 pt-4 border-t border-slate-800">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
@@ -136,32 +144,10 @@ const Settings = () => {
                       <p className="text-sm text-slate-400">Upload a PNG or JPEG to use as a global background.</p>
                     </div>
                     <div className="flex gap-2">
-                      {customization.bgImage && (
-                        <Button 
-                          variant="destructive" 
-                          size="icon" 
-                          onClick={() => updateCustomization('bgImage', '')}
-                          className="h-10 w-10"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      )}
-                      <Button 
-                        variant="outline" 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="border-slate-800 bg-slate-950 text-slate-300 hover:text-white"
-                      >
-                        <ImageIcon className="mr-2" size={16} />
-                        {customization.bgImage ? 'Change Image' : 'Upload Image'}
-                      </Button>
+                      {customization.bgImage && <Button variant="destructive" size="icon" onClick={() => updateCustomization('bgImage', '')} className="h-10 w-10"><Trash2 size={16} /></Button>}
+                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="border-slate-800 bg-slate-950 text-slate-300 hover:text-white"><ImageIcon className="mr-2" size={16} />{customization.bgImage ? 'Change Image' : 'Upload Image'}</Button>
                     </div>
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      accept="image/png, image/jpeg" 
-                      onChange={handleBgImageUpload} 
-                    />
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg" onChange={handleBgImageUpload} />
                   </div>
                 </div>
               </div>
@@ -176,10 +162,7 @@ const Settings = () => {
                   <Label className="text-base font-bold text-white">Export History</Label>
                   <p className="text-sm text-slate-400">Download your match history and stats as a CSV file.</p>
                 </div>
-                <Button onClick={exportData} className="bg-indigo-600 hover:bg-indigo-500">
-                  <FileSpreadsheet className="mr-2" size={18} />
-                  Export CSV
-                </Button>
+                <Button onClick={exportData} className="bg-indigo-600 hover:bg-indigo-500"><FileSpreadsheet className="mr-2" size={18} /> Export CSV</Button>
               </div>
             </CardContent>
           </Card>
@@ -193,6 +176,61 @@ const Settings = () => {
                   <p className="text-sm text-slate-400">Apply scanlines and CRT effects for a command center vibe.</p>
                 </div>
                 <Switch checked={settings.tacticalOverlay} onCheckedChange={(v) => updateSetting('tacticalOverlay', v)} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-red-950/20 border-red-900/50 shadow-2xl">
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-red-500"><AlertTriangle size={20} /> Danger Zone</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-bold text-white">Reset Profile</Label>
+                  <p className="text-sm text-slate-400">Permanently delete all games, history, and profile data.</p>
+                </div>
+                <Dialog open={isResetOpen} onOpenChange={(v) => { setIsResetOpen(v); if(!v) { setResetStep(1); setConfirmUsername(''); } }}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive" className="bg-red-600 hover:bg-red-500">Reset All Data</Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-slate-950 border-slate-800 text-white">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-black uppercase italic flex items-center gap-2 text-red-500">
+                        <AlertTriangle /> {resetStep === 1 ? 'CRITICAL WARNING' : 'AUTHORIZE PURGE'}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-6">
+                      {resetStep === 1 ? (
+                        <div className="space-y-4">
+                          <p className="text-sm text-slate-300">This action is <span className="text-red-500 font-bold">PERMANENT</span>. All tracked games, match history, screenshots, and settings will be destroyed.</p>
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Are you absolutely sure you want to proceed?</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <p className="text-sm text-slate-300">To confirm, please type your username: <span className="text-indigo-400 font-black italic">{profile?.username}</span></p>
+                          <Input 
+                            value={confirmUsername} 
+                            onChange={(e) => setConfirmUsername(e.target.value)} 
+                            placeholder="Type username here..." 
+                            className="bg-slate-900 border-slate-800"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      {resetStep === 1 ? (
+                        <Button onClick={() => setResetStep(2)} className="w-full bg-red-600 hover:bg-red-500 font-black uppercase py-6">I UNDERSTAND, PROCEED</Button>
+                      ) : (
+                        <Button 
+                          onClick={handleFullReset} 
+                          disabled={confirmUsername !== profile?.username}
+                          className="w-full bg-red-600 hover:bg-red-500 font-black uppercase py-6 disabled:opacity-50"
+                        >
+                          CONFIRM FULL RESET
+                        </Button>
+                      )}
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>
