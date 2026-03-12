@@ -3,10 +3,14 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Activity } from 'lucide-react';
+import { Activity, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ActivityHeatmap = () => {
+interface ActivityHeatmapProps {
+  createdAt?: string;
+}
+
+const ActivityHeatmap = ({ createdAt }: ActivityHeatmapProps) => {
   const data = useMemo(() => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const activityMap: Record<string, number> = {};
@@ -22,64 +26,114 @@ const ActivityHeatmap = () => {
     return activityMap;
   }, []);
 
-  const days = useMemo(() => {
+  const joinDateStr = createdAt ? new Date(createdAt).toISOString().split('T')[0] : null;
+
+  const weeks = useMemo(() => {
     const result = [];
     const today = new Date();
-    // Show last 24 weeks (approx 6 months)
-    for (let i = 167; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(today.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const count = data[dateStr] || 0;
-      result.push({ date: dateStr, count });
+    
+    // We want to show 52 weeks (364 days)
+    // Start from the most recent Sunday to align the grid
+    const end = new Date(today);
+    const start = new Date(today);
+    start.setDate(today.getDate() - 364);
+
+    let current = new Date(start);
+    // Adjust to the start of that week (Sunday)
+    current.setDate(current.getDate() - current.getDay());
+
+    for (let w = 0; w < 53; w++) {
+      const week = [];
+      for (let d = 0; d < 7; d++) {
+        const dateStr = current.toISOString().split('T')[0];
+        const count = data[dateStr] || 0;
+        const isJoinDate = dateStr === joinDateStr;
+        
+        week.push({ 
+          date: dateStr, 
+          count, 
+          isJoinDate,
+          isFuture: current > today,
+          isBeforeJoin: joinDateStr ? dateStr < joinDateStr : false
+        });
+        current.setDate(current.getDate() + 1);
+      }
+      result.push(week);
     }
     return result;
-  }, [data]);
+  }, [data, joinDateStr]);
 
-  const getColor = (count: number) => {
-    if (count === 0) return 'bg-slate-900/50 border-slate-800/50';
-    if (count <= 2) return 'bg-indigo-900/60 border-indigo-800/30';
-    if (count <= 5) return 'bg-indigo-700/80 border-indigo-600/30';
-    return 'bg-indigo-500 border-indigo-400/50 shadow-[0_0_10px_rgba(99,102,241,0.2)]';
+  const getColor = (day: any) => {
+    if (day.isFuture) return 'bg-transparent border-transparent opacity-0';
+    if (day.count === 0) return 'bg-slate-900/30 border-slate-800/50';
+    if (day.count <= 2) return 'bg-indigo-900/40 border-indigo-800/20';
+    if (day.count <= 5) return 'bg-indigo-700/70 border-indigo-600/30';
+    return 'bg-indigo-500 border-indigo-400/50 shadow-[0_0_8px_rgba(99,102,241,0.3)]';
   };
 
   return (
     <Card className="bg-slate-900/90 border-slate-800 backdrop-blur-sm overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-          <Activity size={14} className="text-indigo-500" />
-          Operational Frequency
-        </CardTitle>
+      <CardHeader className="pb-4 border-b border-slate-800/50 bg-slate-900/50">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+            <Activity size={14} className="text-indigo-500" />
+            Operational Frequency (Last 365 Days)
+          </CardTitle>
+          {joinDateStr && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+              <Calendar size={10} className="text-indigo-400" />
+              <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Joined {new Date(joinDateStr).toLocaleDateString()}</span>
+            </div>
+          )}
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-1.5">
+      <CardContent className="pt-6">
+        <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
           <TooltipProvider delayDuration={0}>
-            {days.map((day, i) => (
-              <Tooltip key={i}>
-                <TooltipTrigger asChild>
-                  <div 
-                    className={cn(
-                      "w-3 h-3 rounded-sm border transition-all hover:scale-125 cursor-crosshair",
-                      getColor(day.count)
-                    )} 
-                  />
-                </TooltipTrigger>
-                <TooltipContent className="bg-slate-950 border-slate-800 text-[10px] font-bold uppercase tracking-widest">
-                  {day.count} Changes on {new Date(day.date).toLocaleDateString()}
-                </TooltipContent>
-              </Tooltip>
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-1 shrink-0">
+                {week.map((day, di) => (
+                  <Tooltip key={di}>
+                    <TooltipTrigger asChild>
+                      <div 
+                        className={cn(
+                          "w-3 h-3 rounded-[2px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
+                          getColor(day),
+                          day.isJoinDate && "ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 scale-110"
+                        )} 
+                      />
+                    </TooltipTrigger>
+                    {!day.isFuture && (
+                      <TooltipContent className="bg-slate-950 border-slate-800 text-[10px] font-bold uppercase tracking-widest p-2">
+                        <p className="text-white">{day.count} Changes</p>
+                        <p className="text-slate-500">{new Date(day.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        {day.isJoinDate && <p className="text-indigo-400 mt-1 border-t border-slate-800 pt-1">Account Initialized</p>}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                ))}
+              </div>
             ))}
           </TooltipProvider>
         </div>
-        <div className="mt-4 flex items-center justify-end gap-2">
-          <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Less</span>
-          <div className="flex gap-1">
-            <div className="w-2 h-2 rounded-sm bg-slate-900 border border-slate-800" />
-            <div className="w-2 h-2 rounded-sm bg-indigo-900 border border-indigo-800" />
-            <div className="w-2 h-2 rounded-sm bg-indigo-700 border border-indigo-600" />
-            <div className="w-2 h-2 rounded-sm bg-indigo-500 border border-indigo-400" />
+        
+        <div className="mt-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-sm ring-1 ring-indigo-400 ring-offset-1 ring-offset-slate-950 bg-slate-900" />
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Join Date</span>
+            </div>
           </div>
-          <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">More</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Less</span>
+            <div className="flex gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm bg-slate-900/30 border border-slate-800/50" />
+              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-900/40 border border-indigo-800/20" />
+              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-700/70 border border-indigo-600/30" />
+              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-500 border border-indigo-400/50" />
+            </div>
+            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">More</span>
+          </div>
         </div>
       </CardContent>
     </Card>

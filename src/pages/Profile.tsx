@@ -329,7 +329,7 @@ const Profile = () => {
           </section>
         );
       case 'activity_heatmap':
-        return <ActivityHeatmap key="activity_heatmap" />;
+        return <ActivityHeatmap key="activity_heatmap" createdAt={profile.createdAt} />;
       case 'medals':
         return (
           <section key="medals" className="space-y-6">
@@ -432,7 +432,7 @@ const Profile = () => {
 
   return (
     <AppLayout>
-      <main className="max-w-4xl mx-auto p-6 md:p-10">
+      <main className="max-w-6xl mx-auto p-6 md:p-10">
         <div className="relative mb-12">
           <div className="h-48 w-full rounded-3xl bg-slate-900/90 border border-slate-800 overflow-hidden relative backdrop-blur-sm">
             {profile.banner ? <img src={profile.banner} alt="Banner" className="w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent" />}
