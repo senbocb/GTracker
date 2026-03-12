@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles, RefreshCw } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles, RefreshCw, Activity } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -89,7 +89,6 @@ const Profile = () => {
   const [socials, setSocials] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>(INITIAL_CATEGORIES);
   const [games, setGames] = useState<any[]>([]);
-  const [careerStats, setCareerStats] = useState<any[]>([]);
   const [profileLayout, setProfileLayout] = useState<LayoutSection[]>(DEFAULT_PROFILE_LAYOUT);
   const [favorites, setFavorites] = useState<string[]>([]);
   
@@ -257,8 +256,6 @@ const Profile = () => {
   };
 
   const level = Math.floor(profile.xp / 100) + 1;
-  const creationDate = new Date(profile.createdAt);
-  const formattedCreationDate = creationDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
   const peakAchievements = useMemo(() => {
     return games.flatMap(game => 
@@ -318,12 +315,16 @@ const Profile = () => {
           <section key="career_overview" className="space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2"><Shield className="text-indigo-500" size={20} /> Career Overview</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {careerStats.length > 0 ? careerStats.map((stat) => (
-                <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 group relative hover:border-indigo-500/30 transition-colors backdrop-blur-sm">
-                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1">{stat.label}</p>
-                  <p className="text-xl font-black text-white">---</p>
-                </div>
-              )) : <div className="col-span-full p-8 text-center border border-dashed border-slate-800 rounded-2xl text-slate-400 text-xs font-bold uppercase bg-slate-900/40 backdrop-blur-sm">No stats pinned to overview.</div>}
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 group relative hover:border-indigo-500/30 transition-colors backdrop-blur-sm">
+                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1">Total Updates</p>
+                <p className="text-xl font-black text-white">
+                  {games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0)}
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 group relative hover:border-indigo-500/30 transition-colors backdrop-blur-sm">
+                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1">Games Tracked</p>
+                <p className="text-xl font-black text-white">{games.length}</p>
+              </div>
             </div>
           </section>
         );
@@ -341,11 +342,11 @@ const Profile = () => {
                     placeholder="Search..." 
                     value={achievementSearch}
                     onChange={(e) => setAchievementSearch(e.target.value)}
-                    className="bg-slate-900 border-slate-800 h-8 pl-8 text-[10px] w-32"
+                    className="bg-slate-900 border-slate-800 h-8 pl-8 text-[10px] w-32 text-white"
                   />
                 </div>
                 <Select value={achievementSort} onValueChange={setAchievementSort}>
-                  <SelectTrigger className="bg-slate-900 border-slate-800 h-8 text-[10px] w-24">
+                  <SelectTrigger className="bg-slate-900 border-slate-800 h-8 text-[10px] w-24 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
@@ -582,7 +583,7 @@ const Profile = () => {
                           </div>
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Name</Label>
-                            <Input placeholder="e.g. Twitter, Discord, Twitch" value={newSocial.name} onChange={(e) => setNewSocial({...newSocial, name: e.target.value})} className="bg-slate-900 border-slate-800" />
+                            <Input placeholder="e.g. Twitter, Discord, Twitch" value={newSocial.name} onChange={(e) => setNewSocial({...newSocial, name: e.target.value})} className="bg-slate-900 border-slate-800 text-white" />
                           </div>
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Profile URL</Label>
@@ -590,7 +591,7 @@ const Profile = () => {
                               placeholder="https://..." 
                               value={newSocial.url} 
                               onChange={(e) => handleUrlChange(e.target.value)} 
-                              className="bg-slate-900 border-slate-800" 
+                              className="bg-slate-900 border-slate-800 text-white" 
                             />
                           </div>
 

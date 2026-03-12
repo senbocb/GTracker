@@ -19,7 +19,6 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
   const chartData = useMemo(() => {
     if (!history || history.length === 0) return [];
 
-    // Filter by time range
     const now = new Date();
     let filteredHistory = [...history];
     
@@ -29,7 +28,6 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
       filteredHistory = history.filter(h => isAfter(new Date(h.timestamp), cutoff));
     }
 
-    // Sort chronologically for the graph
     const sorted = filteredHistory.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     let peakSoFar = 0;
@@ -58,12 +56,12 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
   return (
     <Card className="bg-slate-900/90 border-slate-800 backdrop-blur-sm">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+        <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <BarChart3 size={16} className="text-indigo-500" />
           Performance Trajectory
         </CardTitle>
         <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-32 h-8 bg-slate-950 border-slate-800 text-[10px] font-black uppercase">
+          <SelectTrigger className="w-32 h-8 bg-slate-950 border-slate-800 text-[10px] font-black uppercase text-white">
             <Calendar size={12} className="mr-2 text-indigo-500" />
             <SelectValue />
           </SelectTrigger>
@@ -83,14 +81,14 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  stroke="#64748b" 
+                  stroke="#94a3b8" 
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
                   dy={10}
                 />
                 <YAxis 
-                  stroke="#64748b" 
+                  stroke="#94a3b8" 
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false}
@@ -99,14 +97,14 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
                 />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
-                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                  labelStyle={{ fontSize: '10px', color: '#64748b', marginBottom: '4px' }}
+                  itemStyle={{ fontSize: '12px', fontWeight: 'bold', color: '#fff' }}
+                  labelStyle={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}
                   formatter={(value: number, name: string, props: any) => {
                     if (name === "Current Rank") return [props.payload.rankLabel, name];
                     return [yAxisFormatter(value), name];
                   }}
                 />
-                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em' }} />
+                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em', color: '#94a3b8' }} />
                 <Line 
                   name="Current Rank"
                   type="monotone" 

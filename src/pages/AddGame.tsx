@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,7 @@ const DEFAULT_REGISTRY = {
   },
   "Counter-Strike 2": { 
     ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
-    modes: ["Premier", "Per-Map Rank", "Wingman", "Faceit"]
+    modes: ["Premier", "Competitive (Per Map)", "Wingman", "Faceit"]
   },
   "Overwatch 2": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
@@ -140,7 +139,7 @@ const AddGame = () => {
         </Link>
 
         <div className="mb-10">
-          <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">INITIALIZE TRACKER</h1>
+          <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">Initialize Tracker</h1>
           <p className="text-slate-400 font-medium">Select your operation environment from your custom registry.</p>
         </div>
 
@@ -149,7 +148,7 @@ const AddGame = () => {
           <CardHeader>
             <CardTitle className="text-xl font-bold flex items-center gap-2 text-white">
               <Gamepad2 className="text-blue-500" />
-              DEPLOYMENT CONFIG
+              Deployment Config
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -214,7 +213,7 @@ const AddGame = () => {
               </div>
 
               <Button type="submit" disabled={!selectedGame || (modeOptions.length > 0 && !selectedMode)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                DEPLOY TRACKER
+                Deploy Tracker
               </Button>
             </form>
           </CardContent>
