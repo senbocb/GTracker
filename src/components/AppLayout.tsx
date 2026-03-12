@@ -5,19 +5,16 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award, Pin, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
+import FloatingTimer from './FloatingTimer';
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [profile, setProfile] = useState<any>(null);
   const [isToolsOpen, setIsToolsOpen] = React.useState(true);
   const [customization, setCustomization] = useState({ bgColor: '#020617', bgImage: '' });
-  
-  // Floating Timer State
-  const [isTimerPinned, setIsTimerPinned] = useState(false);
-  const [showFloatingTimer, setShowFloatingTimer] = useState(false);
 
   useEffect(() => {
     const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
@@ -25,12 +22,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
     const savedCustom = JSON.parse(localStorage.getItem('combat_customization') || 'null');
     if (savedCustom) setCustomization(savedCustom);
-
-    // Check if timer should be floating
-    const timerState = localStorage.getItem('timer_floating_active');
-    setShowFloatingTimer(timerState === 'true');
-    const pinnedState = localStorage.getItem('timer_pinned');
-    setIsTimerPinned(pinnedState === 'true');
   }, [location.pathname]);
 
   const navItems = [
@@ -200,54 +191,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </main>
       </div>
 
-      {/* Floating Timer Overlay */}
-      {showFloatingTimer && location.pathname !== '/timer' && (
-        <div 
-          className={cn(
-            "fixed z-[100] transition-all duration-300",
-            isTimerPinned ? "bottom-8 right-8" : "top-24 right-8"
-          )}
-        >
-          <div className="bg-slate-950/90 border border-indigo-500/50 backdrop-blur-xl rounded-2xl shadow-2xl p-4 w-64 group">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <TimerIcon size={14} className="text-indigo-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-white">Timer</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn("h-6 w-6", isTimerPinned ? "text-indigo-500" : "text-slate-500")}
-                  onClick={() => {
-                    const newState = !isTimerPinned;
-                    setIsTimerPinned(newState);
-                    localStorage.setItem('timer_pinned', newState.toString());
-                  }}
-                >
-                  <Pin size={12} />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6 text-slate-500 hover:text-red-500"
-                  onClick={() => {
-                    setShowFloatingTimer(false);
-                    localStorage.setItem('timer_floating_active', 'false');
-                  }}
-                >
-                  <X size={12} />
-                </Button>
-              </div>
-            </div>
-            <Link to="/timer" className="block text-center py-2 hover:bg-white/5 rounded-lg transition-colors">
-              <span className="text-2xl font-black font-mono text-white tracking-tighter">
-                {localStorage.getItem('timer_display_value') || '00:00:00'}
-              </span>
-            </Link>
-          </div>
-        </div>
-      )}
+      {/* Persistent Floating Timer */}
+      <FloatingTimer />
 
       <div className="fixed bottom-8 left-8 z-50">
         <Link to="/settings">
