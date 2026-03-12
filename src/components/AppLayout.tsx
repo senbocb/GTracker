@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award, LogOut, CheckSquare } from 'lucide-react';
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award, CheckSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 import FloatingTimer from './FloatingTimer';
@@ -64,7 +64,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-full sm:w-72 bg-slate-950 border-r border-slate-800 p-0 flex flex-col">
-                {/* Sidebar Operator Banner */}
                 <div className="relative h-40 shrink-0 overflow-hidden border-b border-slate-800">
                   {profile?.banner ? (
                     <img src={profile.banner} alt="" className="w-full h-full object-cover opacity-40" />
@@ -169,15 +168,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800">
-              <Search size={12} className="text-slate-500" />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="bg-transparent border-none outline-none text-[10px] font-bold text-slate-200 placeholder:text-slate-600 w-24"
-              />
-            </div>
-            
             <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white relative hover-highlight h-9 w-9">
               <Bell size={18} />
               <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-slate-950" />
@@ -201,7 +191,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </main>
       </div>
 
-      {/* Persistent Floating Timer */}
       <FloatingTimer />
     </div>
   );

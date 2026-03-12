@@ -3,27 +3,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { CheckCircle2, Circle, Plus, Trash2, Flame, Calendar as CalendarIcon, BarChart3, Target, Zap, ChevronRight, ChevronLeft, Clock, Trophy } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, Flame, Calendar as CalendarIcon, Target, Zap, Clock, Trophy, XCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
-import { format, startOfToday, eachDayOfInterval, subDays, isSameDay, addDays, differenceInDays, parseISO, isBefore, isAfter } from 'date-fns';
+import { format, startOfToday, eachDayOfInterval, subDays, isSameDay, addDays, differenceInDays, parseISO, isAfter } from 'date-fns';
+
+type LogStatus = 'done' | 'failed' | 'none';
 
 interface Habit {
   id: string;
   name: string;
   description: string;
   createdAt: string;
-  completions: string[]; // Array of ISO date strings (YYYY-MM-DD)
-  duration?: '1w' | '1m' | '3m' | 'custom' | 'infinite';
-  customDays?: number;
+  endDate?: string;
+  logs: Record<string, LogStatus>; // YYYY-MM-DD -> status
 }
 
 const HabitTracker = () => {
@@ -31,21 +31,35 @@ const HabitTracker = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newHabit, setNewHabit] = useState<Partial<Habit>>({ 
     name: '', 
-    description: '', 
-    duration: 'infinite',
-    customDays: 30
+    description: '',
+    endDate: undefined
   });
 
   const [calendarOpenId, setCalendarOpenId] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('combat_habits') || '[]');
-    setHabits(saved);
+    const saved = JSON.parse(localStorage.getItem('combat_habits_v3') || '[]');
+    if (saved.length === 0) {
+      const old = JSON.parse(localStorage.getItem('combat_habits') || '[]');
+      if (old.length > 0) {
+        const migrated = old.map((h: any) => ({
+          id: h.id,
+          name: h.name,
+          description: h.description,
+          createdAt: h.createdAt,
+          logs: (h.completions || []).reduce((acc: any, date: string) => ({ ...acc, [date]: 'done' }), {})
+        }));
+        setHabits(migrated);
+        localStorage.setItem('combat_habits_v3', JSON.stringify(migrated));
+      }
+    } else {
+      setHabits(saved);
+    }
   }, []);
 
   const saveHabits = (updated: Habit[]) => {
     setHabits(updated);
-    localStorage.setItem('combat_habits', JSON.stringify(updated));
+    localStorage.setItem('combat_habits_v3', JSON.stringify(updated));
   };
 
   const handleAddHabit = () => {
@@ -55,18 +69,16 @@ const HabitTracker = () => {
       name: newHabit.name,
       description: newHabit.description || '',
       createdAt: new Date().toISOString(),
-      completions: [],
-      duration: newHabit.duration as any,
-      customDays: newHabit.customDays
+      endDate: newHabit.endDate,
+      logs: {}
     };
     saveHabits([habit, ...habits]);
-    setNewHabit({ name: '', description: '', duration: 'infinite', customDays: 30 });
+    setNewHabit({ name: '', description: '', endDate: undefined });
     setIsAddOpen(false);
     showSuccess(`Mission "${habit.name}" initialized.`);
   };
 
-  const toggleCompletion = (habitId: string, date: Date) => {
-    // Prevent future logging
+  const cycleStatus = (habitId: string, date: Date) => {
     if (isAfter(date, startOfToday())) {
       showError("Cannot log future operations.");
       return;
@@ -75,11 +87,17 @@ const HabitTracker = () => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const updated = habits.map(h => {
       if (h.id === habitId) {
-        const isCompleted = h.completions.includes(dateStr);
-        const newCompletions = isCompleted 
-          ? h.completions.filter(d => d !== dateStr)
-          : [...h.completions, dateStr];
-        return { ...h, completions: newCompletions };
+        const current = h.logs[dateStr] || 'none';
+        let next: LogStatus = 'none';
+        if (current === 'none') next = 'done';
+        else if (current === 'done') next = 'failed';
+        else if (current === 'failed') next = 'none';
+        
+        const newLogs = { ...h.logs };
+        if (next === 'none') delete newLogs[dateStr];
+        else newLogs[dateStr] = next;
+        
+        return { ...h, logs: newLogs };
       }
       return h;
     });
@@ -91,7 +109,6 @@ const HabitTracker = () => {
     showSuccess("Mission decommissioned.");
   };
 
-  // Row starts with Today and finishes the next 6 days
   const next7Days = useMemo(() => {
     const today = startOfToday();
     return eachDayOfInterval({
@@ -100,19 +117,17 @@ const HabitTracker = () => {
     });
   }, []);
 
-  const calculateStreak = (completions: string[]) => {
+  const calculateStreak = (logs: Record<string, LogStatus>) => {
     let streak = 0;
     const today = startOfToday();
-    
     const todayStr = format(today, 'yyyy-MM-dd');
     const yesterdayStr = format(subDays(today, 1), 'yyyy-MM-dd');
     
-    // Streak is only active if today or yesterday was completed
-    if (!completions.includes(todayStr) && !completions.includes(yesterdayStr)) return 0;
+    if (logs[todayStr] !== 'done' && logs[yesterdayStr] !== 'done') return 0;
 
     for (let i = 0; i < 365; i++) {
       const dStr = format(subDays(today, i), 'yyyy-MM-dd');
-      if (completions.includes(dStr)) {
+      if (logs[dStr] === 'done') {
         streak++;
       } else {
         break;
@@ -122,22 +137,17 @@ const HabitTracker = () => {
   };
 
   const getMissionProgress = (habit: Habit) => {
-    if (!habit.duration || habit.duration === 'infinite') return null;
+    if (!habit.endDate) return null;
     
-    let totalDays = 0;
-    switch (habit.duration) {
-      case '1w': totalDays = 7; break;
-      case '1m': totalDays = 30; break;
-      case '3m': totalDays = 90; break;
-      case 'custom': totalDays = habit.customDays || 30; break;
-    }
-
     const startDate = parseISO(habit.createdAt);
+    const endDate = parseISO(habit.endDate);
+    const totalDays = Math.max(1, differenceInDays(endDate, startDate));
     const today = startOfToday();
     
     const daysPassed = Math.max(0, differenceInDays(today, startDate));
     const daysRemaining = Math.max(0, totalDays - daysPassed);
-    const completionRate = Math.min(100, (habit.completions.length / totalDays) * 100);
+    const doneCount = Object.values(habit.logs).filter(s => s === 'done').length;
+    const completionRate = Math.min(100, (doneCount / totalDays) * 100);
 
     return {
       totalDays,
@@ -177,34 +187,15 @@ const HabitTracker = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-400">Mission Duration</Label>
-                  <Select 
-                    value={newHabit.duration} 
-                    onValueChange={(v: any) => setNewHabit({...newHabit, duration: v})}
-                  >
-                    <SelectTrigger className="bg-slate-900 border-slate-800">
-                      <SelectValue placeholder="Select Duration" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      <SelectItem value="infinite">Ongoing Operation</SelectItem>
-                      <SelectItem value="1w">1 Week Sprint</SelectItem>
-                      <SelectItem value="1m">1 Month Campaign</SelectItem>
-                      <SelectItem value="3m">3 Month Deployment</SelectItem>
-                      <SelectItem value="custom">Custom Duration</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-[10px] font-bold uppercase text-slate-400">Duration (End Date - Optional)</Label>
+                  <Input 
+                    type="date"
+                    value={newHabit.endDate} 
+                    onChange={(e) => setNewHabit({...newHabit, endDate: e.target.value})}
+                    className="bg-slate-900 border-slate-800"
+                  />
+                  <p className="text-[9px] text-slate-500 font-bold uppercase">Leave blank for an ongoing operation.</p>
                 </div>
-                {newHabit.duration === 'custom' && (
-                  <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-400">Total Days</Label>
-                    <Input 
-                      type="number"
-                      value={newHabit.customDays} 
-                      onChange={(e) => setNewHabit({...newHabit, customDays: parseInt(e.target.value)})}
-                      className="bg-slate-900 border-slate-800"
-                    />
-                  </div>
-                )}
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-400">Description (Optional)</Label>
                   <Input 
@@ -224,7 +215,7 @@ const HabitTracker = () => {
 
         <div className="grid grid-cols-1 gap-6">
           {habits.length > 0 ? habits.map((habit) => {
-            const streak = calculateStreak(habit.completions);
+            const streak = calculateStreak(habit.logs);
             const mission = getMissionProgress(habit);
             
             return (
@@ -235,7 +226,6 @@ const HabitTracker = () => {
                 )} />
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Info Section */}
                     <div className="flex-1 flex items-start gap-4">
                       <div className={cn(
                         "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shrink-0",
@@ -261,7 +251,7 @@ const HabitTracker = () => {
                               </div>
                               <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 uppercase">
                                 <Trophy size={10} />
-                                {habit.completions.length} / {mission.totalDays} Completed
+                                {Object.values(habit.logs).filter(s => s === 'done').length} / {mission.totalDays} Completed
                               </div>
                             </div>
                           </div>
@@ -269,7 +259,6 @@ const HabitTracker = () => {
                       </div>
                     </div>
 
-                    {/* Controls Section */}
                     <div className="flex flex-col sm:flex-row items-center gap-8">
                       <div className="text-center">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Current Streak</p>
@@ -278,7 +267,7 @@ const HabitTracker = () => {
 
                       <div className="flex items-center gap-2">
                         {next7Days.map((date) => {
-                          const isCompleted = habit.completions.includes(format(date, 'yyyy-MM-dd'));
+                          const status = habit.logs[format(date, 'yyyy-MM-dd')] || 'none';
                           const isToday = isSameDay(date, startOfToday());
                           const isFuture = isAfter(date, startOfToday());
                           
@@ -294,18 +283,16 @@ const HabitTracker = () => {
                                 <p className="text-[7px] font-bold text-slate-700">{format(date, 'MM/dd')}</p>
                               </div>
                               <button
-                                onClick={() => !isFuture && toggleCompletion(habit.id, date)}
+                                onClick={() => !isFuture && cycleStatus(habit.id, date)}
                                 disabled={isFuture}
                                 className={cn(
                                   "w-10 h-10 rounded-xl border-2 transition-all flex items-center justify-center",
-                                  isCompleted 
-                                    ? "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20" 
-                                    : isFuture 
-                                      ? "bg-slate-950/50 border-slate-900 text-slate-800 cursor-not-allowed"
-                                      : "bg-slate-950 border-slate-800 text-slate-700 hover:border-slate-600"
+                                  status === 'done' && "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20",
+                                  status === 'failed' && "bg-red-600/20 border-red-500 text-red-500",
+                                  status === 'none' && (isFuture ? "bg-slate-950/50 border-slate-900 text-slate-800 cursor-not-allowed" : "bg-slate-950 border-slate-800 text-slate-700 hover:border-slate-600")
                                 )}
                               >
-                                {isCompleted ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                                {status === 'done' ? <CheckCircle2 size={20} /> : status === 'failed' ? <XCircle size={20} /> : <Circle size={20} />}
                               </button>
                             </div>
                           );
@@ -323,22 +310,15 @@ const HabitTracker = () => {
                             <DialogHeader><DialogTitle className="italic uppercase font-black">MISSION LOG: {habit.name}</DialogTitle></DialogHeader>
                             <div className="p-4 flex justify-center">
                               <Calendar
-                                mode="multiple"
-                                selected={habit.completions.map(d => parseISO(d))}
-                                onSelect={(dates) => {
-                                  const today = startOfToday();
-                                  const validDates = (dates || []).filter(d => !isAfter(d, today));
-                                  const formatted = validDates.map(d => format(d, 'yyyy-MM-dd'));
-                                  const updated = habits.map(h => h.id === habit.id ? { ...h, completions: formatted } : h);
-                                  saveHabits(updated);
-                                }}
+                                mode="single"
+                                onSelect={(date) => date && cycleStatus(habit.id, date)}
                                 modifiers={{
-                                  completed: (date) => habit.completions.includes(format(date, 'yyyy-MM-dd')),
-                                  missed: (date) => isBefore(date, startOfToday()) && !habit.completions.includes(format(date, 'yyyy-MM-dd'))
+                                  done: (date) => habit.logs[format(date, 'yyyy-MM-dd')] === 'done',
+                                  failed: (date) => habit.logs[format(date, 'yyyy-MM-dd')] === 'failed'
                                 }}
                                 modifiersClassNames={{
-                                  completed: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 rounded-md",
-                                  missed: "bg-red-500/10 text-red-400/50 border border-red-500/20 rounded-md"
+                                  done: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 rounded-md",
+                                  failed: "bg-red-500/20 text-red-400 border border-red-500/50 rounded-md"
                                 }}
                                 className="rounded-md border border-slate-800 bg-slate-900"
                               />
@@ -350,12 +330,12 @@ const HabitTracker = () => {
                                   <span className="text-[9px] font-bold text-slate-400 uppercase">Done</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 rounded bg-red-500/10 border border-red-500/20" />
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase">Missed</span>
+                                  <div className="w-3 h-3 rounded bg-red-500/20 border border-red-500/50" />
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase">Failed</span>
                                 </div>
                               </div>
                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">
-                                Select dates to toggle completion status in the mission log.
+                                Click a date to cycle: None -> Done -> Failed.
                               </p>
                             </div>
                           </DialogContent>

@@ -3,11 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, Swords, Activity, Target, ChevronRight } from 'lucide-react';
+import { TrendingUp, Swords, Activity, Target, ChevronRight, Clock } from 'lucide-react';
 
 const SessionTracker = () => {
   const [seconds, setSeconds] = useState(0);
-  const [isActive, setIsActive] = useState(false);
   const [selectedGame, setSelectedGame] = useState('all');
   const [games, setGames] = useState<any[]>([]);
   const [sessionStats, setSessionStats] = useState({ matches: 0, wins: 0, losses: 0, netRR: 0, netPoints: 0 });
@@ -16,25 +15,17 @@ const SessionTracker = () => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
 
-    const sessionStart = localStorage.getItem('combat_session_start');
-    if (sessionStart) {
-      const startTime = parseInt(sessionStart);
-      setSeconds(Math.floor((Date.now() - startTime) / 1000));
-      setIsActive(true);
-    } else {
-      localStorage.setItem('combat_session_start', Date.now().toString());
-      setIsActive(true);
-    }
+    // Track uptime since app load
+    const startTime = performance.now();
+    const interval = setInterval(() => {
+      setSeconds(Math.floor(performance.now() / 1000));
+    }, 1000);
 
     const savedStats = JSON.parse(localStorage.getItem('combat_session_stats') || '{"matches":0,"wins":0,"losses":0,"netRR":0,"netPoints":0}');
     setSessionStats(savedStats);
 
-    let interval: any = null;
-    if (isActive) {
-      interval = setInterval(() => setSeconds(prev => prev + 1), 1000);
-    }
     return () => clearInterval(interval);
-  }, [isActive]);
+  }, []);
 
   const formatTime = (totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600);
@@ -58,8 +49,8 @@ const SessionTracker = () => {
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2 text-blue-400">
-            <Activity size={16} className="animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Live Session</span>
+            <Clock size={16} className="animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest">App Uptime</span>
           </div>
           <span className="text-[10px] font-bold text-slate-300 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50 font-mono">
             {formatTime(seconds)}
