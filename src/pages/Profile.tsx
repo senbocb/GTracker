@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -97,7 +97,7 @@ const Profile = () => {
   const [achievementSearch, setAchievementSearch] = useState('');
   const [achievementSort, setAchievementSort] = useState('newest');
   
-  const [newSocial, setNewSocial] = useState({ name: '', url: '', icon: '', category: 'socials' });
+  const [newSocial, setNewSocial] = useState({ name: '', url: '', icon: '', category: 'socials', gameId: '' });
   
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -220,7 +220,7 @@ const Profile = () => {
     const updatedSocials = [...socials, { ...newSocial, id: Date.now().toString() }];
     setSocials(updatedSocials);
     localStorage.setItem('combat_socials', JSON.stringify(updatedSocials));
-    setNewSocial({ name: '', url: '', icon: '', category: 'socials' });
+    setNewSocial({ name: '', url: '', icon: '', category: 'socials', gameId: '' });
     setIsAddingSocial(false);
     showSuccess("Platform linked.");
   };
@@ -329,7 +329,7 @@ const Profile = () => {
           </section>
         );
       case 'activity_heatmap':
-        return <ActivityHeatmap key="activity_heatmap" createdAt={profile.createdAt} />;
+        return <ActivityHeatmap key="activity_heatmap" />;
       case 'medals':
         return (
           <section key="medals" className="space-y-6">
@@ -594,6 +594,22 @@ const Profile = () => {
                               className="bg-slate-900 border-slate-800" 
                             />
                           </div>
+
+                          {newSocial.category === 'stat_trackers' && (
+                            <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
+                              <Label className="text-[10px] font-bold uppercase text-indigo-400 tracking-widest">Link to Operation</Label>
+                              <Select onValueChange={(v) => setNewSocial({...newSocial, gameId: v})} value={newSocial.gameId}>
+                                <SelectTrigger className="bg-slate-900 border-slate-800 text-white"><SelectValue placeholder="Select Game" /></SelectTrigger>
+                                <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                  {games.map(g => (
+                                    <SelectItem key={g.id} value={g.id} className="focus:bg-indigo-600">{g.title}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <p className="text-[9px] text-slate-500 font-bold uppercase">Linking allows you to sync rank data directly from this tracker.</p>
+                            </div>
+                          )}
+
                           <div className="grid gap-2">
                             <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Platform Icon</Label>
                             <div className="flex items-center gap-4">

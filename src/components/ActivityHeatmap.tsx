@@ -1,16 +1,15 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Activity, Calendar } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Activity, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface ActivityHeatmapProps {
-  createdAt?: string;
-}
+const ActivityHeatmap = () => {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-const ActivityHeatmap = ({ createdAt }: ActivityHeatmapProps) => {
   const data = useMemo(() => {
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const activityMap: Record<string, number> = {};
@@ -26,44 +25,42 @@ const ActivityHeatmap = ({ createdAt }: ActivityHeatmapProps) => {
     return activityMap;
   }, []);
 
-  const joinDateStr = createdAt ? new Date(createdAt).toISOString().split('T')[0] : null;
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return [currentYear, currentYear - 1, currentYear - 2];
+  }, []);
 
   const weeks = useMemo(() => {
     const result = [];
-    const today = new Date();
-    
-    // We want to show 52 weeks (364 days)
-    // Start from the most recent Sunday to align the grid
-    const end = new Date(today);
-    const start = new Date(today);
-    start.setDate(today.getDate() - 364);
+    // Start from Jan 1st of the selected year
+    const start = new Date(selectedYear, 0, 1);
+    // Adjust to the first Sunday of the year
+    start.setDate(start.getDate() - start.getDay());
 
     let current = new Date(start);
-    // Adjust to the start of that week (Sunday)
-    current.setDate(current.getDate() - current.getDay());
 
-    for (let w = 0; w < 53; w++) {
+    for (let w = 0; w < 52; w++) {
       const week = [];
       for (let d = 0; d < 7; d++) {
         const dateStr = current.toISOString().split('T')[0];
         const count = data[dateStr] || 0;
-        const isJoinDate = dateStr === joinDateStr;
+        const isCurrentYear = current.getFullYear() === selectedYear;
         
         week.push({ 
           date: dateStr, 
           count, 
-          isJoinDate,
-          isFuture: current > today,
-          isBeforeJoin: joinDateStr ? dateStr < joinDateStr : false
+          isCurrentYear,
+          isFuture: current > new Date()
         });
         current.setDate(current.getDate() + 1);
       }
       result.push(week);
     }
     return result;
-  }, [data, joinDateStr]);
+  }, [data, selectedYear]);
 
   const getColor = (day: any) => {
+    if (!day.isCurrentYear) return 'bg-slate-950/20 border-transparent opacity-20';
     if (day.isFuture) return 'bg-transparent border-transparent opacity-0';
     if (day.count === 0) return 'bg-slate-900/30 border-slate-800/50';
     if (day.count <= 2) return 'bg-indigo-900/40 border-indigo-800/20';
@@ -77,37 +74,40 @@ const ActivityHeatmap = ({ createdAt }: ActivityHeatmapProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
             <Activity size={14} className="text-indigo-500" />
-            Operational Frequency (Last 365 Days)
+            Operational Frequency
           </CardTitle>
-          {joinDateStr && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
-              <Calendar size={10} className="text-indigo-400" />
-              <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Joined {new Date(joinDateStr).toLocaleDateString()}</span>
-            </div>
-          )}
+          <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+            <SelectTrigger className="w-24 h-7 bg-slate-950 border-slate-800 text-[10px] font-black uppercase">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-950 border-slate-800 text-white">
+              {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="grid grid-cols-[repeat(52,minmax(0,1fr))] gap-1">
           <TooltipProvider delayDuration={0}>
             {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-1 shrink-0">
+              <div key={wi} className={cn(
+                "flex flex-col gap-1",
+                wi === 0 && "ring-1 ring-yellow-400/50 ring-offset-2 ring-offset-slate-950 rounded-sm p-0.5 -m-0.5"
+              )}>
                 {week.map((day, di) => (
                   <Tooltip key={di}>
                     <TooltipTrigger asChild>
                       <div 
                         className={cn(
-                          "w-3 h-3 rounded-[2px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
-                          getColor(day),
-                          day.isJoinDate && "ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 scale-110"
+                          "aspect-square w-full rounded-[1px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
+                          getColor(day)
                         )} 
                       />
                     </TooltipTrigger>
-                    {!day.isFuture && (
+                    {!day.isFuture && day.isCurrentYear && (
                       <TooltipContent className="bg-slate-950 border-slate-800 text-[10px] font-bold uppercase tracking-widest p-2">
                         <p className="text-white">{day.count} Changes</p>
                         <p className="text-slate-500">{new Date(day.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                        {day.isJoinDate && <p className="text-indigo-400 mt-1 border-t border-slate-800 pt-1">Account Initialized</p>}
                       </TooltipContent>
                     )}
                   </Tooltip>
@@ -120,16 +120,16 @@ const ActivityHeatmap = ({ createdAt }: ActivityHeatmapProps) => {
         <div className="mt-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-sm ring-1 ring-indigo-400 ring-offset-1 ring-offset-slate-950 bg-slate-900" />
-              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Join Date</span>
+              <div className="w-2 h-2 rounded-sm ring-1 ring-yellow-400 ring-offset-1 ring-offset-slate-950 bg-slate-900" />
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Year Start</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Less</span>
             <div className="flex gap-1">
               <div className="w-2.5 h-2.5 rounded-sm bg-slate-900/30 border border-slate-800/50" />
-              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-900/40 border border-indigo-800/20" />
-              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-700/70 border border-indigo-600/30" />
+              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-900/40 border-indigo-800/20" />
+              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-700/70 border-indigo-600/30" />
               <div className="w-2.5 h-2.5 rounded-sm bg-indigo-500 border border-indigo-400/50" />
             </div>
             <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">More</span>
