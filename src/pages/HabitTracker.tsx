@@ -3,15 +3,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { CheckCircle2, Circle, Plus, Trash2, Flame, Calendar, BarChart3, Target, Zap, ChevronRight, ChevronLeft } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, Flame, Calendar as CalendarIcon, BarChart3, Target, Zap, ChevronRight, ChevronLeft, Clock, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Progress } from "@/components/ui/progress";
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
-import { format, startOfToday, eachDayOfInterval, subDays, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfToday, eachDayOfInterval, subDays, isSameDay, addDays, differenceInDays, parseISO } from 'date-fns';
 
 interface Habit {
   id: string;
@@ -19,12 +22,21 @@ interface Habit {
   description: string;
   createdAt: string;
   completions: string[]; // Array of ISO date strings (YYYY-MM-DD)
+  duration?: '1w' | '1m' | '3m' | 'custom' | 'infinite';
+  customDays?: number;
 }
 
 const HabitTracker = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [newHabit, setNewHabit] = useState({ name: '', description: '' });
+  const [newHabit, setNewHabit] = useState<Partial<Habit>>({ 
+    name: '', 
+    description: '', 
+    duration: 'infinite',
+    customDays: 30
+  });
+
+  const [calendarOpenId, setCalendarOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('combat_habits') || '[]');
@@ -41,14 +53,16 @@ const HabitTracker = () => {
     const habit: Habit = {
       id: Date.now().toString(),
       name: newHabit.name,
-      description: newHabit.description,
+      description: newHabit.description || '',
       createdAt: new Date().toISOString(),
-      completions: []
+      completions: [],
+      duration: newHabit.duration as any,
+      customDays: newHabit.customDays
     };
     saveHabits([habit, ...habits]);
-    setNewHabit({ name: '', description: '' });
+    setNewHabit({ name: '', description: '', duration: 'infinite', customDays: 30 });
     setIsAddOpen(false);
-    showSuccess(`Habit "${habit.name}" initialized.`);
+    showSuccess(`Mission "${habit.name}" initialized.`);
   };
 
   const toggleCompletion = (habitId: string, date: Date) => {
@@ -68,7 +82,7 @@ const HabitTracker = () => {
 
   const removeHabit = (id: string) => {
     saveHabits(habits.filter(h => h.id !== id));
-    showSuccess("Habit decommissioned.");
+    showSuccess("Mission decommissioned.");
   };
 
   const last7Days = useMemo(() => {
@@ -81,17 +95,15 @@ const HabitTracker = () => {
 
   const calculateStreak = (completions: string[]) => {
     let streak = 0;
-    let current = startOfToday();
-    const sorted = [...completions].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    const today = startOfToday();
     
-    // Check if completed today or yesterday to keep streak alive
-    const todayStr = format(current, 'yyyy-MM-dd');
-    const yesterdayStr = format(subDays(current, 1), 'yyyy-MM-dd');
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const yesterdayStr = format(subDays(today, 1), 'yyyy-MM-dd');
     
     if (!completions.includes(todayStr) && !completions.includes(yesterdayStr)) return 0;
 
     for (let i = 0; i < 365; i++) {
-      const dStr = format(subDays(startOfToday(), i), 'yyyy-MM-dd');
+      const dStr = format(subDays(today, i), 'yyyy-MM-dd');
       if (completions.includes(dStr)) {
         streak++;
       } else {
@@ -99,6 +111,36 @@ const HabitTracker = () => {
       }
     }
     return streak;
+  };
+
+  const getMissionProgress = (habit: Habit) => {
+    if (!habit.duration || habit.duration === 'infinite') return null;
+    
+    let totalDays = 0;
+    switch (habit.duration) {
+      case '1w': totalDays = 7; break;
+      case '1m': totalDays = 30; break;
+      case '3m': totalDays = 90; break;
+      case 'custom': totalDays = habit.customDays || 30; break;
+    }
+
+    const startDate = parseISO(habit.createdAt);
+    const endDate = addDays(startDate, totalDays);
+    const today = startOfToday();
+    
+    const daysPassed = Math.max(0, differenceInDays(today, startDate));
+    const daysRemaining = Math.max(0, totalDays - daysPassed);
+    const progress = Math.min(100, (daysPassed / totalDays) * 100);
+    
+    const completionRate = Math.min(100, (habit.completions.length / totalDays) * 100);
+
+    return {
+      totalDays,
+      daysRemaining,
+      progress,
+      completionRate,
+      isComplete: daysRemaining === 0
+    };
   };
 
   return (
@@ -115,14 +157,14 @@ const HabitTracker = () => {
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
               <Button className="bg-indigo-600 hover:bg-indigo-500 font-black uppercase py-6 px-8 rounded-2xl shadow-lg shadow-indigo-600/20">
-                <Plus size={20} className="mr-2" /> New Routine
+                <Plus size={20} className="mr-2" /> New Mission
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-slate-950 border-slate-800 text-white">
-              <DialogHeader><DialogTitle className="italic uppercase font-black">INITIALIZE ROUTINE</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="italic uppercase font-black">INITIALIZE MISSION</DialogTitle></DialogHeader>
               <div className="space-y-6 py-4">
                 <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase text-slate-400">Routine Name</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-400">Mission Name</Label>
                   <Input 
                     placeholder="e.g. 30m Aim Training" 
                     value={newHabit.name} 
@@ -130,6 +172,35 @@ const HabitTracker = () => {
                     className="bg-slate-900 border-slate-800"
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-bold uppercase text-slate-400">Mission Duration</Label>
+                  <Select 
+                    value={newHabit.duration} 
+                    onValueChange={(v: any) => setNewHabit({...newHabit, duration: v})}
+                  >
+                    <SelectTrigger className="bg-slate-900 border-slate-800">
+                      <SelectValue placeholder="Select Duration" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      <SelectItem value="infinite">Ongoing Operation</SelectItem>
+                      <SelectItem value="1w">1 Week Sprint</SelectItem>
+                      <SelectItem value="1m">1 Month Campaign</SelectItem>
+                      <SelectItem value="3m">3 Month Deployment</SelectItem>
+                      <SelectItem value="custom">Custom Duration</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {newHabit.duration === 'custom' && (
+                  <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400">Total Days</Label>
+                    <Input 
+                      type="number"
+                      value={newHabit.customDays} 
+                      onChange={(e) => setNewHabit({...newHabit, customDays: parseInt(e.target.value)})}
+                      className="bg-slate-900 border-slate-800"
+                    />
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-400">Description (Optional)</Label>
                   <Input 
@@ -141,7 +212,7 @@ const HabitTracker = () => {
                 </div>
               </div>
               <DialogFooter>
-                <Button onClick={handleAddHabit} className="w-full bg-indigo-600 font-black uppercase py-6">START TRACKING</Button>
+                <Button onClick={handleAddHabit} className="w-full bg-indigo-600 font-black uppercase py-6">START MISSION</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -150,28 +221,55 @@ const HabitTracker = () => {
         <div className="grid grid-cols-1 gap-6">
           {habits.length > 0 ? habits.map((habit) => {
             const streak = calculateStreak(habit.completions);
+            const mission = getMissionProgress(habit);
+            
             return (
               <Card key={habit.id} className="bg-slate-900/50 border-slate-800 backdrop-blur-sm overflow-hidden group">
-                <div className="h-1 w-full bg-slate-800 group-hover:bg-indigo-500/50 transition-colors" />
+                <div className={cn(
+                  "h-1 w-full transition-colors",
+                  streak > 0 ? "bg-indigo-500" : "bg-slate-800"
+                )} />
                 <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col lg:flex-row gap-8">
+                    {/* Info Section */}
+                    <div className="flex-1 flex items-start gap-4">
                       <div className={cn(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+                        "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shrink-0",
                         streak > 0 ? "bg-orange-500/20 text-orange-500" : "bg-slate-800 text-slate-600"
                       )}>
-                        <Flame size={24} className={cn(streak > 0 && "animate-pulse")} />
+                        <Flame size={28} className={cn(streak > 0 && "animate-pulse")} />
                       </div>
-                      <div>
-                        <h3 className="text-lg font-black text-white uppercase italic tracking-tight">{habit.name}</h3>
-                        <p className="text-xs text-slate-500 font-medium">{habit.description || 'No description provided.'}</p>
+                      <div className="min-w-0">
+                        <h3 className="text-xl font-black text-white uppercase italic tracking-tight truncate">{habit.name}</h3>
+                        <p className="text-xs text-slate-500 font-medium mb-4">{habit.description || 'No description provided.'}</p>
+                        
+                        {mission && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                              <span className="text-slate-400">Mission Progress</span>
+                              <span className="text-indigo-400">{Math.round(mission.completionRate)}% Efficiency</span>
+                            </div>
+                            <Progress value={mission.completionRate} className="h-1.5 bg-slate-950" />
+                            <div className="flex items-center gap-4 mt-2">
+                              <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 uppercase">
+                                <Clock size={10} />
+                                {mission.daysRemaining} Days Left
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500 uppercase">
+                                <Trophy size={10} />
+                                {habit.completions.length} / {mission.totalDays} Completed
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-8">
+                    {/* Controls Section */}
+                    <div className="flex flex-col sm:flex-row items-center gap-8">
                       <div className="text-center">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Current Streak</p>
-                        <p className="text-2xl font-black text-white tabular-nums">{streak} <span className="text-xs text-slate-600">DAYS</span></p>
+                        <p className="text-3xl font-black text-white tabular-nums">{streak} <span className="text-xs text-slate-600">DAYS</span></p>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -202,14 +300,44 @@ const HabitTracker = () => {
                         })}
                       </div>
 
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-slate-700 hover:text-red-500"
-                        onClick={() => removeHabit(habit.id)}
-                      >
-                        <Trash2 size={18} />
-                      </Button>
+                      <div className="flex items-center gap-2 border-l border-slate-800 pl-6">
+                        <Dialog open={calendarOpenId === habit.id} onOpenChange={(v) => setCalendarOpenId(v ? habit.id : null)}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-10 w-10 border-slate-800 bg-slate-950 text-slate-400 hover:text-white">
+                              <CalendarIcon size={18} />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-[400px]">
+                            <DialogHeader><DialogTitle className="italic uppercase font-black">MISSION LOG: {habit.name}</DialogTitle></DialogHeader>
+                            <div className="p-4 flex justify-center">
+                              <Calendar
+                                mode="multiple"
+                                selected={habit.completions.map(d => parseISO(d))}
+                                onSelect={(dates) => {
+                                  const formatted = (dates || []).map(d => format(d, 'yyyy-MM-dd'));
+                                  const updated = habits.map(h => h.id === habit.id ? { ...h, completions: formatted } : h);
+                                  saveHabits(updated);
+                                }}
+                                className="rounded-md border border-slate-800 bg-slate-900"
+                              />
+                            </div>
+                            <div className="px-6 pb-6">
+                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">
+                                Select dates to toggle completion status in the mission log.
+                              </p>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-10 w-10 text-slate-700 hover:text-red-500"
+                          onClick={() => removeHabit(habit.id)}
+                        >
+                          <Trash2 size={18} />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -220,10 +348,10 @@ const HabitTracker = () => {
               <div className="w-16 h-16 rounded-3xl bg-slate-900 flex items-center justify-center mx-auto mb-6 text-slate-700">
                 <Target size={32} />
               </div>
-              <h3 className="text-xl font-bold text-slate-300 mb-2">No Routines Defined</h3>
+              <h3 className="text-xl font-bold text-slate-300 mb-2">No Missions Defined</h3>
               <p className="text-slate-500 max-w-xs mx-auto text-sm mb-8">Establish daily habits to sharpen your tactical edge and maintain peak performance.</p>
               <Button onClick={() => setIsAddOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 font-black px-8 py-6 rounded-2xl">
-                Initialize First Habit
+                Initialize First Mission
               </Button>
             </div>
           )}
