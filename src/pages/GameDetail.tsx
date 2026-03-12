@@ -137,7 +137,6 @@ const GameDetail = () => {
       setExternalLinks(found.externalLinks || []);
       setSeasons(found.seasons || []);
 
-      // Fetch linked socials from profile
       const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
       const linked = savedSocials.filter((s: any) => s.category === 'stat_trackers' && s.gameId === id);
       setLinkedSocials(linked);
@@ -330,7 +329,6 @@ const GameDetail = () => {
 
   const activeBanner = currentModeData?.image || game.image;
 
-  // Merge manual external links with linked socials from profile
   const allTrackers = [
     ...externalLinks,
     ...linkedSocials.map(s => ({ name: s.name, url: s.url, icon: s.icon, isLinked: true }))
@@ -448,7 +446,11 @@ const GameDetail = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
-            <ProgressChart data={[]} rankNames={metadata.ranks} />
+            <ProgressChart 
+              history={currentModeData?.history} 
+              rankNames={metadata.ranks} 
+              getRankValue={getRankValue}
+            />
 
             <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between border-b border-slate-800 bg-slate-900/80">

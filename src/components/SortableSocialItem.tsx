@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Globe, X, RefreshCw } from 'lucide-react';
+import { Globe, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { syncTrackerData } from '@/utils/statSync';
 
 interface SortableSocialItemProps {
   social: any;
@@ -13,7 +12,6 @@ interface SortableSocialItemProps {
 }
 
 const SortableSocialItem = ({ social, onRemove }: SortableSocialItemProps) => {
-  const [isSyncing, setIsSyncing] = useState(false);
   const {
     attributes,
     listeners,
@@ -27,16 +25,6 @@ const SortableSocialItem = ({ social, onRemove }: SortableSocialItemProps) => {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
-  };
-
-  const handleSync = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!social.gameId) return;
-    
-    setIsSyncing(true);
-    await syncTrackerData(social.gameId, social.url);
-    setIsSyncing(false);
   };
 
   return (
@@ -59,19 +47,6 @@ const SortableSocialItem = ({ social, onRemove }: SortableSocialItemProps) => {
           <Globe size={12} className="text-slate-400" />
         )}
         <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{social.name}</span>
-        
-        {social.category === 'stat_trackers' && social.gameId && (
-          <button 
-            onClick={handleSync}
-            disabled={isSyncing}
-            className={cn(
-              "ml-1 p-0.5 rounded hover:bg-indigo-500/20 text-indigo-400 transition-colors",
-              isSyncing && "animate-spin"
-            )}
-          >
-            <RefreshCw size={10} />
-          </button>
-        )}
       </div>
       <button 
         onClick={() => onRemove(social.id)}
