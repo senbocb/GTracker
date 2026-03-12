@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar } from 'lucide-react';
+import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar, BarChart3 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -110,6 +110,7 @@ const GameDetail = () => {
   const [game, setGame] = useState<any>(null);
   const [activeMode, setActiveMode] = useState('');
   const [externalLinks, setExternalLinks] = useState<any[]>([]);
+  const [linkedSocials, setLinkedSocials] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
   
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -135,6 +136,11 @@ const GameDetail = () => {
       setActiveMode(found.modes[0]?.name || '');
       setExternalLinks(found.externalLinks || []);
       setSeasons(found.seasons || []);
+
+      // Fetch linked socials from profile
+      const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
+      const linked = savedSocials.filter((s: any) => s.category === 'stat_trackers' && s.gameId === id);
+      setLinkedSocials(linked);
     } else {
       navigate('/');
     }
@@ -323,6 +329,12 @@ const GameDetail = () => {
   if (!game) return null;
 
   const activeBanner = currentModeData?.image || game.image;
+
+  // Merge manual external links with linked socials from profile
+  const allTrackers = [
+    ...externalLinks,
+    ...linkedSocials.map(s => ({ name: s.name, url: s.url, icon: s.icon, isLinked: true }))
+  ];
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
@@ -517,14 +529,37 @@ const GameDetail = () => {
             <SeasonManager gameId={game.id} seasons={seasons} onUpdate={updateSeasons} />
             
             <Card className="bg-slate-900/50 border-slate-800">
-              <CardHeader><CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest">External Trackers</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <BarChart3 size={16} className="text-indigo-500" />
+                  External Trackers
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-3">
-                {externalLinks.map((link, i) => (
-                  <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/50 transition-all group hover-highlight">
-                    <span className="text-xs font-bold text-white uppercase">{link.name}</span>
+                {allTrackers.length > 0 ? allTrackers.map((link: any, i) => (
+                  <a 
+                    key={i} 
+                    href={link.url.startsWith('http') ? link.url : `https://${link.url}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/50 transition-all group hover-highlight"
+                  >
+                    <div className="flex items-center gap-3">
+                      {link.icon ? (
+                        <img src={link.icon} alt="" className="w-5 h-5 object-contain rounded" />
+                      ) : (
+                        <ExternalLink size={14} className="text-slate-500" />
+                      )}
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-white uppercase">{link.name}</span>
+                        {link.isLinked && <span className="text-[8px] font-black text-indigo-400 uppercase tracking-tighter">Linked Profile</span>}
+                      </div>
+                    </div>
                     <ExternalLink size={14} className="text-slate-400 group-hover:text-indigo-400" />
                   </a>
-                ))}
+                )) : (
+                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest text-center py-4">No trackers linked.</p>
+                )}
               </CardContent>
             </Card>
           </div>
