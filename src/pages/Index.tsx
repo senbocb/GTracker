@@ -9,6 +9,7 @@ import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
+import ClientDownload from '@/components/ClientDownload';
 import { Plus, Gamepad2, Activity, LayoutGrid, List, Trophy, Terminal } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
@@ -244,6 +245,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            <ClientDownload />
             <LayoutSettings sections={layout} onUpdate={updateLayout} />
             <Link to="/add-game" className="flex-1 sm:flex-none">
               <Button variant="outline" size="sm" className="w-full border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover-highlight">
