@@ -51,7 +51,7 @@ const QuickStatsSettings = ({ configs, onUpdate, games }: QuickStatsSettingsProp
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-800/50 active:bg-slate-800">
           <Settings2 size={16} />
         </Button>
       </DialogTrigger>

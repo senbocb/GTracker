@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles, RefreshCw, Activity, Download, Share } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles, RefreshCw, Activity, Download, Share, FileImage } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -267,7 +267,9 @@ const Profile = () => {
       <main className="max-w-6xl mx-auto p-6 md:p-10">
         <div className="flex justify-between items-center mb-8">
           <Link to="/"><Button variant="ghost" className="text-slate-300 hover:text-white -ml-4 hover-highlight"><ChevronLeft className="mr-2" size={20} /> Back</Button></Link>
-          <Button onClick={() => setIsExportOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 font-black uppercase"><Share className="mr-2" size={18} /> Share Profile</Button>
+          <Button onClick={() => setIsExportOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 font-black uppercase">
+            <FileImage className="mr-2" size={18} /> Download Profile as PNG/Jpeg
+          </Button>
         </div>
 
         <div className="relative mb-12">

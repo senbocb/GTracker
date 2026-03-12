@@ -77,7 +77,7 @@ const ActivityHeatmap = () => {
             Operational Frequency
           </CardTitle>
           <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-            <SelectTrigger className="w-24 h-7 bg-slate-950 border-slate-800 text-[10px] font-black uppercase">
+            <SelectTrigger className="w-24 h-7 bg-slate-950 border-slate-800 text-[10px] font-black uppercase text-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-slate-950 border-slate-800 text-white">
