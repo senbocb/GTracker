@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import AppLayout from '@/components/AppLayout';
 
 const DEFAULT_LAYOUT: LayoutSection[] = [
-  { id: 'quick_stats', label: 'Quick Stats', enabled: true },
+  { id: 'quick_stats', label: 'Overview', enabled: true },
   { id: 'active_operations', label: 'Games', enabled: true },
   { id: 'session_tracker', label: 'Live Intel', enabled: true },
   { id: 'match_history', label: 'Recent Changes', enabled: true },
@@ -39,7 +39,6 @@ const Index = () => {
 
     const savedLayout = JSON.parse(localStorage.getItem('combat_layout') || 'null');
     if (savedLayout) {
-      // Merge saved layout with defaults to ensure new sections are included
       const mergedLayout = DEFAULT_LAYOUT.map(def => {
         const saved = savedLayout.find((s: any) => s.id === def.id);
         return saved ? { ...def, ...saved } : def;
@@ -49,13 +48,11 @@ const Index = () => {
 
     const savedStats = JSON.parse(localStorage.getItem('combat_stat_configs') || 'null');
     if (savedStats) {
-      setStatConfigs(savedStats);
+      setStatConfigs(savedStats.filter((c: any) => !['avg_winrate', 'op_status'].includes(c.id)));
     } else {
       const initial: QuickStatConfig[] = [
-        { id: 'active_trackers', label: 'Active Trackers', enabled: true, type: 'common' },
+        { id: 'active_trackers', label: 'Games Tracked', enabled: true, type: 'common' },
         { id: 'total_logs', label: 'Total Logs', enabled: true, type: 'common' },
-        { id: 'avg_winrate', label: 'Avg Win Rate', enabled: true, type: 'common' },
-        { id: 'op_status', label: 'Operational Status', enabled: true, type: 'common' },
       ];
       setStatConfigs(initial);
     }
@@ -99,11 +96,6 @@ const Index = () => {
   const getStatValue = (config: QuickStatConfig) => {
     if (config.id === 'active_trackers') return games.length.toString();
     if (config.id === 'total_logs') return games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0).toString();
-    if (config.id === 'avg_winrate') {
-      const avg = games.length > 0 ? Math.round(games.reduce((acc, g) => acc + parseInt(g.winRate || '0'), 0) / games.length) : 0;
-      return `${avg}%`;
-    }
-    if (config.id === 'op_status') return 'Active';
     
     if (config.type === 'game' && config.gameId && config.modeName) {
       const game = games.find(g => g.id === config.gameId);
@@ -132,7 +124,7 @@ const Index = () => {
         return (
           <div key="quick_stats" className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Tactical Overview</h2>
+              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Overview</h2>
               <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} games={games} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -15,6 +15,7 @@ import AppLayout from '@/components/AppLayout';
 import { processImage } from '@/utils/imageProcessing';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import ProfileGallery from '@/components/ProfileGallery';
+import ActivityHeatmap from '@/components/ActivityHeatmap';
 import { getIconFromUrl, SOCIAL_PRESETS } from '@/utils/iconFetcher';
 
 // DnD Kit Imports
@@ -66,6 +67,7 @@ const INITIAL_CATEGORIES = [
 
 const DEFAULT_PROFILE_LAYOUT: LayoutSection[] = [
   { id: 'career_overview', label: 'Career Overview', enabled: true },
+  { id: 'activity_heatmap', label: 'Operational Frequency', enabled: true },
   { id: 'medals', label: 'Medals & Achievements', enabled: true },
   { id: 'profile_gallery', label: 'Screenshots & Gallery', enabled: true },
   { id: 'profile_stats', label: 'Profile Stats', enabled: true },
@@ -132,7 +134,13 @@ const Profile = () => {
     setGames(savedGames);
     
     const savedLayout = JSON.parse(localStorage.getItem('combat_profile_layout') || 'null');
-    if (savedLayout) setProfileLayout(savedLayout);
+    if (savedLayout) {
+      const mergedLayout = DEFAULT_PROFILE_LAYOUT.map(def => {
+        const saved = savedLayout.find((s: any) => s.id === def.id);
+        return saved ? { ...def, ...saved } : def;
+      });
+      setProfileLayout(mergedLayout);
+    }
 
     const savedFavs = JSON.parse(localStorage.getItem('combat_achievement_favs') || '[]');
     setFavorites(savedFavs);
@@ -320,6 +328,8 @@ const Profile = () => {
             </div>
           </section>
         );
+      case 'activity_heatmap':
+        return <ActivityHeatmap key="activity_heatmap" />;
       case 'medals':
         return (
           <section key="medals" className="space-y-6">
@@ -614,7 +624,7 @@ const Profile = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
             {profileLayout
-              .filter(s => ['career_overview', 'medals', 'profile_gallery'].includes(s.id))
+              .filter(s => ['career_overview', 'activity_heatmap', 'medals', 'profile_gallery'].includes(s.id))
               .map(s => renderSection(s.id))}
           </div>
 
