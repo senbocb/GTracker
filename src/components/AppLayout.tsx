@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award, LogOut } from 'lucide-react';
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award, LogOut, CheckSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 import FloatingTimer from './FloatingTimer';
@@ -32,6 +32,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   ];
 
   const tacticalTools = [
+    { label: 'Habit Tracker', path: '/habits', icon: <CheckSquare size={16} /> },
     { label: 'Timer', path: '/timer', icon: <TimerIcon size={16} /> },
     { label: 'Crosshair Vault', path: '/crosshairs', icon: <Target size={16} /> },
     { label: 'Config Archive', path: '/configs', icon: <FileCode size={16} /> },
