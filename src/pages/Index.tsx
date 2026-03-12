@@ -9,7 +9,7 @@ import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
-import { Plus, Gamepad2, Activity, LayoutGrid, List, Trophy } from 'lucide-react';
+import { Plus, Gamepad2, Activity, LayoutGrid, List, Trophy, Terminal } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -122,9 +122,12 @@ const Index = () => {
     switch (id) {
       case 'quick_stats':
         return (
-          <div key="quick_stats" className="mb-8">
+          <div key="quick_stats" className="mb-10">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Overview</h2>
+              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                <Terminal size={12} className="text-indigo-500" />
+                System Overview
+              </h2>
               <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} games={games} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -135,9 +138,9 @@ const Index = () => {
                       {config.type === 'game' ? <Trophy size={12} className="text-yellow-500" /> : <Activity size={12} className="text-indigo-500" />}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{config.label}</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{config.label}</span>
                       {config.type === 'game' && (
-                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                        <span className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">
                           {games.find(g => g.id === config.gameId)?.title}
                         </span>
                       )}
@@ -155,32 +158,25 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-black text-white flex items-center gap-3 italic uppercase tracking-tight">
                 <span className="w-1.5 h-6 bg-indigo-600 rounded-full" />
-                Games
+                Active Operations
               </h2>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg p-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={cn("h-8 w-8 rounded-md", viewMode === 'card' ? "bg-indigo-600 text-white" : "text-slate-400 hover-highlight")}
-                    onClick={() => setViewMode('card')}
-                  >
-                    <LayoutGrid size={16} />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={cn("h-8 w-8 rounded-md", viewMode === 'list' ? "bg-indigo-600 text-white" : "text-slate-400 hover-highlight")}
-                    onClick={() => setViewMode('list')}
-                  >
-                    <List size={16} />
-                  </Button>
-                </div>
-                <Link to="/add-game">
-                  <Button variant="ghost" size="sm" className="text-indigo-400 hover:text-indigo-300 font-bold text-[10px] uppercase tracking-widest hover-highlight">
-                    <Plus size={14} className="mr-1" /> Add Game
-                  </Button>
-                </Link>
+              <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg p-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn("h-8 w-8 rounded-md", viewMode === 'card' ? "bg-indigo-600 text-white" : "text-slate-400 hover-highlight")}
+                  onClick={() => setViewMode('card')}
+                >
+                  <LayoutGrid size={16} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn("h-8 w-8 rounded-md", viewMode === 'list' ? "bg-indigo-600 text-white" : "text-slate-400 hover-highlight")}
+                  onClick={() => setViewMode('list')}
+                >
+                  <List size={16} />
+                </Button>
               </div>
             </div>
             {games.length > 0 ? (
@@ -201,7 +197,7 @@ const Index = () => {
                   <Gamepad2 size={40} />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-slate-300">No Games Tracked</h3>
+                  <h3 className="text-xl font-bold text-slate-300">No Operations Tracked</h3>
                   <p className="text-slate-400 max-w-xs mx-auto text-sm">Deploy your first game tracker to begin monitoring your competitive performance metrics.</p>
                 </div>
                 <Link to="/add-game">
@@ -216,7 +212,7 @@ const Index = () => {
       case 'session_tracker':
         return (
           <div key="session_tracker" className="space-y-4">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Live Intel</h2>
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Live Intel</h2>
             <SessionTracker />
             <AddMatchModal />
           </div>
@@ -224,7 +220,7 @@ const Index = () => {
       case 'match_history':
         return (
           <div key="match_history" className="space-y-4">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Recent Changes</h2>
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Recent Changes</h2>
             <MatchHistory matches={recentMatches} />
           </div>
         );
@@ -235,13 +231,31 @@ const Index = () => {
 
   return (
     <AppLayout>
-      <main className="max-w-7xl mx-auto p-6 md:p-10">
+      <main className="max-w-7xl mx-auto p-4 sm:p-6 md:p-10">
+        {/* Command Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 p-4 rounded-2xl bg-slate-900/50 border border-slate-800 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-500">
+              <Terminal size={20} />
+            </div>
+            <div>
+              <h1 className="text-lg font-black italic uppercase tracking-tight text-white">Command Center</h1>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Operational Status: Active</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <LayoutSettings sections={layout} onUpdate={updateLayout} />
+            <Link to="/add-game" className="flex-1 sm:flex-none">
+              <Button variant="outline" size="sm" className="w-full border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover-highlight">
+                <Plus size={16} className="mr-2" />
+                ADD OPERATION
+              </Button>
+            </Link>
+          </div>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-10">
           <div className="flex-1 space-y-10">
-            <div className="flex items-center justify-end mb-6">
-              <LayoutSettings sections={layout} onUpdate={updateLayout} />
-            </div>
-
             {layout
               .filter(s => ['quick_stats', 'active_operations'].includes(s.id))
               .map(s => renderSection(s.id))}

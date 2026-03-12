@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award } from 'lucide-react';
+import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, Search, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
 import FloatingTimer from './FloatingTimer';
@@ -25,16 +25,16 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   }, [location.pathname]);
 
   const navItems = [
-    { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
-    { label: 'History', path: '/history', icon: <History size={20} /> },
-    { label: 'Achievements', path: '/achievements', icon: <Award size={20} /> },
-    { label: 'Registry', path: '/registry', icon: <Library size={20} /> },
+    { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={18} /> },
+    { label: 'History', path: '/history', icon: <History size={18} /> },
+    { label: 'Achievements', path: '/achievements', icon: <Award size={18} /> },
+    { label: 'Registry', path: '/registry', icon: <Library size={18} /> },
   ];
 
   const tacticalTools = [
-    { label: 'Timer', path: '/timer', icon: <TimerIcon size={18} /> },
-    { label: 'Crosshair Vault', path: '/crosshairs', icon: <Target size={18} /> },
-    { label: 'Config Archive', path: '/configs', icon: <FileCode size={18} /> },
+    { label: 'Timer', path: '/timer', icon: <TimerIcon size={16} /> },
+    { label: 'Crosshair Vault', path: '/crosshairs', icon: <Target size={16} /> },
+    { label: 'Config Archive', path: '/configs', icon: <FileCode size={16} /> },
   ];
 
   const isCustomizablePage = location.pathname === '/' || location.pathname === '/profile';
@@ -54,32 +54,47 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       style={bgStyle}
     >
       <header className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4 sm:gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white hover-highlight">
-                  <Menu size={24} />
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover-highlight h-10 w-10">
+                  <Menu size={20} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-full sm:w-80 bg-slate-950 border-r border-slate-800 p-0 flex flex-col">
-                <div className="p-8 border-b border-slate-900">
-                  <Link to="/" className="flex items-center gap-3 group">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20">
-                      <Gamepad2 className="text-white" size={20} />
+              <SheetContent side="left" className="w-full sm:w-72 bg-slate-950 border-r border-slate-800 p-0 flex flex-col">
+                {/* Sidebar Operator Banner */}
+                <div className="relative h-40 shrink-0 overflow-hidden border-b border-slate-800">
+                  {profile?.banner ? (
+                    <img src={profile.banner} alt="" className="w-full h-full object-cover opacity-40" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-slate-950" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                  
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3">
+                    <Avatar className="w-12 h-12 border-2 border-indigo-500 shadow-lg">
+                      <AvatarImage src={profile?.avatar} />
+                      <AvatarFallback className="bg-slate-900 text-slate-300 font-black">
+                        {profile?.username?.substring(0, 2).toUpperCase() || 'OP'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-white uppercase italic tracking-tight truncate">{profile?.username || 'OPERATOR'}</p>
+                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Level {Math.floor((profile?.xp || 0) / 100) + 1}</p>
                     </div>
-                    <span className="text-lg font-black italic uppercase tracking-tighter text-white">GTracker.app</span>
-                  </Link>
+                  </div>
                 </div>
                 
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-3 mb-2 mt-4">Operations</p>
                   {navItems.map((item) => (
                     <Link key={item.path} to={item.path}>
                       <Button 
                         variant="ghost" 
                         className={cn(
-                          "w-full justify-start gap-4 h-14 font-black uppercase italic tracking-tight text-sm",
-                          location.pathname === item.path ? "bg-indigo-600 text-white" : "text-slate-300 hover:text-white hover-highlight"
+                          "w-full justify-start gap-3 h-11 font-bold uppercase italic tracking-tight text-xs",
+                          location.pathname === item.path ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover-highlight"
                         )}
                       >
                         {item.icon}
@@ -88,17 +103,18 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                     </Link>
                   ))}
 
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-3 mb-2 mt-6">Tactical Tools</p>
                   <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen} className="w-full">
                     <CollapsibleTrigger asChild>
                       <Button 
                         variant="ghost" 
-                        className="w-full justify-between gap-4 h-14 font-black uppercase italic tracking-tight text-sm text-slate-300 hover:text-white hover-highlight"
+                        className="w-full justify-between gap-3 h-11 font-bold uppercase italic tracking-tight text-xs text-slate-400 hover:text-white hover-highlight"
                       >
-                        <div className="flex items-center gap-4">
-                          <Zap size={20} />
-                          Tactical Tools
+                        <div className="flex items-center gap-3">
+                          <Zap size={18} />
+                          Tools
                         </div>
-                        <ChevronDown className={cn("transition-transform", isToolsOpen && "rotate-180")} size={16} />
+                        <ChevronDown className={cn("transition-transform", isToolsOpen && "rotate-180")} size={14} />
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-1 pl-4 mt-1">
@@ -107,8 +123,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                           <Button 
                             variant="ghost" 
                             className={cn(
-                              "w-full justify-start gap-4 h-12 font-bold uppercase tracking-widest text-[10px]",
-                              location.pathname === tool.path ? "text-indigo-400" : "text-slate-400 hover:text-white"
+                              "w-full justify-start gap-3 h-10 font-bold uppercase tracking-widest text-[9px]",
+                              location.pathname === tool.path ? "text-indigo-400" : "text-slate-500 hover:text-white"
                             )}
                           >
                             {tool.icon}
@@ -120,16 +136,22 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                   </Collapsible>
                 </nav>
 
-                <div className="p-4 border-t border-slate-900">
+                <div className="p-3 border-t border-slate-900 space-y-1">
+                  <Link to="/profile">
+                    <Button variant="ghost" className="w-full justify-start gap-3 h-11 font-bold uppercase italic tracking-tight text-xs text-slate-400 hover:text-white hover-highlight">
+                      <User size={18} />
+                      Profile
+                    </Button>
+                  </Link>
                   <Link to="/settings">
                     <Button 
                       variant="ghost" 
                       className={cn(
-                        "w-full justify-start gap-4 h-14 font-black uppercase italic tracking-tight text-sm",
-                        location.pathname === '/settings' ? "bg-indigo-600 text-white" : "text-slate-300 hover:text-white hover-highlight"
+                        "w-full justify-start gap-3 h-11 font-bold uppercase italic tracking-tight text-xs",
+                        location.pathname === '/settings' ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover-highlight"
                       )}
                     >
-                      <Settings size={20} />
+                      <Settings size={18} />
                       Settings
                     </Button>
                   </Link>
@@ -137,55 +159,42 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               </SheetContent>
             </Sheet>
 
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 group-hover:scale-105 transition-transform">
-                <Gamepad2 className="text-white" size={20} />
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 group-hover:scale-105 transition-transform">
+                <Gamepad2 className="text-white" size={16} />
               </div>
-              <span className="text-lg font-black italic uppercase tracking-tighter text-white hidden sm:block">GTracker.app</span>
+              <span className="text-base font-black italic uppercase tracking-tighter text-white hidden sm:block">GTracker</span>
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-slate-800">
-              <Search size={14} className="text-slate-400" />
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800">
+              <Search size={12} className="text-slate-500" />
               <input 
                 type="text" 
-                placeholder="Search games..." 
-                className="bg-transparent border-none outline-none text-[11px] font-bold text-slate-200 placeholder:text-slate-500 w-32"
+                placeholder="Search..." 
+                className="bg-transparent border-none outline-none text-[10px] font-bold text-slate-200 placeholder:text-slate-600 w-24"
               />
             </div>
             
-            <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white relative hover-highlight">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full border-2 border-slate-950" />
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white relative hover-highlight h-9 w-9">
+              <Bell size={18} />
+              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-slate-950" />
             </Button>
 
             <Link to="/profile">
-              <div className="relative flex items-center gap-3 pl-4 border-l border-slate-800 group cursor-pointer hover-highlight rounded-r-xl py-2 pr-2 overflow-hidden">
-                {profile?.banner && (
-                  <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity">
-                    <img src={profile.banner} alt="" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-l from-slate-950 via-transparent to-slate-950" />
-                  </div>
-                )}
-                
-                <div className="text-right hidden sm:block relative z-10">
-                  <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{profile?.username || 'OPERATOR'}</p>
-                  <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest leading-none">Level {Math.floor((profile?.xp || 0) / 100) + 1}</p>
-                </div>
-                <Avatar className="w-10 h-10 border-2 border-slate-800 group-hover:border-indigo-500 transition-colors relative z-10">
-                  <AvatarImage src={profile?.avatar} />
-                  <AvatarFallback className="bg-slate-900 text-slate-300 font-black">
-                    {profile?.username?.substring(0, 2).toUpperCase() || 'OP'}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+              <Avatar className="w-8 h-8 border border-slate-800 hover:border-indigo-500 transition-colors">
+                <AvatarImage src={profile?.avatar} />
+                <AvatarFallback className="bg-slate-900 text-slate-400 text-[10px] font-black">
+                  {profile?.username?.substring(0, 2).toUpperCase() || 'OP'}
+                </AvatarFallback>
+              </Avatar>
             </Link>
           </div>
         </div>
       </header>
 
-      <div className="flex flex-col min-h-[calc(100vh-5rem)]">
+      <div className="flex flex-col min-h-[calc(100vh-4rem)]">
         <main className="flex-1 container mx-auto px-4 sm:px-6 py-6">
           {children}
         </main>
@@ -193,14 +202,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Persistent Floating Timer */}
       <FloatingTimer />
-
-      <div className="fixed bottom-8 left-8 z-50">
-        <Link to="/settings">
-          <Button size="icon" className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover-border-indigo-500 shadow-2xl transition-all hover:scale-110">
-            <Settings size={24} />
-          </Button>
-        </Link>
-      </div>
     </div>
   );
 };
