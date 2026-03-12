@@ -335,7 +335,7 @@ const HabitTracker = () => {
                                 </div>
                               </div>
                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">
-                                Click a date to cycle: None -> Done -> Failed.
+                                Click a date to cycle: None {"->"} Done {"->"} Failed.
                               </p>
                             </div>
                           </DialogContent>
