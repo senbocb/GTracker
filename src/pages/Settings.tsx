@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical } from 'lucide-react';
+import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -69,19 +68,49 @@ const Settings = () => {
     }
   };
 
+  const exportData = () => {
+    try {
+      const games = JSON.parse(localStorage.getItem('combat_games') || '[]');
+      const profile = JSON.parse(localStorage.getItem('combat_profile') || '{}');
+      
+      let csvContent = "Game,Mode,Rank,Tier,Timestamp\n";
+      
+      games.forEach((game: any) => {
+        game.modes.forEach((mode: any) => {
+          (mode.history || []).forEach((log: any) => {
+            csvContent += `"${game.title}","${mode.name}","${log.rank}","${log.tier || ''}","${log.timestamp}"\n`;
+          });
+        });
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `gtracker_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showSuccess("Data exported successfully.");
+    } catch (err) {
+      showError("Failed to export data.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
       <main className="max-w-3xl mx-auto p-6 md:p-10">
         <Link to="/"><Button variant="ghost" className="mb-8 text-slate-400 hover:text-white -ml-4 hover-highlight"><ChevronLeft className="mr-2" size={20} /> Back to Dashboard</Button></Link>
 
         <div className="mb-10">
-          <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">SYSTEM CONFIGURATION</h1>
-          <p className="text-slate-400 font-medium">Adjust your interface and tracking parameters.</p>
+          <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">Settings</h1>
+          <p className="text-slate-400 font-medium">Adjust your interface and data preferences.</p>
         </div>
 
         <div className="space-y-6">
           <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-indigo-500" size={20} /> CUSTOMIZATION</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-indigo-500" size={20} /> Customization</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -134,22 +163,29 @@ const Settings = () => {
                       onChange={handleBgImageUpload} 
                     />
                   </div>
-                  
-                  {customization.bgImage && (
-                    <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                      <img src={customization.bgImage} alt="Background Preview" className="w-full h-full object-cover opacity-50" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Background Active</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Monitor className="text-indigo-500" size={20} /> INTERFACE</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Download className="text-indigo-500" size={20} /> Data Management</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-bold text-white">Export History</Label>
+                  <p className="text-sm text-slate-400">Download your match history and stats as a CSV file.</p>
+                </div>
+                <Button onClick={exportData} className="bg-indigo-600 hover:bg-indigo-500">
+                  <FileSpreadsheet className="mr-2" size={18} />
+                  Export CSV
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Monitor className="text-indigo-500" size={20} /> Interface</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -161,7 +197,6 @@ const Settings = () => {
             </CardContent>
           </Card>
         </div>
-        <footer className="mt-20 pb-10 border-t border-slate-800 pt-10"><MadeWithDyad /></footer>
       </main>
     </div>
   );

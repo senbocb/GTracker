@@ -87,7 +87,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 </div>
                 
                 <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-3 mb-2 mt-4">Operations</p>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-3 mb-2 mt-4">Navigation</p>
                   {navItems.map((item) => (
                     <Link key={item.path} to={item.path}>
                       <Button 
@@ -103,7 +103,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                     </Link>
                   ))}
 
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-3 mb-2 mt-6">Tactical Tools</p>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-3 mb-2 mt-6">Tools</p>
                   <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen} className="w-full">
                     <CollapsibleTrigger asChild>
                       <Button 

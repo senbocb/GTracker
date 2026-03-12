@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar, BarChart3 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -347,11 +346,11 @@ const GameDetail = () => {
           <Dialog open={isLogOpen} onOpenChange={(v) => { setIsLogOpen(v); if(!v) setEditingLogId(null); }}>
             <DialogTrigger asChild>
               <Button className="bg-indigo-600 hover:bg-indigo-500 font-bold shadow-lg shadow-indigo-600/20">
-                <Plus size={16} className="mr-2" /> LOG RANK CHANGE
+                <Plus size={16} className="mr-2" /> Log Rank Change
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-slate-950 border-slate-800 text-white">
-              <DialogHeader><DialogTitle className="italic uppercase font-black">{editingLogId ? 'EDIT COMBAT LOG' : 'LOG COMBAT DATA'}</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="italic uppercase font-black">{editingLogId ? 'Edit History Entry' : 'Log Rank Change'}</DialogTitle></DialogHeader>
               <div className="space-y-6 py-4">
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-300">
@@ -456,7 +455,7 @@ const GameDetail = () => {
               <CardHeader className="flex flex-row items-center justify-between border-b border-slate-800 bg-slate-900/80">
                 <CardTitle className="text-sm font-black italic uppercase tracking-widest flex items-center gap-2">
                   <TableIcon className="text-indigo-500" size={16} />
-                  COMBAT LOGS (SHEET VIEW)
+                  Match History
                 </CardTitle>
                 <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase text-slate-400" onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>
                   Date {sortOrder === 'desc' ? <ArrowDown size={10} /> : <ArrowUp size={10} />}
@@ -519,7 +518,7 @@ const GameDetail = () => {
                         </tr>
                       );
                     }) : (
-                      <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No combat data logged.</td></tr>
+                      <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No data logged.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -566,7 +565,6 @@ const GameDetail = () => {
             </Card>
           </div>
         </div>
-        <footer className="mt-20 pb-10 border-t border-slate-800 pt-10"><MadeWithDyad /></footer>
       </main>
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import GameCard from '@/components/GameCard';
 import GameListItem from '@/components/GameListItem';
 import MatchHistory from '@/components/MatchHistory';
@@ -158,7 +157,7 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-black text-white flex items-center gap-3 italic uppercase tracking-tight">
                 <span className="w-1.5 h-6 bg-indigo-600 rounded-full" />
-                Active Operations
+                Tracked Games
               </h2>
               <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg p-1">
                 <Button 
@@ -197,12 +196,12 @@ const Index = () => {
                   <Gamepad2 size={40} />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-slate-300">No Operations Tracked</h3>
-                  <p className="text-slate-400 max-w-xs mx-auto text-sm">Deploy your first game tracker to begin monitoring your competitive performance metrics.</p>
+                  <h3 className="text-xl font-bold text-slate-300">No Games Tracked</h3>
+                  <p className="text-slate-400 max-w-xs mx-auto text-sm">Add your first game to begin monitoring your performance metrics.</p>
                 </div>
                 <Link to="/add-game">
                   <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-8 py-6 rounded-2xl shadow-lg shadow-indigo-600/20">
-                    Initialize Tracker
+                    Add Game
                   </Button>
                 </Link>
               </div>
@@ -212,7 +211,7 @@ const Index = () => {
       case 'session_tracker':
         return (
           <div key="session_tracker" className="space-y-4">
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Live Intel</h2>
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Session Stats</h2>
             <SessionTracker />
             <AddMatchModal />
           </div>
@@ -232,15 +231,15 @@ const Index = () => {
   return (
     <AppLayout>
       <main className="max-w-7xl mx-auto p-4 sm:p-6 md:p-10">
-        {/* Command Bar */}
+        {/* Dashboard Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 p-4 rounded-2xl bg-slate-900/50 border border-slate-800 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-500">
               <Terminal size={20} />
             </div>
             <div>
-              <h1 className="text-lg font-black italic uppercase tracking-tight text-white">Command Center</h1>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Operational Status: Active</p>
+              <h1 className="text-lg font-black italic uppercase tracking-tight text-white">Dashboard Overview</h1>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status: Active</p>
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -248,7 +247,7 @@ const Index = () => {
             <Link to="/add-game" className="flex-1 sm:flex-none">
               <Button variant="outline" size="sm" className="w-full border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover-highlight">
                 <Plus size={16} className="mr-2" />
-                ADD OPERATION
+                Add Game
               </Button>
             </Link>
           </div>
@@ -267,10 +266,6 @@ const Index = () => {
               .map(s => renderSection(s.id))}
           </aside>
         </div>
-
-        <footer className="mt-20 pb-10 border-t border-slate-800 pt-10">
-          <MadeWithDyad />
-        </footer>
       </main>
     </AppLayout>
   );

@@ -57,7 +57,7 @@
     @apply bg-[#020617] text-slate-200;
   }
   .hover-highlight {
-    @apply transition-all duration-200 hover:bg-indigo-500/10 active:bg-indigo-500/20;
+    @apply transition-all duration-200 hover:bg-white/5 active:bg-white/10 hover:text-white;
   }
 }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
@@ -67,7 +66,7 @@ const INITIAL_CATEGORIES = [
 
 const DEFAULT_PROFILE_LAYOUT: LayoutSection[] = [
   { id: 'career_overview', label: 'Career Overview', enabled: true },
-  { id: 'activity_heatmap', label: 'Operational Frequency', enabled: true },
+  { id: 'activity_heatmap', label: 'Activity History', enabled: true },
   { id: 'medals', label: 'Medals & Achievements', enabled: true },
   { id: 'profile_gallery', label: 'Screenshots & Gallery', enabled: true },
   { id: 'profile_stats', label: 'Profile Stats', enabled: true },
@@ -317,7 +316,7 @@ const Profile = () => {
       case 'career_overview':
         return (
           <section key="career_overview" className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2"><Shield className="text-indigo-500" size={20} /> CAREER OVERVIEW</h2>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2"><Shield className="text-indigo-500" size={20} /> Career Overview</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {careerStats.length > 0 ? careerStats.map((stat) => (
                 <div key={stat.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 group relative hover:border-indigo-500/30 transition-colors backdrop-blur-sm">
@@ -334,7 +333,7 @@ const Profile = () => {
         return (
           <section key="medals" className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Medal className="text-yellow-500" size={20} /> MEDALS & ACHIEVEMENTS</h2>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Medal className="text-yellow-500" size={20} /> Medals & Achievements</h2>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
@@ -548,7 +547,7 @@ const Profile = () => {
 
                     <Dialog open={isAddingSocial} onOpenChange={setIsAddingSocial}>
                       <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-[450px]">
-                        <DialogHeader><DialogTitle className="italic uppercase font-black">LINK PLATFORM</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle className="italic uppercase font-black">Link Platform</DialogTitle></DialogHeader>
                         <div className="space-y-6 py-4">
                           <div className="space-y-3">
                             <Label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2">
@@ -597,7 +596,7 @@ const Profile = () => {
 
                           {newSocial.category === 'stat_trackers' && (
                             <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
-                              <Label className="text-[10px] font-bold uppercase text-indigo-400 tracking-widest">Link to Operation</Label>
+                              <Label className="text-[10px] font-bold uppercase text-indigo-400 tracking-widest">Link to Game</Label>
                               <Select onValueChange={(v) => setNewSocial({...newSocial, gameId: v})} value={newSocial.gameId}>
                                 <SelectTrigger className="bg-slate-900 border-slate-800 text-white"><SelectValue placeholder="Select Game" /></SelectTrigger>
                                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
@@ -623,7 +622,7 @@ const Profile = () => {
                             <input type="file" ref={socialIconRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'social')} />
                           </div>
                         </div>
-                        <DialogFooter><Button onClick={handleAddSocial} className="w-full bg-indigo-600 font-black uppercase py-6">ATTACH LINK</Button></DialogFooter>
+                        <DialogFooter><Button onClick={handleAddSocial} className="w-full bg-indigo-600 font-black uppercase py-6">Attach Link</Button></DialogFooter>
                       </DialogContent>
                     </Dialog>
                   </div>
@@ -650,7 +649,6 @@ const Profile = () => {
               .map(s => renderSection(s.id))}
           </div>
         </div>
-        <footer className="mt-20 pb-10 border-t border-slate-800 pt-10"><MadeWithDyad /></footer>
       </main>
     </AppLayout>
   );
