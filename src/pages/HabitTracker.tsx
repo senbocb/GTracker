@@ -14,7 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
-import { format, startOfToday, eachDayOfInterval, subDays, isSameDay, addDays, differenceInDays, parseISO } from 'date-fns';
+import { format, startOfToday, eachDayOfInterval, subDays, isSameDay, addDays, differenceInDays, parseISO, isBefore, isAfter } from 'date-fns';
 
 interface Habit {
   id: string;
@@ -66,6 +66,12 @@ const HabitTracker = () => {
   };
 
   const toggleCompletion = (habitId: string, date: Date) => {
+    // Prevent future logging
+    if (isAfter(date, startOfToday())) {
+      showError("Cannot log future operations.");
+      return;
+    }
+
     const dateStr = format(date, 'yyyy-MM-dd');
     const updated = habits.map(h => {
       if (h.id === habitId) {
@@ -85,11 +91,12 @@ const HabitTracker = () => {
     showSuccess("Mission decommissioned.");
   };
 
-  const last7Days = useMemo(() => {
+  // Row starts with Today and finishes the next 6 days
+  const next7Days = useMemo(() => {
     const today = startOfToday();
     return eachDayOfInterval({
-      start: subDays(today, 6),
-      end: today
+      start: today,
+      end: addDays(today, 6)
     });
   }, []);
 
@@ -100,6 +107,7 @@ const HabitTracker = () => {
     const todayStr = format(today, 'yyyy-MM-dd');
     const yesterdayStr = format(subDays(today, 1), 'yyyy-MM-dd');
     
+    // Streak is only active if today or yesterday was completed
     if (!completions.includes(todayStr) && !completions.includes(yesterdayStr)) return 0;
 
     for (let i = 0; i < 365; i++) {
@@ -125,19 +133,15 @@ const HabitTracker = () => {
     }
 
     const startDate = parseISO(habit.createdAt);
-    const endDate = addDays(startDate, totalDays);
     const today = startOfToday();
     
     const daysPassed = Math.max(0, differenceInDays(today, startDate));
     const daysRemaining = Math.max(0, totalDays - daysPassed);
-    const progress = Math.min(100, (daysPassed / totalDays) * 100);
-    
     const completionRate = Math.min(100, (habit.completions.length / totalDays) * 100);
 
     return {
       totalDays,
       daysRemaining,
-      progress,
       completionRate,
       isComplete: daysRemaining === 0
     };
@@ -273,24 +277,32 @@ const HabitTracker = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {last7Days.map((date) => {
+                        {next7Days.map((date) => {
                           const isCompleted = habit.completions.includes(format(date, 'yyyy-MM-dd'));
                           const isToday = isSameDay(date, startOfToday());
+                          const isFuture = isAfter(date, startOfToday());
+                          
                           return (
                             <div key={date.toISOString()} className="flex flex-col items-center gap-2">
-                              <span className={cn(
-                                "text-[8px] font-black uppercase tracking-tighter",
-                                isToday ? "text-indigo-400" : "text-slate-600"
-                              )}>
-                                {format(date, 'EEE')}
-                              </span>
+                              <div className="text-center mb-1">
+                                <p className={cn(
+                                  "text-[8px] font-black uppercase tracking-tighter",
+                                  isToday ? "text-indigo-400" : "text-slate-600"
+                                )}>
+                                  {format(date, 'EEE')}
+                                </p>
+                                <p className="text-[7px] font-bold text-slate-700">{format(date, 'MM/dd')}</p>
+                              </div>
                               <button
-                                onClick={() => toggleCompletion(habit.id, date)}
+                                onClick={() => !isFuture && toggleCompletion(habit.id, date)}
+                                disabled={isFuture}
                                 className={cn(
                                   "w-10 h-10 rounded-xl border-2 transition-all flex items-center justify-center",
                                   isCompleted 
                                     ? "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20" 
-                                    : "bg-slate-950 border-slate-800 text-slate-700 hover:border-slate-600"
+                                    : isFuture 
+                                      ? "bg-slate-950/50 border-slate-900 text-slate-800 cursor-not-allowed"
+                                      : "bg-slate-950 border-slate-800 text-slate-700 hover:border-slate-600"
                                 )}
                               >
                                 {isCompleted ? <CheckCircle2 size={20} /> : <Circle size={20} />}
@@ -314,14 +326,34 @@ const HabitTracker = () => {
                                 mode="multiple"
                                 selected={habit.completions.map(d => parseISO(d))}
                                 onSelect={(dates) => {
-                                  const formatted = (dates || []).map(d => format(d, 'yyyy-MM-dd'));
+                                  const today = startOfToday();
+                                  const validDates = (dates || []).filter(d => !isAfter(d, today));
+                                  const formatted = validDates.map(d => format(d, 'yyyy-MM-dd'));
                                   const updated = habits.map(h => h.id === habit.id ? { ...h, completions: formatted } : h);
                                   saveHabits(updated);
+                                }}
+                                modifiers={{
+                                  completed: (date) => habit.completions.includes(format(date, 'yyyy-MM-dd')),
+                                  missed: (date) => isBefore(date, startOfToday()) && !habit.completions.includes(format(date, 'yyyy-MM-dd'))
+                                }}
+                                modifiersClassNames={{
+                                  completed: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 rounded-md",
+                                  missed: "bg-red-500/10 text-red-400/50 border border-red-500/20 rounded-md"
                                 }}
                                 className="rounded-md border border-slate-800 bg-slate-900"
                               />
                             </div>
-                            <div className="px-6 pb-6">
+                            <div className="px-6 pb-6 space-y-4">
+                              <div className="flex items-center justify-center gap-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500/50" />
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase">Done</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded bg-red-500/10 border border-red-500/20" />
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase">Missed</span>
+                                </div>
+                              </div>
                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">
                                 Select dates to toggle completion status in the mission log.
                               </p>

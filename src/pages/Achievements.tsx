@@ -72,6 +72,18 @@ const Achievements = () => {
       if (aFav && !bFav) return -1;
       if (!aFav && bFav) return 1;
 
+      const aUnlocked = a.unlocked || level >= a.minLevel;
+      const bUnlocked = b.unlocked || level >= b.minLevel;
+
+      if (sortBy === 'obtained') {
+        if (aUnlocked && !bUnlocked) return -1;
+        if (!aUnlocked && bUnlocked) return 1;
+      }
+      if (sortBy === 'not_obtained') {
+        if (!aUnlocked && bUnlocked) return -1;
+        if (aUnlocked && !bUnlocked) return 1;
+      }
+
       if (sortBy === 'newest') return -1;
       if (sortBy === 'oldest') return 1;
       return 0;
@@ -105,7 +117,8 @@ const Achievements = () => {
             <SelectContent className="bg-slate-900 border-slate-800 text-white">
               <SelectItem value="newest">Newest First</SelectItem>
               <SelectItem value="oldest">Oldest First</SelectItem>
-              <SelectItem value="rarity">By Rarity</SelectItem>
+              <SelectItem value="obtained">Obtained</SelectItem>
+              <SelectItem value="not_obtained">Not Obtained</SelectItem>
             </SelectContent>
           </Select>
         </div>
