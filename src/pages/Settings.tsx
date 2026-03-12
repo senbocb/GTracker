@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, HardDrive } from 'lucide-react';
+import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -69,10 +69,6 @@ const Settings = () => {
     }
   };
 
-  const handleClientDownload = () => {
-    showSuccess("Initializing GTracker_Setup.exe download...");
-  };
-
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
       <main className="max-w-3xl mx-auto p-6 md:p-10">
@@ -84,37 +80,6 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-900 border-slate-800 shadow-2xl overflow-hidden">
-            <div className="h-1 w-full bg-indigo-600" />
-            <CardHeader>
-              <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
-                <Monitor className="text-indigo-500" size={20} /> 
-                DESKTOP CLIENT
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col md:flex-row items-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 flex items-center justify-center text-indigo-500 shrink-0">
-                  <Download size={32} />
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-base font-black uppercase italic tracking-tight text-white">GTracker for Windows</h3>
-                  <p className="text-sm text-slate-400 mt-1">Run GTracker as a standalone application with local file storage in the <span className="text-indigo-400 font-mono">/GTracker</span> folder.</p>
-                </div>
-                <Button onClick={handleClientDownload} className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 font-black uppercase px-8 py-6 rounded-xl">
-                  Download .exe
-                </Button>
-              </div>
-              
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-900/50 border border-slate-800">
-                <HardDrive className="text-slate-500" size={18} />
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  The desktop client automatically syncs your local <span className="text-slate-300">GTracker</span> folder with this web interface.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="bg-slate-900 border-slate-800 shadow-2xl">
             <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-indigo-500" size={20} /> CUSTOMIZATION</CardTitle></CardHeader>
             <CardContent className="space-y-6">
