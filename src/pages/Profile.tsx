@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles, RefreshCw, Activity, Download, Share, FileImage } from 'lucide-react';
+import { User, Shield, Target, Zap, Award, ChevronLeft, Camera, Edit2, Check, X, Plus, ExternalLink, Settings2, Globe, Medal, Star, Trophy, Gamepad2, Link as LinkIcon, Trash2, BarChart3, Share2, UserCircle, Calendar, Search, Filter, Layout, Image as ImageIcon, MousePointer2, Sparkles, RefreshCw, Activity, Download, Share, FileImage, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import ActivityHeatmap from '@/components/ActivityHeatmap';
 import { getIconFromUrl, SOCIAL_PRESETS } from '@/utils/iconFetcher';
 import RankBadge from '@/components/RankBadge';
 import html2canvas from 'html2canvas';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 // DnD Kit Imports
 import {
@@ -76,9 +78,11 @@ const DEFAULT_PROFILE_LAYOUT: LayoutSection[] = [
 ];
 
 const Profile = () => {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingSocial, setIsAddingSocial] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [exportConfig, setExportConfig] = useState({
     showCurrent: true,
     showPeak: true,
@@ -89,8 +93,8 @@ const Profile = () => {
 
   const [profile, setProfile] = useState({
     username: 'UNIDENTIFIED_USER',
-    avatar: '',
-    banner: '',
+    avatar_url: '',
+    banner_url: '',
     createdAt: new Date().toISOString(),
     xp: 0,
     country: 'United States',
@@ -103,9 +107,6 @@ const Profile = () => {
   const [games, setGames] = useState<any[]>([]);
   const [profileLayout, setProfileLayout] = useState<LayoutSection[]>(DEFAULT_PROFILE_LAYOUT);
   const [favorites, setFavorites] = useState<string[]>([]);
-  
-  const [achievementSearch, setAchievementSearch] = useState('');
-  const [achievementSort, setAchievementSort] = useState('newest');
   
   const [newSocial, setNewSocial] = useState({ name: '', url: '', icon: '', category: 'socials', gameId: '' });
   
@@ -120,8 +121,9 @@ const Profile = () => {
   );
 
   useEffect(() => {
-    const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
-    if (savedProfile) setProfile(prev => ({ ...prev, ...savedProfile }));
+    if (user) {
+      fetchProfile();
+    }
     const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
     setSocials(savedSocials);
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -130,7 +132,29 @@ const Profile = () => {
     if (savedLayout) setProfileLayout(savedLayout);
     const savedFavs = JSON.parse(localStorage.getItem('combat_achievement_favs') || '[]');
     setFavorites(savedFavs);
-  }, []);
+  }, [user]);
+
+  const fetchProfile = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user?.id)
+      .single();
+    
+    if (data) {
+      setProfile(prev => ({
+        ...prev,
+        username: data.username,
+        avatar_url: data.avatar_url,
+        banner_url: data.banner_url,
+        xp: data.xp,
+        country: data.country || prev.country,
+        countryFlag: data.country_flag || prev.countryFlag,
+        sensitivity: data.sensitivity || prev.sensitivity,
+        createdAt: data.updated_at
+      }));
+    }
+  };
 
   const handleExport = async () => {
     if (!exportRef.current) return;
@@ -152,10 +176,42 @@ const Profile = () => {
     }
   };
 
-  const handleSave = () => {
-    localStorage.setItem('combat_profile', JSON.stringify(profile));
-    setIsEditing(false);
-    showSuccess("Profile updated.");
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Check username uniqueness if changed
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', profile.username)
+        .neq('id', user?.id)
+        .single();
+      
+      if (existing) {
+        throw new Error("Username already taken.");
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username: profile.username,
+          country: profile.country,
+          country_flag: profile.countryFlag,
+          sensitivity: profile.sensitivity,
+          avatar_url: profile.avatar_url,
+          banner_url: profile.banner_url
+        })
+        .eq('id', user?.id);
+      
+      if (error) throw error;
+
+      setIsEditing(false);
+      showSuccess("Profile updated.");
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner' | 'social') => {
@@ -165,9 +221,12 @@ const Profile = () => {
         const processed = await processImage(file, type === 'banner' ? 1200 : 400, type === 'banner' ? 600 : 400, 0.7);
         if (type === 'social') setNewSocial({ ...newSocial, icon: processed });
         else {
-          const updated = { ...profile, [type]: processed };
+          const field = type === 'avatar' ? 'avatar_url' : 'banner_url';
+          const updated = { ...profile, [field]: processed };
           setProfile(updated);
-          localStorage.setItem('combat_profile', JSON.stringify(updated));
+          
+          // Auto-save image to Supabase
+          await supabase.from('profiles').update({ [field]: processed }).eq('id', user?.id);
           showSuccess(`${type} updated.`);
         }
       } catch (err) { showError(`Failed to process ${type}.`); }
@@ -268,19 +327,19 @@ const Profile = () => {
         <div className="flex justify-between items-center mb-8">
           <Link to="/"><Button variant="ghost" className="text-slate-300 hover:text-white -ml-4 hover-highlight"><ChevronLeft className="mr-2" size={20} /> Back</Button></Link>
           <Button onClick={() => setIsExportOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 font-black uppercase">
-            <FileImage className="mr-2" size={18} /> Download Profile as PNG/Jpeg
+            <FileImage className="mr-2" size={18} /> Download Profile
           </Button>
         </div>
 
         <div className="relative mb-12">
           <div className="h-48 w-full rounded-3xl bg-slate-900/90 border border-slate-800 overflow-hidden relative backdrop-blur-sm">
-            {profile.banner ? <img src={profile.banner} alt="Banner" className="w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent" />}
+            {profile.banner_url ? <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" /> : <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent" />}
             <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-300 hover:text-white bg-slate-950/50 rounded-full h-10 w-10" onClick={() => bannerInputRef.current?.click()}><Camera size={18} /></Button>
             <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
           </div>
           <div className="absolute -bottom-10 left-8 flex items-end gap-6 w-[calc(100%-4rem)]">
             <div className="w-32 h-32 rounded-3xl bg-slate-950 border-4 border-[#020617] flex items-center justify-center shadow-2xl group cursor-pointer relative overflow-hidden shrink-0" onClick={() => avatarInputRef.current?.click()}>
-              {profile.avatar ? <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <User size={64} className="text-slate-700 group-hover:text-indigo-500 transition-colors" />}
+              {profile.avatar_url ? <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" /> : <User size={64} className="text-slate-700 group-hover:text-indigo-500 transition-colors" />}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Camera size={24} className="text-white" /></div>
               <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatar')} />
             </div>
@@ -291,7 +350,12 @@ const Profile = () => {
                     <div className="space-y-1"><Label className="text-[10px] font-bold uppercase text-slate-400">Username</Label><Input value={profile.username} onChange={(e) => setProfile({...profile, username: e.target.value})} className="bg-slate-900 border-slate-800 text-white font-black italic h-10" /></div>
                     <div className="space-y-1"><Label className="text-[10px] font-bold uppercase text-slate-400">Country</Label><Select onValueChange={(v) => { const c = COUNTRIES.find(x => x.name === v); if(c) setProfile({...profile, country: c.name, countryFlag: c.flag}); }} value={profile.country}><SelectTrigger className="bg-slate-900 border-slate-800 text-white h-10"><SelectValue /></SelectTrigger><SelectContent className="bg-slate-900 border-slate-800 text-white">{COUNTRIES.map(c => <SelectItem key={c.name} value={c.name}>{c.flag} {c.name}</SelectItem>)}</SelectContent></Select></div>
                   </div>
-                  <div className="flex gap-2 pt-2"><Button size="sm" onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-500 font-bold"><Check size={16} className="mr-1" /> Save</Button><Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-white">Cancel</Button></div>
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 font-bold">
+                      {saving ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} className="mr-1" />} Save
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-white">Cancel</Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -332,7 +396,7 @@ const Profile = () => {
             <div className="p-8 bg-[#020617] overflow-auto max-h-[50vh]">
               <div ref={exportRef} className="w-[600px] bg-[#020617] border border-slate-800 rounded-3xl overflow-hidden p-8 space-y-8">
                 <div className="flex items-center gap-6">
-                  <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 border-indigo-500 overflow-hidden shrink-0">{profile.avatar && <img src={profile.avatar} className="w-full h-full object-cover" />}</div>
+                  <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 border-indigo-500 overflow-hidden shrink-0">{profile.avatar_url && <img src={profile.avatar_url} className="w-full h-full object-cover" />}</div>
                   <div>
                     <h2 className="text-3xl font-black italic uppercase text-white">{profile.username}</h2>
                     <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Level {level} Operator • {profile.countryFlag} {profile.country}</p>
