@@ -56,14 +56,16 @@ const Login = () => {
         });
         
         if (error) {
+          // Handle Rate Limit (429)
+          if (error.status === 429 || error.message.toLowerCase().includes("rate limit")) {
+            setCooldown(300); // 5 minute cooldown on UI
+            throw new Error("Supabase Security: Email rate limit reached. Please wait 15 minutes or try logging in if you already have an account.");
+          }
+          
           if (error.message.includes("User already registered")) {
             showError("Account already exists. Redirecting to Login...");
             setView('login');
             return;
-          }
-          if (error.message.includes("rate limit") || error.status === 429) {
-            setCooldown(60);
-            throw new Error("Email rate limit reached. Please wait a few minutes before trying again.");
           }
           throw error;
         }
@@ -102,8 +104,8 @@ const Login = () => {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) {
-          if (error.message.includes("rate limit") || error.status === 429) {
-            setCooldown(60);
+          if (error.status === 429 || error.message.toLowerCase().includes("rate limit")) {
+            setCooldown(300);
             throw new Error("Rate limit reached. Please wait before requesting another reset.");
           }
           throw error;
@@ -136,9 +138,9 @@ const Login = () => {
       showSuccess("Verification email resent.");
       setCooldown(60);
     } catch (err: any) {
-      if (err.message.includes("rate limit") || err.status === 429) {
-        showError("Still rate limited. Please wait a few more minutes.");
-        setCooldown(120);
+      if (err.status === 429 || err.message.toLowerCase().includes("rate limit")) {
+        showError("Still rate limited. Please wait 15 minutes.");
+        setCooldown(300);
       } else {
         showError(err.message || "Failed to resend email.");
       }
@@ -250,7 +252,7 @@ const Login = () => {
               disabled={loading || cooldown > 0} 
               className="w-full bg-indigo-600 hover:bg-indigo-500 font-black uppercase py-7 rounded-2xl shadow-xl shadow-indigo-600/20"
             >
-              {loading ? 'Processing...' : cooldown > 0 ? `Wait ${cooldown}s` : view === 'signup' ? 'Create Account' : view === 'forgot-password' ? 'Send Reset Link' : 'Authorize Access'}
+              {loading ? 'Processing...' : cooldown > 0 ? `Wait ${Math.ceil(cooldown / 60)}m` : view === 'signup' ? 'Create Account' : view === 'forgot-password' ? 'Send Reset Link' : 'Authorize Access'}
             </Button>
           </form>
 
