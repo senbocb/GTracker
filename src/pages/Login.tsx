@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Lock, Mail, LogIn, Key, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Shield, Lock, Mail, LogIn, Key, RefreshCw, ArrowLeft, Clock } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,12 +18,21 @@ const Login = () => {
   const [view, setView] = useState<AuthView>('login');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [cooldown, setCooldown] = useState(0);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     username: '',
     pin: ''
   });
+
+  // Handle cooldown timer
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +56,7 @@ const Login = () => {
         
         if (error) {
           if (error.message.includes("rate limit")) {
+            setCooldown(60); // Set a 60s cooldown on UI
             throw new Error("Email rate limit reached. Please wait a few minutes before trying again.");
           }
           throw error;
@@ -57,6 +67,7 @@ const Login = () => {
           navigate('/');
         } else {
           showSuccess("Verification email sent. Please check your inbox.");
+          setCooldown(60);
         }
       } else if (view === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -78,8 +89,15 @@ const Login = () => {
         const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes("rate limit")) {
+            setCooldown(60);
+            throw new Error("Rate limit reached. Please wait before requesting another reset.");
+          }
+          throw error;
+        }
         showSuccess("Password reset link sent to your email.");
+        setCooldown(60);
         setView('login');
       }
     } catch (err: any) {
@@ -94,6 +112,8 @@ const Login = () => {
       showError("Please enter your email first.");
       return;
     }
+    if (cooldown > 0) return;
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.resend({
@@ -102,8 +122,14 @@ const Login = () => {
       });
       if (error) throw error;
       showSuccess("Verification email resent.");
+      setCooldown(60);
     } catch (err: any) {
-      showError(err.message || "Failed to resend email.");
+      if (err.message.includes("rate limit")) {
+        showError("Still rate limited. Please wait a few more minutes.");
+        setCooldown(120); // Increase cooldown if they hit it again
+      } else {
+        showError(err.message || "Failed to resend email.");
+      }
     } finally {
       setLoading(false);
     }
@@ -208,8 +234,11 @@ const Login = () => {
               </>
             )}
 
-            <Button disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 font-black uppercase py-7 rounded-2xl shadow-xl shadow-indigo-600/20">
-              {loading ? 'Processing...' : view === 'signup' ? 'Create Account' : view === 'forgot-password' ? 'Send Reset Link' : 'Authorize Access'}
+            <Button 
+              disabled={loading || cooldown > 0} 
+              className="w-full bg-indigo-600 hover:bg-indigo-500 font-black uppercase py-7 rounded-2xl shadow-xl shadow-indigo-600/20"
+            >
+              {loading ? 'Processing...' : cooldown > 0 ? `Wait ${cooldown}s` : view === 'signup' ? 'Create Account' : view === 'forgot-password' ? 'Send Reset Link' : 'Authorize Access'}
             </Button>
           </form>
 
@@ -231,10 +260,15 @@ const Login = () => {
                 </button>
                 {view === 'login' && (
                   <button 
+                    disabled={cooldown > 0}
                     onClick={resendVerification}
-                    className="text-[10px] font-black uppercase text-slate-600 hover:text-slate-400 flex items-center justify-center gap-2"
+                    className={cn(
+                      "text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-colors",
+                      cooldown > 0 ? "text-slate-700 cursor-not-allowed" : "text-slate-600 hover:text-slate-400"
+                    )}
                   >
-                    <RefreshCw size={12} /> Resend Verification Email
+                    {cooldown > 0 ? <Clock size={12} /> : <RefreshCw size={12} />}
+                    {cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend Verification Email'}
                   </button>
                 )}
               </>
