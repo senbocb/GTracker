@@ -1,197 +1,154 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, History, Target, FileCode, User, Settings, Bell, LogOut, ChevronDown, Zap, Info, Sparkles, ListChecks } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Gamepad2, Menu, LayoutDashboard, History, Settings, User, Bell, ChevronDown, Zap, Timer as TimerIcon, Library, Target, FileCode, Award, CheckSquare } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from '@/lib/utils';
-import FloatingTimer from './FloatingTimer';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+
+const VERSION_HISTORY = [
+  { version: "v2.4", type: "Update", title: "Auth & PIN Security", date: "Today", notes: "Implemented Supabase auth with mandatory PIN security and cross-device sync." },
+  { version: "v2.3", type: "Change", title: "CS2 Per-Map Overhaul", date: "Yesterday", notes: "Redesigned map tracking with 14 maps and rank-first logging flow." },
+  { version: "v2.2", type: "Note", title: "Season Management", date: "2 days ago", notes: "Added season tags to history and multi-season peak tracking." },
+  { version: "v2.1", type: "Update", title: "Visual Refinements", date: "3 days ago", notes: "Optimized heatmap density and fixed high-contrast UI elements." }
+];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const [profile, setProfile] = useState<any>(null);
-  const [isToolsOpen, setIsToolsOpen] = React.useState(true);
-  const [customization, setCustomization] = useState({ bgColor: '#020617', bgImage: '' });
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
-    setProfile(savedProfile);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
 
-    const savedCustom = JSON.parse(localStorage.getItem('combat_customization') || 'null');
-    if (savedCustom) setCustomization(savedCustom);
-  }, [location.pathname]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
-    { label: 'Dashboard', path: '/', icon: <LayoutDashboard size={18} /> },
-    { label: 'History', path: '/history', icon: <History size={18} /> },
-    { label: 'Achievements', path: '/achievements', icon: <Award size={18} /> },
-    { label: 'Registry', path: '/registry', icon: <Library size={18} /> },
+    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/' },
+    { icon: <History size={20} />, label: 'History', path: '/history' },
+    { icon: <Zap size={20} />, label: 'Habits', path: '/habits' },
+    { icon: <Target size={20} />, label: 'Crosshairs', path: '/crosshairs' },
+    { icon: <FileCode size={20} />, label: 'Configs', path: '/configs' },
+    { icon: <User size={20} />, label: 'Profile', path: '/profile' },
   ];
-
-  const tacticalTools = [
-    { label: 'Habit Tracker', path: '/habits', icon: <CheckSquare size={16} /> },
-    { label: 'Timer', path: '/timer', icon: <TimerIcon size={16} /> },
-    { label: 'Crosshair Vault', path: '/crosshairs', icon: <Target size={16} /> },
-    { label: 'Config Archive', path: '/configs', icon: <FileCode size={16} /> },
-  ];
-
-  const isCustomizablePage = location.pathname === '/' || location.pathname === '/profile';
-  
-  const bgStyle = isCustomizablePage ? {
-    backgroundColor: customization.bgColor,
-    backgroundImage: customization.bgImage ? `url(${customization.bgImage})` : 'none',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundAttachment: 'fixed',
-    backgroundRepeat: 'no-repeat'
-  } : { backgroundColor: '#020617' };
 
   return (
-    <div 
-      className="min-h-screen text-slate-200 font-sans selection:bg-indigo-500/30 transition-colors duration-500 overflow-x-hidden"
-      style={bgStyle}
-    >
-      <header className="sticky top-0 z-50 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover-highlight h-10 w-10">
-                  <Menu size={20} />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-full sm:w-72 bg-slate-950 border-r border-slate-800 p-0 flex flex-col">
-                <div className="relative h-40 shrink-0 overflow-hidden border-b border-slate-800">
-                  {profile?.banner ? (
-                    <img src={profile.banner} alt="" className="w-full h-full object-cover opacity-40" />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-slate-950" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-                  
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3">
-                    <Avatar className="w-12 h-12 border-2 border-indigo-500 shadow-lg">
-                      <AvatarImage src={profile?.avatar} />
-                      <AvatarFallback className="bg-slate-900 text-slate-300 font-black">
-                        {profile?.username?.substring(0, 2).toUpperCase() || 'OP'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="text-sm font-black text-white uppercase italic tracking-tight truncate">{profile?.username || 'OPERATOR'}</p>
-                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Level {Math.floor((profile?.xp || 0) / 100) + 1}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-3 mb-2 mt-4">Navigation</p>
-                  {navItems.map((item) => (
-                    <Link key={item.path} to={item.path}>
-                      <Button 
-                        variant="ghost" 
-                        className={cn(
-                          "w-full justify-start gap-3 h-11 font-bold uppercase italic tracking-tight text-xs",
-                          location.pathname === item.path ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover-highlight"
-                        )}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </Button>
-                    </Link>
-                  ))}
-
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-3 mb-2 mt-6">Tools</p>
-                  <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen} className="w-full">
-                    <CollapsibleTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        className="w-full justify-between gap-3 h-11 font-bold uppercase italic tracking-tight text-xs text-slate-400 hover:text-white hover-highlight"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Zap size={18} />
-                          Tools
-                        </div>
-                        <ChevronDown className={cn("transition-transform", isToolsOpen && "rotate-180")} size={14} />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-1 pl-4 mt-1">
-                      {tacticalTools.map((tool) => (
-                        <Link key={tool.path} to={tool.path}>
-                          <Button 
-                            variant="ghost" 
-                            className={cn(
-                              "w-full justify-start gap-3 h-10 font-bold uppercase tracking-widest text-[9px]",
-                              location.pathname === tool.path ? "text-indigo-400" : "text-slate-500 hover:text-white"
-                            )}
-                          >
-                            {tool.icon}
-                            {tool.label}
-                          </Button>
-                        </Link>
-                      ))}
-                    </CollapsibleContent>
-                  </Collapsible>
-                </nav>
-
-                <div className="p-3 border-t border-slate-900 space-y-1">
-                  <Link to="/profile">
-                    <Button variant="ghost" className="w-full justify-start gap-3 h-11 font-bold uppercase italic tracking-tight text-xs text-slate-400 hover:text-white hover-highlight">
-                      <User size={18} />
-                      Profile
-                    </Button>
-                  </Link>
-                  <Link to="/settings">
-                    <Button 
-                      variant="ghost" 
-                      className={cn(
-                        "w-full justify-start gap-3 h-11 font-bold uppercase italic tracking-tight text-xs",
-                        location.pathname === '/settings' ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover-highlight"
-                      )}
-                    >
-                      <Settings size={18} />
-                      Settings
-                    </Button>
-                  </Link>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 group-hover:scale-105 transition-transform">
-                <Gamepad2 className="text-white" size={16} />
-              </div>
-              <span className="text-base font-black italic uppercase tracking-tighter text-white hidden sm:block">GTracker</span>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white relative hover-highlight h-9 w-9">
-              <Bell size={18} />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-indigo-500 rounded-full border border-slate-950" />
-            </Button>
-
-            <Link to="/profile">
-              <Avatar className="w-8 h-8 border border-slate-800 hover:border-indigo-500 transition-colors">
-                <AvatarImage src={profile?.avatar} />
-                <AvatarFallback className="bg-slate-900 text-slate-400 text-[10px] font-black">
-                  {profile?.username?.substring(0, 2).toUpperCase() || 'OP'}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
-          </div>
+    <div className="min-h-screen bg-[#020617] text-slate-200 flex">
+      <aside className="w-20 md:w-64 border-r border-slate-800 flex flex-col bg-slate-950/50 backdrop-blur-xl sticky top-0 h-screen z-50">
+        <div className="p-6 mb-8">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 group-hover:scale-110 transition-transform">
+              <Target className="text-white" size={24} />
+            </div>
+            <span className="hidden md:block text-xl font-black italic tracking-tighter text-white uppercase">GTracker</span>
+          </Link>
         </div>
-      </header>
 
-      <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-        <main className="flex-1 container mx-auto px-4 sm:px-6 py-6">
+        <nav className="flex-1 px-4 space-y-2">
+          {navItems.map((item) => (
+            <Link key={item.path} to={item.path}>
+              <Button 
+                variant="ghost" 
+                className={cn(
+                  "w-full justify-start gap-4 h-12 rounded-xl transition-all group",
+                  location.pathname === item.path 
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/10" 
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                )}
+              >
+                <span className={cn(location.pathname === item.path ? "text-white" : "text-slate-500 group-hover:text-indigo-400")}>
+                  {item.icon}
+                </span>
+                <span className="hidden md:block font-bold uppercase tracking-widest text-[10px]">{item.label}</span>
+              </Button>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          <Link to="/settings">
+            <Button variant="ghost" className="w-full justify-start gap-4 h-12 text-slate-400 hover:text-white rounded-xl">
+              <Settings size={20} />
+              <span className="hidden md:block font-bold uppercase tracking-widest text-[10px]">Settings</span>
+            </Button>
+          </Link>
+          {user ? (
+            <Button 
+              variant="ghost" 
+              onClick={() => supabase.auth.signOut()}
+              className="w-full justify-start gap-4 h-12 text-slate-400 hover:text-red-400 rounded-xl"
+            >
+              <LogOut size={20} />
+              <span className="hidden md:block font-bold uppercase tracking-widest text-[10px]">Logout</span>
+            </Button>
+          ) : (
+            <Link to="/login">
+              <Button variant="ghost" className="w-full justify-start gap-4 h-12 text-indigo-400 hover:text-white hover:bg-indigo-600/20 rounded-xl">
+                <LogIn size={20} />
+                <span className="hidden md:block font-bold uppercase tracking-widest text-[10px]">Login</span>
+              </Button>
+            </Link>
+          )}
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/30 backdrop-blur-md sticky top-0 z-40">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Operational Status: <span className="text-emerald-500">Active</span></h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative text-slate-400 hover:text-white bg-slate-900/50 rounded-full">
+                  <Bell size={20} />
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full border-2 border-slate-950" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 bg-slate-950 border-slate-800 text-white p-0 overflow-hidden">
+                <DropdownMenuLabel className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest">Version History</span>
+                  <span className="text-[8px] font-bold text-indigo-400 uppercase">Latest: v2.4</span>
+                </DropdownMenuLabel>
+                <div className="max-h-[400px] overflow-y-auto">
+                  {VERSION_HISTORY.map((v, i) => (
+                    <div key={i} className="p-4 border-b border-slate-800/50 hover:bg-slate-900/50 transition-colors">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={cn(
+                          "text-[8px] font-black uppercase px-1.5 py-0.5 rounded",
+                          v.type === 'Update' ? "bg-emerald-500/20 text-emerald-400" :
+                          v.type === 'Change' ? "bg-indigo-500/20 text-indigo-400" : "bg-slate-500/20 text-slate-400"
+                        )}>{v.type}</span>
+                        <span className="text-[8px] font-bold text-slate-500 uppercase">{v.date}</span>
+                      </div>
+                      <h4 className="text-xs font-black uppercase italic tracking-tight mb-1">{v.title} <span className="text-slate-600 ml-1">{v.version}</span></h4>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">{v.notes}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-3 bg-slate-900/50 text-center">
+                  <Button variant="ghost" className="text-[9px] font-black uppercase text-indigo-400 hover:text-white h-auto py-1">View Full Changelog</Button>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <div className="h-10 w-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+              {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-slate-500" />}
+            </div>
+          </div>
+        </header>
+        <div className="flex-1 overflow-y-auto">
           {children}
-        </main>
+        </div>
       </div>
-
-      <FloatingTimer />
     </div>
   );
 };
