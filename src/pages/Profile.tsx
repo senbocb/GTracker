@@ -78,7 +78,7 @@ const DEFAULT_PROFILE_LAYOUT: LayoutSection[] = [
 ];
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, profile: globalProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingSocial, setIsAddingSocial] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -92,7 +92,7 @@ const Profile = () => {
   });
 
   const [profile, setProfile] = useState({
-    username: 'UNIDENTIFIED_USER',
+    username: 'OPERATOR',
     avatar_url: '',
     banner_url: '',
     createdAt: new Date().toISOString(),
@@ -102,6 +102,7 @@ const Profile = () => {
     sensitivity: '',
     age: ''
   });
+
   const [socials, setSocials] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>(INITIAL_CATEGORIES);
   const [games, setGames] = useState<any[]>([]);
@@ -120,10 +121,24 @@ const Profile = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  // Sync local state with global profile when not editing
   useEffect(() => {
-    if (user) {
-      fetchProfile();
+    if (globalProfile && !isEditing) {
+      setProfile({
+        username: globalProfile.username || 'OPERATOR',
+        avatar_url: globalProfile.avatar_url || '',
+        banner_url: globalProfile.banner_url || '',
+        createdAt: globalProfile.updated_at,
+        xp: globalProfile.xp || 0,
+        country: globalProfile.country || 'United States',
+        countryFlag: globalProfile.country_flag || '🇺🇸',
+        sensitivity: globalProfile.sensitivity || '',
+        age: ''
+      });
     }
+  }, [globalProfile, isEditing]);
+
+  useEffect(() => {
     const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
     setSocials(savedSocials);
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
@@ -132,29 +147,7 @@ const Profile = () => {
     if (savedLayout) setProfileLayout(savedLayout);
     const savedFavs = JSON.parse(localStorage.getItem('combat_achievement_favs') || '[]');
     setFavorites(savedFavs);
-  }, [user]);
-
-  const fetchProfile = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user?.id)
-      .single();
-    
-    if (data) {
-      setProfile(prev => ({
-        ...prev,
-        username: data.username,
-        avatar_url: data.avatar_url,
-        banner_url: data.banner_url,
-        xp: data.xp,
-        country: data.country || prev.country,
-        countryFlag: data.country_flag || prev.countryFlag,
-        sensitivity: data.sensitivity || prev.sensitivity,
-        createdAt: data.updated_at
-      }));
-    }
-  };
+  }, []);
 
   const handleExport = async () => {
     if (!exportRef.current) return;
@@ -177,20 +170,9 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
+    if (!user) return;
     setSaving(true);
     try {
-      // Check username uniqueness if changed
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', profile.username)
-        .neq('id', user?.id)
-        .single();
-      
-      if (existing) {
-        throw new Error("Username already taken.");
-      }
-
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -201,12 +183,12 @@ const Profile = () => {
           avatar_url: profile.avatar_url,
           banner_url: profile.banner_url
         })
-        .eq('id', user?.id);
+        .eq('id', user.id);
       
       if (error) throw error;
 
       setIsEditing(false);
-      showSuccess("Profile updated.");
+      showSuccess("Profile updated across all devices.");
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -222,12 +204,13 @@ const Profile = () => {
         if (type === 'social') setNewSocial({ ...newSocial, icon: processed });
         else {
           const field = type === 'avatar' ? 'avatar_url' : 'banner_url';
-          const updated = { ...profile, [field]: processed };
-          setProfile(updated);
+          setProfile(prev => ({ ...prev, [field]: processed }));
           
           // Auto-save image to Supabase
-          await supabase.from('profiles').update({ [field]: processed }).eq('id', user?.id);
-          showSuccess(`${type} updated.`);
+          if (user) {
+            await supabase.from('profiles').update({ [field]: processed }).eq('id', user.id);
+            showSuccess(`${type} updated.`);
+          }
         }
       } catch (err) { showError(`Failed to process ${type}.`); }
     }
