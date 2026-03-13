@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Lock, Mail, UserPlus, LogIn, Key } from 'lucide-react';
+import { Shield, Lock, Mail, LogIn, Key } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -40,49 +40,44 @@ const Login = () => {
           password: formData.password,
           options: {
             data: {
-              pin: formData.pin
+              pin: formData.pin,
+              username: formData.username || formData.email.split('@')[0]
             }
           }
         });
         if (error) throw error;
-        showSuccess("Account created! Please set your username.");
-        setShowUsernameDialog(true);
+        
+        // Create initial profile record
+        if (data.user) {
+          await supabase.from('profiles').insert({
+            id: data.user.id,
+            username: formData.username || formData.email.split('@')[0],
+            xp: 0
+          });
+        }
+
+        showSuccess("Account created! Welcome to GTracker.");
+        navigate('/');
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password
         });
-        if (error) throw error;
         
+        if (error) throw error;
+
+        // Verify PIN from metadata
         const userPin = data.user?.user_metadata?.pin;
         if (userPin !== formData.pin) {
           await supabase.auth.signOut();
-          throw new Error("Invalid Security PIN.");
+          throw new Error("Invalid Security PIN. Access Denied.");
         }
         
-        showSuccess("Welcome back, Operator.");
+        showSuccess("Authorization successful. Welcome back.");
         navigate('/');
       }
     } catch (err: any) {
-      showError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSetUsername = async () => {
-    if (!formData.username) return;
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        data: { username: formData.username }
-      });
-      if (error) throw error;
-      showSuccess("Username set successfully.");
-      setShowUsernameDialog(false);
-      navigate('/');
-    } catch (err: any) {
-      showError(err.message);
+      showError(err.message || "Authentication failed.");
     } finally {
       setLoading(false);
     }
@@ -131,6 +126,20 @@ const Login = () => {
                 />
               </div>
             </div>
+
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-slate-400">Username</Label>
+                <Input 
+                  required
+                  placeholder="OPERATOR_NAME" 
+                  value={formData.username}
+                  onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  className="bg-slate-950 border-slate-800 text-white"
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-indigo-400">Security PIN (4-10 Digits)</Label>
               <div className="relative">
@@ -162,28 +171,6 @@ const Login = () => {
           </div>
         </CardContent>
       </Card>
-
-      <Dialog open={showUsernameDialog} onOpenChange={setShowUsernameDialog}>
-        <DialogContent className="bg-slate-950 border-slate-800 text-white">
-          <DialogHeader>
-            <DialogTitle className="italic uppercase font-black">Set Your Username</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid gap-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-400">Username</Label>
-              <Input 
-                placeholder="OPERATOR_NAME" 
-                value={formData.username} 
-                onChange={(e) => setFormData({...formData, username: e.target.value})} 
-                className="bg-slate-900 border-slate-800" 
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleSetUsername} className="w-full bg-indigo-600 font-black uppercase py-6">Confirm Username</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
