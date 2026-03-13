@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { showSuccess, showError } from '@/utils/toast';
 import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/components/ThemeProvider';
 
 const UI_PRESETS = [
   { id: 'tactical', name: 'Tactical Command', primary: '#6366f1', bg: '#020617', description: 'Standard issue indigo interface.' },
@@ -25,21 +26,7 @@ const UI_PRESETS = [
 
 const Settings = () => {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState({
-    highContrast: false,
-    compactDashboard: true,
-    rankAlerts: true,
-    sessionReminders: false,
-    seasonGoal: '',
-    tacticalOverlay: false,
-    uiPreset: 'tactical'
-  });
-
-  const [customization, setCustomization] = useState({
-    bgColor: '#020617',
-    bgImage: ''
-  });
-
+  const { settings, updateSettings } = useTheme();
   const [profile, setProfile] = useState<any>(null);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [resetStep, setResetStep] = useState(1);
@@ -48,57 +35,16 @@ const Settings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('combat_settings') || 'null');
-    if (saved) {
-      setSettings(saved);
-      if (saved.uiPreset) {
-        document.body.setAttribute('data-theme', saved.uiPreset);
-      }
-      if (saved.tacticalOverlay) {
-        document.body.classList.add('tactical-overlay', 'scanline-effect');
-      }
-    }
-
-    const savedCustom = JSON.parse(localStorage.getItem('combat_customization') || 'null');
-    if (savedCustom) setCustomization(savedCustom);
-
     const savedProfile = JSON.parse(localStorage.getItem('combat_profile') || 'null');
     setProfile(savedProfile);
   }, []);
-
-  const updateSetting = (key: keyof typeof settings, value: any) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    localStorage.setItem('combat_settings', JSON.stringify(newSettings));
-    
-    if (key === 'tacticalOverlay') {
-      document.body.classList.toggle('tactical-overlay', value);
-      document.body.classList.toggle('scanline-effect', value);
-    }
-
-    if (key === 'uiPreset') {
-      document.body.setAttribute('data-theme', value);
-      const preset = UI_PRESETS.find(p => p.id === value);
-      if (preset) {
-        updateCustomization('bgColor', preset.bg);
-      }
-    }
-    
-    showSuccess("Configuration updated.");
-  };
-
-  const updateCustomization = (key: keyof typeof customization, value: string) => {
-    const newCustom = { ...customization, [key]: value };
-    setCustomization(newCustom);
-    localStorage.setItem('combat_customization', JSON.stringify(newCustom));
-  };
 
   const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
         const processed = await processImage(file, 1920, 1080, 0.6);
-        updateCustomization('bgImage', processed);
+        updateSettings({ bgImage: processed });
         showSuccess("Background image updated.");
       } catch (err) {
         showError("Failed to process image.");
@@ -139,7 +85,7 @@ const Settings = () => {
               <div className="space-y-4">
                 <div className="grid gap-2">
                   <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Visual Preset</Label>
-                  <Select value={settings.uiPreset} onValueChange={(v) => updateSetting('uiPreset', v)}>
+                  <Select value={settings.uiPreset} onValueChange={(v) => updateSettings({ uiPreset: v })}>
                     <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-white">
                       <div className="flex items-center gap-3">
                         <div 
@@ -170,7 +116,7 @@ const Settings = () => {
                     <Label className="text-sm font-bold text-white">Tactical Overlay</Label>
                     <p className="text-[10px] text-slate-500 uppercase tracking-widest">Scanlines & CRT effects</p>
                   </div>
-                  <Switch checked={settings.tacticalOverlay} onCheckedChange={(v) => updateSetting('tacticalOverlay', v)} />
+                  <Switch checked={settings.tacticalOverlay} onCheckedChange={(v) => updateSettings({ tacticalOverlay: v })} />
                 </div>
               </div>
             </CardContent>
@@ -186,8 +132,8 @@ const Settings = () => {
                     <p className="text-sm text-slate-400">Set a custom base color for the interface.</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-slate-300 uppercase">{customization.bgColor}</span>
-                    <Input type="color" value={customization.bgColor} onChange={(e) => updateCustomization('bgColor', e.target.value)} className="w-12 h-12 p-1 bg-slate-950 border-slate-800 cursor-pointer" />
+                    <span className="text-xs font-mono text-slate-300 uppercase">{settings.bgColor}</span>
+                    <Input type="color" value={settings.bgColor} onChange={(e) => updateSettings({ bgColor: e.target.value })} className="w-12 h-12 p-1 bg-slate-950 border-slate-800 cursor-pointer" />
                   </div>
                 </div>
                 <div className="space-y-4 pt-4 border-t border-slate-800">
@@ -197,8 +143,8 @@ const Settings = () => {
                       <p className="text-sm text-slate-400">Upload a PNG or JPEG to use as a global background.</p>
                     </div>
                     <div className="flex gap-2">
-                      {customization.bgImage && <Button variant="destructive" size="icon" onClick={() => updateCustomization('bgImage', '')} className="h-10 w-10"><Trash2 size={16} /></Button>}
-                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="border-slate-800 bg-slate-950 text-slate-300 hover:text-white"><ImageIcon className="mr-2" size={16} />{customization.bgImage ? 'Change Image' : 'Upload Image'}</Button>
+                      {settings.bgImage && <Button variant="destructive" size="icon" onClick={() => updateSettings({ bgImage: '' })} className="h-10 w-10"><Trash2 size={16} /></Button>}
+                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="border-slate-800 bg-slate-950 text-slate-300 hover:text-white"><ImageIcon className="mr-2" size={16} />{settings.bgImage ? 'Change Image' : 'Upload Image'}</Button>
                     </div>
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg" onChange={handleBgImageUpload} />
                   </div>
