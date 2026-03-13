@@ -14,18 +14,45 @@ import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 
+const DEFAULT_REGISTRY = {
+  "Valorant": { 
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
+    modes: ["Competitive", "Premier"],
+    image: "https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?q=80&w=1000&auto=format&fit=crop"
+  },
+  "Counter-Strike 2": { 
+    ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
+    modes: ["Premier", "Competitive (Per Map)", "Wingman", "Faceit"],
+    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+  },
+  "League of Legends": {
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
+    modes: ["Ranked Solo/Duo", "Ranked Flex"],
+    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+  }
+};
+
 const AddGame = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [registry, setRegistry] = useState<any>({});
+  const [registry, setRegistry] = useState<any>(DEFAULT_REGISTRY);
   const [selectedGame, setSelectedGame] = useState('');
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
-    setRegistry(saved);
+    const saved = localStorage.getItem('combat_game_registry');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Object.keys(parsed).length > 0) {
+          setRegistry(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse registry", e);
+      }
+    }
   }, []);
 
   const gameOptions = Object.keys(registry);
@@ -59,7 +86,7 @@ const AddGame = () => {
 
     setLoading(true);
     try {
-      // 1. Create or find the game
+      // 1. Create the game
       const { data: game, error: gameError } = await supabase
         .from('games')
         .insert({
@@ -86,7 +113,7 @@ const AddGame = () => {
       
       if (modesError) throw modesError;
 
-      showSuccess(`${selectedGame} trackers initialized in cloud.`);
+      showSuccess(`${selectedGame} trackers initialized.`);
       navigate('/');
     } catch (err: any) {
       showError(err.message);
@@ -181,8 +208,7 @@ const AddGame = () => {
               </div>
 
               <Button type="submit" disabled={loading || !selectedGame || selectedModes.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                {loading ? <Loader2 className="animate-spin mr-2" /> : null}
-                Deploy Trackers
+                {loading ? <Loader2 className="animate-spin mr-2" /> : "Deploy Trackers"}
               </Button>
             </form>
           </CardContent>
