@@ -1,29 +1,44 @@
 "use client";
 
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, History, Target, FileCode, User, Settings, Bell, LogOut, LogIn, Zap, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, History, Target, FileCode, User, Settings, 
+  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield 
+} from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { 
+  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel 
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 
 const VERSION_HISTORY = [
-  { version: "v2.4", type: "Update", title: "Auth & PIN Security", date: "Today", notes: "Implemented Supabase auth with mandatory PIN security and cross-device sync." },
-  { version: "v2.3", type: "Change", title: "CS2 Per-Map Overhaul", date: "Yesterday", notes: "Redesigned map tracking with 14 maps and rank-first logging flow." },
-  { version: "v2.2", type: "Note", title: "Season Management", date: "2 days ago", notes: "Added season tags to history and multi-season peak tracking." },
-  { version: "v2.1", type: "Update", title: "Visual Refinements", date: "3 days ago", notes: "Optimized heatmap density and fixed high-contrast UI elements." }
+  { version: "v2.5", type: "Update", title: "Social & Teams", date: "Today", notes: "Added Social tab with friend requests and Team management." },
+  { version: "v2.4", type: "Update", title: "Auth & PIN Security", date: "Yesterday", notes: "Implemented Supabase auth with mandatory PIN security." }
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, loading, signOut } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user && location.pathname !== '/login') {
+      navigate('/login');
+    }
+  }, [user, loading, navigate, location.pathname]);
+
+  if (loading) return <div className="min-h-screen bg-[#020617] flex items-center justify-center text-indigo-500 font-black italic uppercase">Initializing System...</div>;
+  if (!user && location.pathname !== '/login') return null;
 
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/' },
     { icon: <History size={20} />, label: 'History', path: '/history' },
     { icon: <Zap size={20} />, label: 'Habits', path: '/habits' },
+    { icon: <Users size={20} />, label: 'Social', path: '/social' },
+    { icon: <Shield size={20} />, label: 'Teams', path: '/teams' },
     { icon: <Target size={20} />, label: 'Crosshairs', path: '/crosshairs' },
     { icon: <FileCode size={20} />, label: 'Configs', path: '/configs' },
     { icon: <User size={20} />, label: 'Profile', path: '/profile' },
@@ -31,14 +46,25 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 flex">
-      <aside className="w-20 md:w-64 border-r border-slate-800 flex flex-col bg-slate-950/50 backdrop-blur-xl sticky top-0 h-screen z-50">
-        <div className="p-6 mb-8">
+      <aside className={cn(
+        "border-r border-slate-800 flex flex-col bg-slate-950/50 backdrop-blur-xl sticky top-0 h-screen z-50 transition-all duration-300",
+        isCollapsed ? "w-20" : "w-64"
+      )}>
+        <div className="p-6 mb-8 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 group-hover:scale-110 transition-transform">
               <Target className="text-white" size={24} />
             </div>
-            <span className="hidden md:block text-xl font-black italic tracking-tighter text-white uppercase">GTracker</span>
+            {!isCollapsed && <span className="text-xl font-black italic tracking-tighter text-white uppercase">GTracker</span>}
           </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-slate-500 hover:text-white"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+          >
+            {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </Button>
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
@@ -56,7 +82,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 <span className={cn(location.pathname === item.path ? "text-white" : "text-slate-500 group-hover:text-indigo-400")}>
                   {item.icon}
                 </span>
-                <span className="hidden md:block font-bold uppercase tracking-widest text-[10px]">{item.label}</span>
+                {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">{item.label}</span>}
               </Button>
             </Link>
           ))}
@@ -66,26 +92,17 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           <Link to="/settings">
             <Button variant="ghost" className="w-full justify-start gap-4 h-12 text-slate-400 hover:text-white rounded-xl">
               <Settings size={20} />
-              <span className="hidden md:block font-bold uppercase tracking-widest text-[10px]">Settings</span>
+              {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">Settings</span>}
             </Button>
           </Link>
-          {user ? (
-            <Button 
-              variant="ghost" 
-              onClick={() => supabase.auth.signOut()}
-              className="w-full justify-start gap-4 h-12 text-slate-400 hover:text-red-400 rounded-xl"
-            >
-              <LogOut size={20} />
-              <span className="hidden md:block font-bold uppercase tracking-widest text-[10px]">Logout</span>
-            </Button>
-          ) : (
-            <Link to="/login">
-              <Button variant="ghost" className="w-full justify-start gap-4 h-12 text-indigo-400 hover:text-white hover:bg-indigo-600/20 rounded-xl">
-                <LogIn size={20} />
-                <span className="hidden md:block font-bold uppercase tracking-widest text-[10px]">Login</span>
-              </Button>
-            </Link>
-          )}
+          <Button 
+            variant="ghost" 
+            onClick={signOut}
+            className="w-full justify-start gap-4 h-12 text-slate-400 hover:text-red-400 rounded-xl"
+          >
+            <LogOut size={20} />
+            {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">Logout</span>}
+          </Button>
         </div>
       </aside>
 
@@ -105,7 +122,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               <DropdownMenuContent align="end" className="w-80 bg-slate-950 border-slate-800 text-white p-0 overflow-hidden">
                 <DropdownMenuLabel className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest">Version History</span>
-                  <span className="text-[8px] font-bold text-indigo-400 uppercase">Latest: v2.4</span>
+                  <span className="text-[8px] font-bold text-indigo-400 uppercase">Latest: v2.5</span>
                 </DropdownMenuLabel>
                 <div className="max-h-[400px] overflow-y-auto">
                   {VERSION_HISTORY.map((v, i) => (
@@ -125,9 +142,11 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="h-10 w-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
-              {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-slate-500" />}
-            </div>
+            <Link to="/profile">
+              <div className="h-10 w-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden hover:border-indigo-500 transition-colors">
+                {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-slate-500" />}
+              </div>
+            </Link>
           </div>
         </header>
         <div className="flex-1 overflow-y-auto">

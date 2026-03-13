@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Lock, Mail, UserPlus, LogIn } from 'lucide-react';
+import { Shield, Lock, Mail, UserPlus, LogIn, Key } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const Login = () => {
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -38,13 +40,13 @@ const Login = () => {
           password: formData.password,
           options: {
             data: {
-              username: formData.username,
               pin: formData.pin
             }
           }
         });
         if (error) throw error;
-        showSuccess("Account created! Please check your email.");
+        showSuccess("Account created! Please set your username.");
+        setShowUsernameDialog(true);
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
@@ -52,16 +54,33 @@ const Login = () => {
         });
         if (error) throw error;
         
-        // Verify PIN
         const userPin = data.user?.user_metadata?.pin;
         if (userPin !== formData.pin) {
           await supabase.auth.signOut();
-          throw new Error("Invalid PIN.");
+          throw new Error("Invalid Security PIN.");
         }
         
         showSuccess("Welcome back, Operator.");
         navigate('/');
       }
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetUsername = async () => {
+    if (!formData.username) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { username: formData.username }
+      });
+      if (error) throw error;
+      showSuccess("Username set successfully.");
+      setShowUsernameDialog(false);
+      navigate('/');
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -84,21 +103,6 @@ const Login = () => {
         </CardHeader>
         <CardContent className="p-8">
           <form onSubmit={handleAuth} className="space-y-6">
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400">Username</Label>
-                <div className="relative">
-                  <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
-                  <Input 
-                    required
-                    placeholder="OPERATOR_NAME" 
-                    value={formData.username}
-                    onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    className="bg-slate-950 border-slate-800 pl-10 text-white"
-                  />
-                </div>
-              </div>
-            )}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-slate-400">Email Address</Label>
               <div className="relative">
@@ -129,15 +133,18 @@ const Login = () => {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-indigo-400">Security PIN (4-10 Digits)</Label>
-              <Input 
-                required
-                type="password"
-                inputMode="numeric"
-                placeholder="0000" 
-                value={formData.pin}
-                onChange={(e) => setFormData({...formData, pin: e.target.value.replace(/\D/g, '')})}
-                className="bg-slate-950 border-slate-800 text-center text-xl font-black tracking-[0.5em] text-white"
-              />
+              <div className="relative">
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500" size={16} />
+                <Input 
+                  required
+                  type="password"
+                  inputMode="numeric"
+                  placeholder="0000" 
+                  value={formData.pin}
+                  onChange={(e) => setFormData({...formData, pin: e.target.value.replace(/\D/g, '')})}
+                  className="bg-slate-950 border-slate-800 pl-10 text-center text-xl font-black tracking-[0.5em] text-white"
+                />
+              </div>
             </div>
 
             <Button disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 font-black uppercase py-7 rounded-2xl shadow-xl shadow-indigo-600/20">
@@ -155,6 +162,28 @@ const Login = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={showUsernameDialog} onOpenChange={setShowUsernameDialog}>
+        <DialogContent className="bg-slate-950 border-slate-800 text-white">
+          <DialogHeader>
+            <DialogTitle className="italic uppercase font-black">Set Your Username</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid gap-2">
+              <Label className="text-[10px] font-bold uppercase text-slate-400">Username</Label>
+              <Input 
+                placeholder="OPERATOR_NAME" 
+                value={formData.username} 
+                onChange={(e) => setFormData({...formData, username: e.target.value})} 
+                className="bg-slate-900 border-slate-800" 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSetUsername} className="w-full bg-indigo-600 font-black uppercase py-6">Confirm Username</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
