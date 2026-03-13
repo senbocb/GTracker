@@ -74,6 +74,27 @@ const Teams = () => {
     if (data) setInvites(data);
   };
 
+  const handleSearch = async () => {
+    if (!search.trim()) {
+      fetchTeams();
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('*, team_members(count)')
+        .or(`name.ilike.%${search}%,tag.ilike.%${search}%`);
+      
+      if (error) throw error;
+      setTeams(data || []);
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeam.name || !newTeam.tag) return;
     setIsSubmitting(true);
@@ -220,7 +241,7 @@ const Teams = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => acceptInvite(invite)} className="bg-indigo-600 h-8 w-8 p-0"><Check size={16} /></Button>
-                    <Button size="sm" variant="ghost" onClick={async () => { await supabase.from('team_invites').delete().eq('id', invite.id); fetchInvites(); }} className="h-8 w-8 p-0 text-slate-500 hover:text-red-500"><X size={16} /></Button>
+                    <Button size="sm" variant="ghost" onClick={async () => { await supabase.from('team_invites').delete().eq('id', invite.id); fetchInvites(); }} className="h-8 w-8 p-0 text-slate-500 hover:text-red-400"><X size={16} /></Button>
                   </div>
                 </div>
               ))}

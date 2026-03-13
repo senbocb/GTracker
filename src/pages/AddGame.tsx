@@ -32,8 +32,8 @@ const DEFAULT_REGISTRY = {
   },
   "Overwatch 2": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
-    modes: ["Role Queue", "Open Queue"],
-    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+    modes: ["Tank", "Damage", "Support", "Open Queue"],
+    image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop"
   },
   "Apex Legends": {
     ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
@@ -43,12 +43,12 @@ const DEFAULT_REGISTRY = {
   "Aim Lab": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"],
     modes: ["Ranked Season", "Benchmarks"],
-    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1000&auto=format&fit=crop"
   },
   "Kovaaks": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Jade", "Master", "Grandmaster", "Nova", "Celestial"],
     modes: ["Voltaic Benchmarks", "rA Benchmarks"],
-    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1542751110-97427bbecf20?q=80&w=1000&auto=format&fit=crop"
   }
 };
 
@@ -71,6 +71,7 @@ const AddGame = () => {
   }, [user]);
 
   const gameOptions = Object.keys(registry);
+  
   const modeOptions = useMemo(() => {
     if (!selectedGame || !registry[selectedGame]) return [];
     const allModes = registry[selectedGame].modes || [];

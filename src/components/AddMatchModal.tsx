@@ -12,12 +12,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 
-const CS_LEGACY_RANKS = [
-  "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master",
-  "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master",
-  "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian",
-  "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
-];
+const FACEIT_RANKS = ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10"];
 
 const GAME_METADATA: Record<string, any> = {
   "Valorant": { 
@@ -129,8 +124,8 @@ const AddMatchModal = () => {
   
   const metadata = useMemo(() => {
     const base = GAME_METADATA[selectedGameObj?.title] || { ranks: [], tierCount: 0, stats: [] };
-    if (selectedGameObj?.title === 'Counter-Strike 2' && selectedModeObj?.name === 'Wingman') {
-      return { ...base, ranks: CS_LEGACY_RANKS };
+    if (selectedModeObj?.name === 'Faceit') {
+      return { ...base, ranks: FACEIT_RANKS, tierCount: 0 };
     }
     return base;
   }, [selectedGameObj, selectedModeObj]);
@@ -140,7 +135,7 @@ const AddMatchModal = () => {
     const numeric = parseInt(rankName.replace(/\D/g, ''));
     
     if (gameTitle === 'osu!') return 10000000 - numeric;
-    if (gameTitle === 'Counter-Strike 2' && selectedModeObj?.name !== 'Wingman') return numeric;
+    if (gameTitle === 'Counter-Strike 2' && selectedModeObj?.name !== 'Wingman' && selectedModeObj?.name !== 'Faceit') return numeric;
     
     const meta = GAME_METADATA[gameTitle] || { ranks: [] };
     const rankIdx = meta.ranks.indexOf(rankName);
