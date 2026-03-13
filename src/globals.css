@@ -4,37 +4,14 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.75rem;
-  }
-
-  .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 226.3 70.6% 58.2%;
+    --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -45,7 +22,43 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 226.3 70.6% 58.2%;
+    --radius: 0.75rem;
+  }
+
+  /* Theme: Stealth Ops (Emerald) */
+  [data-theme='stealth'] {
+    --primary: 142.1 70.6% 45.3%;
+    --ring: 142.1 70.6% 45.3%;
+    --background: 240 10% 3.9%;
+  }
+
+  /* Theme: Valor Red (Red) */
+  [data-theme='valor'] {
+    --primary: 0 72.2% 50.6%;
+    --ring: 0 72.2% 50.6%;
+    --background: 0 0% 3.9%;
+  }
+
+  /* Theme: Cyber Neon (Fuchsia) */
+  [data-theme='cyber'] {
+    --primary: 292.2 84.1% 60.6%;
+    --ring: 292.2 84.1% 60.6%;
+    --background: 240 10% 2%;
+  }
+
+  /* Theme: Frost Bite (Cyan) */
+  [data-theme='frost'] {
+    --primary: 188.7 94.5% 42.7%;
+    --ring: 188.7 94.5% 42.7%;
+    --background: 222.2 47.4% 4%;
+  }
+
+  /* Theme: Desert Storm (Amber) */
+  [data-theme='desert'] {
+    --primary: 37.9 92.1% 50.2%;
+    --ring: 37.9 92.1% 50.2%;
+    --background: 20 14.3% 4.1%;
   }
 }
 
@@ -54,7 +67,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#020617] text-slate-200;
+    @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   .hover-highlight {
     @apply transition-all duration-200 hover:bg-slate-800/40 active:bg-slate-800/60 hover:text-white;
@@ -89,7 +103,7 @@
   left: 0;
   width: 100%;
   height: 100px;
-  background: linear-gradient(0deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
+  background: linear-gradient(0deg, hsl(var(--primary) / 0.05) 0%, transparent 100%);
   opacity: 0.1;
   pointer-events: none;
   animation: scanline 8s linear infinite;

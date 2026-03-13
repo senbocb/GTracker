@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet, AlertTriangle, Check, Layout } from 'lucide-react';
+import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet, AlertTriangle, Check, Layout, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -14,10 +15,12 @@ import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
 
 const UI_PRESETS = [
-  { id: 'tactical', name: 'Tactical Command', primary: '#6366f1', bg: '#020617' },
-  { id: 'stealth', name: 'Stealth Ops', primary: '#10b981', bg: '#000000' },
-  { id: 'valor', name: 'Valor Red', primary: '#ef4444', bg: '#0a0a0a' },
-  { id: 'cyber', name: 'Cyber Neon', primary: '#d946ef', bg: '#050505' }
+  { id: 'tactical', name: 'Tactical Command', primary: '#6366f1', bg: '#020617', description: 'Standard issue indigo interface.' },
+  { id: 'stealth', name: 'Stealth Ops', primary: '#10b981', bg: '#09090b', description: 'Low-profile emerald green design.' },
+  { id: 'valor', name: 'Valor Red', primary: '#ef4444', bg: '#0a0a0a', description: 'High-intensity combat red.' },
+  { id: 'cyber', name: 'Cyber Neon', primary: '#d946ef', bg: '#050505', description: 'Vibrant fuchsia cyberpunk aesthetic.' },
+  { id: 'frost', name: 'Frost Bite', primary: '#0ea5e9', bg: '#020617', description: 'Cool cyan arctic configuration.' },
+  { id: 'desert', name: 'Desert Storm', primary: '#f59e0b', bg: '#1c1917', description: 'Amber-toned tactical environment.' }
 ];
 
 const Settings = () => {
@@ -46,7 +49,15 @@ const Settings = () => {
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('combat_settings') || 'null');
-    if (saved) setSettings(saved);
+    if (saved) {
+      setSettings(saved);
+      if (saved.uiPreset) {
+        document.body.setAttribute('data-theme', saved.uiPreset);
+      }
+      if (saved.tacticalOverlay) {
+        document.body.classList.add('tactical-overlay', 'scanline-effect');
+      }
+    }
 
     const savedCustom = JSON.parse(localStorage.getItem('combat_customization') || 'null');
     if (savedCustom) setCustomization(savedCustom);
@@ -64,23 +75,22 @@ const Settings = () => {
       document.body.classList.toggle('tactical-overlay', value);
       document.body.classList.toggle('scanline-effect', value);
     }
+
+    if (key === 'uiPreset') {
+      document.body.setAttribute('data-theme', value);
+      const preset = UI_PRESETS.find(p => p.id === value);
+      if (preset) {
+        updateCustomization('bgColor', preset.bg);
+      }
+    }
     
     showSuccess("Configuration updated.");
-  };
-
-  const applyPreset = (preset: any) => {
-    updateSetting('uiPreset', preset.id);
-    updateCustomization('bgColor', preset.bg);
-    // In a real app, we'd update CSS variables here
-    document.documentElement.style.setProperty('--primary', preset.primary);
-    showSuccess(`Applied ${preset.name} preset.`);
   };
 
   const updateCustomization = (key: keyof typeof customization, value: string) => {
     const newCustom = { ...customization, [key]: value };
     setCustomization(newCustom);
     localStorage.setItem('combat_customization', JSON.stringify(newCustom));
-    showSuccess("Visual theme updated.");
   };
 
   const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +99,7 @@ const Settings = () => {
       try {
         const processed = await processImage(file, 1920, 1080, 0.6);
         updateCustomization('bgImage', processed);
+        showSuccess("Background image updated.");
       } catch (err) {
         showError("Failed to process image.");
       }
@@ -107,7 +118,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans">
       <main className="max-w-3xl mx-auto p-6 md:p-10">
         <Link to="/"><Button variant="ghost" className="mb-8 text-slate-400 hover:text-white -ml-4 hover-highlight"><ChevronLeft className="mr-2" size={20} /> Back to Dashboard</Button></Link>
 
@@ -118,28 +129,55 @@ const Settings = () => {
 
         <div className="space-y-6">
           <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Layout className="text-indigo-500" size={20} /> UI Presets</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {UI_PRESETS.map(preset => (
-                  <button
-                    key={preset.id}
-                    onClick={() => applyPreset(preset)}
-                    className={cn(
-                      "p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-3 group",
-                      settings.uiPreset === preset.id ? "border-indigo-500 bg-indigo-500/10" : "border-slate-800 bg-slate-950 hover:border-slate-700"
-                    )}
-                  >
-                    <div className="w-10 h-10 rounded-full shadow-lg" style={{ backgroundColor: preset.primary }} />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-center">{preset.name}</span>
-                  </button>
-                ))}
+            <CardHeader>
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+                <Layout className="text-primary" size={20} /> 
+                UI Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="grid gap-2">
+                  <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Visual Preset</Label>
+                  <Select value={settings.uiPreset} onValueChange={(v) => updateSetting('uiPreset', v)}>
+                    <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-white">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full shadow-sm" 
+                          style={{ backgroundColor: UI_PRESETS.find(p => p.id === settings.uiPreset)?.primary }} 
+                        />
+                        <SelectValue placeholder="Select a theme" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      {UI_PRESETS.map(preset => (
+                        <SelectItem key={preset.id} value={preset.id}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: preset.primary }} />
+                            <div className="flex flex-col">
+                              <span className="font-bold uppercase text-[10px] tracking-widest">{preset.name}</span>
+                              <span className="text-[8px] text-slate-500">{preset.description}</span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-bold text-white">Tactical Overlay</Label>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest">Scanlines & CRT effects</p>
+                  </div>
+                  <Switch checked={settings.tacticalOverlay} onCheckedChange={(v) => updateSetting('tacticalOverlay', v)} />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-indigo-500" size={20} /> Customization</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-primary" size={20} /> Customization</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -165,19 +203,6 @@ const Settings = () => {
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg" onChange={handleBgImageUpload} />
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Monitor className="text-indigo-500" size={20} /> Interface</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-bold text-white">Tactical Overlay</Label>
-                  <p className="text-sm text-slate-400">Apply scanlines and CRT effects for a command center vibe.</p>
-                </div>
-                <Switch checked={settings.tacticalOverlay} onCheckedChange={(v) => updateSetting('tacticalOverlay', v)} />
               </div>
             </CardContent>
           </Card>

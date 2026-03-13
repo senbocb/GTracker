@@ -51,26 +51,7 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
         </div>
         <div>
           <h3 className="text-sm font-black text-white uppercase italic tracking-tight">{title}</h3>
-          <div className="flex gap-2 mt-1">
-            {modes.length > 3 ? (
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">
-                  {modes[currentModeIdx].name}
-                </span>
-                <div className="flex gap-0.5">
-                  {modes.map((_, i) => (
-                    <div key={i} className={cn("w-1 h-1 rounded-full", i === currentModeIdx ? "bg-indigo-500" : "bg-slate-700")} />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              modes.map((mode, idx) => (
-                <span key={idx} className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  {mode.name}{idx < modes.length - 1 ? ' • ' : ''}
-                </span>
-              ))
-            )}
-          </div>
+          {/* Removed the mode text list from here as requested */}
         </div>
       </div>
 
@@ -79,7 +60,7 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
           {displayedModes.map((mode, idx) => (
             <div key={idx} className="flex flex-col items-end animate-in fade-in slide-in-from-right-1">
               <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">{mode.name}</p>
-              <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-75 origin-right" />
+              <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-90 origin-right" />
             </div>
           ))}
         </div>

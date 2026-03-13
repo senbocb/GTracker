@@ -59,7 +59,7 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
   return (
     <Card 
       onClick={() => navigate(`/game/${id}`)}
-      className="overflow-hidden bg-slate-900 border-slate-800 group hover:border-indigo-500/50 transition-all duration-300 cursor-pointer hover-highlight"
+      className="overflow-hidden bg-slate-900 border-slate-800 group hover:border-primary/50 transition-all duration-300 cursor-pointer hover-highlight"
     >
       <div className="relative h-32 overflow-hidden">
         {image ? (
@@ -73,7 +73,7 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-slate-300 hover:text-white h-8 w-8 bg-slate-950/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
+            className="text-slate-300 hover:text-white hover:bg-primary/20 h-8 w-8 bg-slate-950/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
             onClick={(e) => { e.stopPropagation(); setIsUploadOpen(true); }}
           >
             <Camera size={14} />
@@ -101,10 +101,30 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
         <DialogContent className="bg-slate-950 border-slate-800 text-white">
           <DialogHeader><DialogTitle className="italic uppercase font-black">Banner Config</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-6">
-            <Button variant="outline" className={cn("h-24 flex flex-col gap-2 border-slate-800", uploadTarget === 'game' && "border-indigo-500 bg-indigo-500/10")} onClick={() => setUploadTarget('game')}><Globe size={24} /><span className="text-[10px] font-black uppercase">Global Banner</span></Button>
-            <Button variant="outline" className={cn("h-24 flex flex-col gap-2 border-slate-800", uploadTarget === 'mode' && "border-indigo-500 bg-indigo-500/10")} onClick={() => setUploadTarget('mode')}><Layers size={24} /><span className="text-[10px] font-black uppercase">Mode Specific</span></Button>
+            <Button 
+              variant="outline" 
+              className={cn(
+                "h-24 flex flex-col gap-2 border-slate-800 hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors", 
+                uploadTarget === 'game' && "border-primary bg-primary/10 text-primary"
+              )} 
+              onClick={() => setUploadTarget('game')}
+            >
+              <Globe size={24} />
+              <span className="text-[10px] font-black uppercase">Global Banner</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className={cn(
+                "h-24 flex flex-col gap-2 border-slate-800 hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors", 
+                uploadTarget === 'mode' && "border-primary bg-primary/10 text-primary"
+              )} 
+              onClick={() => setUploadTarget('mode')}
+            >
+              <Layers size={24} />
+              <span className="text-[10px] font-black uppercase">Mode Specific</span>
+            </Button>
           </div>
-          <DialogFooter><Button className="w-full bg-indigo-600 font-black uppercase py-6" onClick={() => fileInputRef.current?.click()}>Select Image</Button></DialogFooter>
+          <DialogFooter><Button className="w-full bg-primary hover:bg-primary/90 font-black uppercase py-6" onClick={() => fileInputRef.current?.click()}>Select Image</Button></DialogFooter>
           <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleBannerUpload} />
         </DialogContent>
       </Dialog>
