@@ -39,6 +39,16 @@ const DEFAULT_REGISTRY = {
     ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
     modes: ["Battle Royale Ranked"],
     image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+  },
+  "Aim Lab": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"],
+    modes: ["Ranked Season", "Benchmarks"],
+    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+  },
+  "Kovaaks": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Jade", "Master", "Grandmaster", "Nova", "Celestial"],
+    modes: ["Voltaic Benchmarks", "rA Benchmarks"],
+    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
   }
 };
 
@@ -50,26 +60,30 @@ const AddGame = () => {
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [existingGames, setExistingGames] = useState<any[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('combat_game_registry');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Object.keys(parsed).length > 0) {
-          setRegistry({ ...DEFAULT_REGISTRY, ...parsed });
-        }
-      } catch (e) {
-        console.error("Failed to parse registry", e);
-      }
+    if (user) {
+      supabase.from('games').select('*, game_modes(*)').eq('user_id', user.id).then(({ data }) => {
+        if (data) setExistingGames(data);
+      });
     }
-  }, []);
+  }, [user]);
 
   const gameOptions = Object.keys(registry);
   const modeOptions = useMemo(() => {
     if (!selectedGame || !registry[selectedGame]) return [];
-    return registry[selectedGame].modes || [];
-  }, [selectedGame, registry]);
+    const allModes = registry[selectedGame].modes || [];
+    
+    // Filter out modes already tracked for this game
+    const existingGame = existingGames.find(g => g.title === selectedGame);
+    if (existingGame) {
+      const existingModeNames = existingGame.game_modes.map((m: any) => m.name);
+      return allModes.filter((m: string) => !existingModeNames.includes(m));
+    }
+    
+    return allModes;
+  }, [selectedGame, registry, existingGames]);
 
   const toggleMode = (mode: string) => {
     setSelectedModes(prev => 
@@ -96,22 +110,30 @@ const AddGame = () => {
 
     setLoading(true);
     try {
-      // 1. Create the game
-      const { data: game, error: gameError } = await supabase
-        .from('games')
-        .insert({
-          user_id: user.id,
-          title: selectedGame,
-          image: imageUrl || registry[selectedGame].image || ''
-        })
-        .select()
-        .single();
+      // 1. Check if game already exists
+      let gameId;
+      const existingGame = existingGames.find(g => g.title === selectedGame);
       
-      if (gameError) throw gameError;
+      if (existingGame) {
+        gameId = existingGame.id;
+      } else {
+        const { data: game, error: gameError } = await supabase
+          .from('games')
+          .insert({
+            user_id: user.id,
+            title: selectedGame,
+            image: imageUrl || registry[selectedGame].image || ''
+          })
+          .select()
+          .single();
+        
+        if (gameError) throw gameError;
+        gameId = game.id;
+      }
 
       // 2. Create modes
       const modesToInsert = selectedModes.map(name => ({
-        game_id: game.id,
+        game_id: gameId,
         name: name,
         rank: 'Unranked',
         peak_rank: 'Unranked'
@@ -172,7 +194,7 @@ const AddGame = () => {
                   </Select>
                 </div>
 
-                {modeOptions.length > 0 && (
+                {modeOptions.length > 0 ? (
                   <div className="grid gap-3 animate-in fade-in slide-in-from-top-2">
                     <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Modes (Multiple Allowed)</Label>
                     <div className="grid grid-cols-2 gap-2">
@@ -193,6 +215,8 @@ const AddGame = () => {
                       ))}
                     </div>
                   </div>
+                ) : selectedGame && (
+                  <p className="text-xs text-slate-500 italic">All available modes for this game are already being tracked.</p>
                 )}
 
                 <div className="grid gap-2">

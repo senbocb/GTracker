@@ -2,16 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Shield, Plus, Users, Target, Globe, Settings, LogOut, Bell, MessageSquare, UserPlus, Search, Loader2, User } from 'lucide-react';
+import { Shield, Plus, Users, Target, Globe, Settings, LogOut, Bell, MessageSquare, UserPlus, Search, Loader2, User, Camera, Lock, Unlock, Check, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { processImage } from '@/utils/imageProcessing';
 
 const Teams = () => {
   const { user } = useAuth();
@@ -20,18 +22,19 @@ const Teams = () => {
   const [teams, setTeams] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [newTeam, setNewTeam] = useState({ name: '', description: '' });
+  const [newTeam, setNewTeam] = useState({ name: '', description: '', is_open: true, icon_url: '' });
+  const [invites, setInvites] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
       fetchTeams();
+      fetchInvites();
     }
   }, [user]);
 
   const fetchTeams = async () => {
     setLoading(true);
     try {
-      // Fetch teams where user is a member
       const { data: memberTeams } = await supabase
         .from('team_members')
         .select('team_id, teams(*, team_members(count), team_announcements(*))')
@@ -45,6 +48,15 @@ const Teams = () => {
     }
   };
 
+  const fetchInvites = async () => {
+    const { data } = await supabase
+      .from('team_invites')
+      .select('*, team:teams(*)')
+      .eq('invitee_id', user?.id)
+      .eq('status', 'pending');
+    if (data) setInvites(data);
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeam.name) return;
     try {
@@ -53,23 +65,21 @@ const Teams = () => {
         .insert({ 
           name: newTeam.name, 
           description: newTeam.description,
-          leader_id: user?.id 
+          leader_id: user?.id,
+          is_open: newTeam.is_open,
+          icon_url: newTeam.icon_url
         })
         .select()
         .single();
       
       if (teamError) throw teamError;
 
-      const { error: memberError } = await supabase
-        .from('team_members')
-        .insert({ 
-          team_id: team.id, 
-          user_id: user?.id,
-          role: 'Leader'
-        });
+      await supabase.from('team_members').insert({ 
+        team_id: team.id, 
+        user_id: user?.id,
+        role: 'Leader'
+      });
       
-      if (memberError) throw memberError;
-
       showSuccess("Team initialized.");
       setIsCreateOpen(false);
       fetchTeams();
@@ -96,14 +106,20 @@ const Teams = () => {
     }
   };
 
-  const joinTeam = async (teamId: string) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const processed = await processImage(file, 200, 200, 0.7);
+      setNewTeam({ ...newTeam, icon_url: processed });
+    }
+  };
+
+  const acceptInvite = async (invite: any) => {
     try {
-      const { error } = await supabase
-        .from('team_members')
-        .insert({ team_id: teamId, user_id: user?.id });
-      
-      if (error) throw error;
+      await supabase.from('team_members').insert({ team_id: invite.team_id, user_id: user?.id });
+      await supabase.from('team_invites').delete().eq('id', invite.id);
       showSuccess("Joined team.");
+      fetchInvites();
       fetchTeams();
     } catch (err: any) {
       showError(err.message);
@@ -138,6 +154,31 @@ const Teams = () => {
           </div>
         </div>
 
+        {invites.length > 0 && (
+          <div className="mb-10 space-y-4">
+            <h2 className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Pending Invites</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {invites.map(invite => (
+                <div key={invite.id} className="p-4 rounded-2xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center overflow-hidden">
+                      {invite.team?.icon_url ? <img src={invite.team.icon_url} className="w-full h-full object-cover" /> : <Shield size={20} className="text-indigo-500" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-white uppercase italic">{invite.team?.name}</p>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase">Invited you to join</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => acceptInvite(invite)} className="bg-indigo-600 h-8 w-8 p-0"><Check size={16} /></Button>
+                    <Button size="sm" variant="ghost" onClick={async () => { await supabase.from('team_invites').delete().eq('id', invite.id); fetchInvites(); }} className="h-8 w-8 p-0 text-slate-500 hover:text-red-500"><X size={16} /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!activeTeam ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
@@ -147,8 +188,13 @@ const Teams = () => {
                 <div className="h-1.5 w-full bg-indigo-600" />
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-black italic uppercase tracking-tight text-white">{team.name}</CardTitle>
-                    <span className="px-2 py-0.5 rounded bg-indigo-600/10 border border-indigo-500/20 text-[8px] font-black text-indigo-400 uppercase">{team.rank}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
+                        {team.icon_url ? <img src={team.icon_url} className="w-full h-full object-cover" /> : <Shield size={20} className="text-slate-600" />}
+                      </div>
+                      <CardTitle className="text-xl font-black italic uppercase tracking-tight text-white">{team.name}</CardTitle>
+                    </div>
+                    {team.is_open ? <Unlock size={14} className="text-emerald-500" /> : <Lock size={14} className="text-slate-600" />}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -175,6 +221,9 @@ const Teams = () => {
                 <Button variant="ghost" size="icon" onClick={() => setActiveTeam(null)} className="text-slate-500 hover:text-white">
                   <Plus className="rotate-45" size={20} />
                 </Button>
+                <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden">
+                  {activeTeam.icon_url ? <img src={activeTeam.icon_url} className="w-full h-full object-cover" /> : <Shield size={24} className="text-indigo-500" />}
+                </div>
                 <h2 className="text-3xl font-black italic uppercase text-white">{activeTeam.name}</h2>
               </div>
               <div className="flex gap-2">
@@ -233,6 +282,13 @@ const Teams = () => {
               <DialogTitle className="italic uppercase font-black">Initialize Tactical Unit</DialogTitle>
             </DialogHeader>
             <div className="space-y-6 py-4">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 border-dashed border-slate-800 flex items-center justify-center overflow-hidden group cursor-pointer" onClick={() => document.getElementById('team-icon')?.click()}>
+                  {newTeam.icon_url ? <img src={newTeam.icon_url} className="w-full h-full object-cover" /> : <Camera size={32} className="text-slate-700 group-hover:text-indigo-500 transition-colors" />}
+                </div>
+                <input id="team-icon" type="file" className="hidden" accept="image/*" onChange={handleIconUpload} />
+                <p className="text-[10px] font-bold uppercase text-slate-500">Upload Clan Icon</p>
+              </div>
               <div className="grid gap-2">
                 <Label className="text-[10px] font-bold uppercase text-slate-400">Team Name</Label>
                 <Input 
@@ -250,6 +306,13 @@ const Teams = () => {
                   onChange={(e) => setNewTeam({...newTeam, description: e.target.value})}
                   className="bg-slate-900 border-slate-800" 
                 />
+              </div>
+              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="space-y-0.5">
+                  <Label className="text-xs font-bold text-white">Open Recruitment</Label>
+                  <p className="text-[9px] text-slate-500 uppercase">Allow anyone to join without invite</p>
+                </div>
+                <Switch checked={newTeam.is_open} onCheckedChange={(v) => setNewTeam({...newTeam, is_open: v})} />
               </div>
             </div>
             <DialogFooter>

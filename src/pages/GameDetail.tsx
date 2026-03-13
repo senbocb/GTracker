@@ -13,9 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import SeasonManager, { Season } from '@/components/SeasonManager';
-import CS2MapRanks from '@/components/CS2MapRanks';
+import TournamentWidget from '@/components/TournamentWidget';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import { supabase } from "@/integrations/supabase/client";
 
 const GAME_METADATA: Record<string, any> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"], tierCount: 3 },
@@ -37,17 +38,35 @@ const GameDetail = () => {
   const [isPulling, setIsPulling] = useState(false);
 
   useEffect(() => {
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const found = savedGames.find((g: any) => g.id === id);
-    if (found) {
-      setGame(found);
-      setActiveMode(found.modes[0]?.name || '');
-      setSeasons(found.seasons || []);
-      setBenchmarks(found.benchmarks || []);
+    fetchGameData();
+  }, [id]);
+
+  const fetchGameData = async () => {
+    const { data: gameData } = await supabase
+      .from('games')
+      .select('*, game_modes(*, game_history(*))')
+      .eq('id', id)
+      .single();
+    
+    if (gameData) {
+      const formatted = {
+        ...gameData,
+        modes: gameData.game_modes.map((m: any) => ({
+          ...m,
+          history: m.game_history.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        }))
+      };
+      setGame(formatted);
+      setActiveMode(formatted.modes[0]?.name || '');
+      // Seasons and benchmarks would ideally be in DB too, but using local storage for now as per previous implementation
+      const savedSeasons = JSON.parse(localStorage.getItem(`seasons_${id}`) || '[]');
+      setSeasons(savedSeasons);
+      const savedBenchmarks = JSON.parse(localStorage.getItem(`benchmarks_${id}`) || '[]');
+      setBenchmarks(savedBenchmarks);
     } else {
       navigate('/');
     }
-  }, [id, navigate]);
+  };
 
   const handlePullBenchmarks = () => {
     setIsPulling(true);
@@ -62,20 +81,14 @@ const GameDetail = () => {
       setBenchmarks(mockBenchmarks);
       setIsPulling(false);
       showSuccess("Benchmarks synchronized from evxl.app");
-      
-      // Update local storage
-      const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-      const updated = savedGames.map((g: any) => g.id === id ? { ...g, benchmarks: mockBenchmarks } : g);
-      localStorage.setItem('combat_games', JSON.stringify(updated));
+      localStorage.setItem(`benchmarks_${id}`, JSON.stringify(mockBenchmarks));
     }, 1500);
   };
 
   const toggleBenchmarkVisibility = (benchId: string) => {
     const updated = benchmarks.map(b => b.id === benchId ? { ...b, visible: !b.visible } : b);
     setBenchmarks(updated);
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const updatedGames = savedGames.map((g: any) => g.id === id ? { ...g, benchmarks: updated } : g);
-    localStorage.setItem('combat_games', JSON.stringify(updatedGames));
+    localStorage.setItem(`benchmarks_${id}`, JSON.stringify(updated));
   };
 
   if (!game) return null;
@@ -142,10 +155,12 @@ const GameDetail = () => {
             )}
             
             <ProgressChart history={game.modes.find((m: any) => m.name === activeMode)?.history} rankNames={GAME_METADATA[game.title]?.ranks} getRankValue={() => 0} />
+            
+            <TournamentWidget gameId={id!} />
           </div>
 
           <div className="space-y-6">
-            <SeasonManager gameId={game.id} seasons={seasons} onUpdate={(s) => setSeasons(s)} />
+            <SeasonManager gameId={game.id} seasons={seasons} onUpdate={(s) => { setSeasons(s); localStorage.setItem(`seasons_${id}`, JSON.stringify(s)); }} />
           </div>
         </div>
       </main>

@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, History, Target, FileCode, User, Settings, 
-  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield 
+  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield, Search, Terminal
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel 
 } from "@/components/ui/dropdown-menu";
@@ -23,12 +24,20 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const { user, profile, loading, signOut } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   if (loading) return <div className="min-h-screen bg-[#020617] flex items-center justify-center text-indigo-500 font-black italic uppercase">Initializing System...</div>;
   if (!user && location.pathname !== '/login' && location.pathname !== '/reset-password') {
     navigate('/login');
     return null;
   }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    // Redirect to social page with search query
+    navigate(`/social?q=${encodeURIComponent(searchQuery)}`);
+  };
 
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/' },
@@ -105,11 +114,22 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/30 backdrop-blur-md sticky top-0 z-40">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
+          <div className="flex items-center gap-8 flex-1">
+            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 hidden md:block">
               Operator: <span className="text-indigo-400">{profile?.username || 'Authenticating...'}</span>
             </h2>
+            
+            <form onSubmit={handleSearch} className="relative max-w-md w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+              <Input 
+                placeholder="Search operators, teams, intel..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-slate-900/50 border-slate-800 pl-10 h-10 text-xs font-bold uppercase tracking-widest focus:ring-indigo-500"
+              />
+            </form>
           </div>
+          
           <div className="flex items-center gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
