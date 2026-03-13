@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, History, Target, FileCode, User, Settings, 
@@ -12,61 +12,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
 
 const VERSION_HISTORY = [
-  { version: "v2.6", type: "Update", title: "Cloud Sync", date: "Today", notes: "Full real-time synchronization across all devices and browsers." },
-  { version: "v2.5", type: "Update", title: "Social & Teams", date: "Yesterday", notes: "Added Social tab with friend requests and Team management." }
+  { version: "v2.7", type: "Update", title: "Global Sync", date: "Today", notes: "Fixed cross-browser synchronization issues using real-time database triggers." },
+  { version: "v2.6", type: "Update", title: "Cloud Sync", date: "Yesterday", notes: "Full real-time synchronization across all devices and browsers." }
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [dbProfile, setDbProfile] = useState<any>(null);
-
-  useEffect(() => {
-    if (!loading && !user && location.pathname !== '/login' && location.pathname !== '/reset-password') {
-      navigate('/login');
-      return;
-    }
-
-    if (user) {
-      const fetchAndSubscribe = async () => {
-        // Initial fetch
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (data) setDbProfile(data);
-
-        // Real-time subscription
-        const channel = supabase
-          .channel(`profile_${user.id}`)
-          .on('postgres_changes', { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'profiles', 
-            filter: `id=eq.${user.id}` 
-          }, (payload) => {
-            setDbProfile(payload.new);
-          })
-          .subscribe();
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      };
-
-      fetchAndSubscribe();
-    }
-  }, [user, loading, navigate, location.pathname]);
 
   if (loading) return <div className="min-h-screen bg-[#020617] flex items-center justify-center text-indigo-500 font-black italic uppercase">Initializing System...</div>;
-  if (!user && location.pathname !== '/login' && location.pathname !== '/reset-password') return null;
+  if (!user && location.pathname !== '/login' && location.pathname !== '/reset-password') {
+    navigate('/login');
+    return null;
+  }
 
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/' },
@@ -145,7 +107,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <header className="h-20 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/30 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-4">
             <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-              Operator: <span className="text-indigo-400">{dbProfile?.username || 'Authenticating...'}</span>
+              Operator: <span className="text-indigo-400">{profile?.username || 'Authenticating...'}</span>
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -159,7 +121,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               <DropdownMenuContent align="end" className="w-80 bg-slate-950 border-slate-800 text-white p-0 overflow-hidden">
                 <DropdownMenuLabel className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest">Version History</span>
-                  <span className="text-[8px] font-bold text-indigo-400 uppercase">Latest: v2.6</span>
+                  <span className="text-[8px] font-bold text-indigo-400 uppercase">Latest: v2.7</span>
                 </DropdownMenuLabel>
                 <div className="max-h-[400px] overflow-y-auto">
                   {VERSION_HISTORY.map((v, i) => (
@@ -181,7 +143,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             </DropdownMenu>
             <Link to="/profile">
               <div className="h-10 w-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden hover:border-indigo-500 transition-colors">
-                {dbProfile?.avatar_url ? <img src={dbProfile.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-slate-500" />}
+                {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-slate-500" />}
               </div>
             </Link>
           </div>
