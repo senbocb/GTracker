@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet, AlertTriangle, Check } from 'lucide-react';
+import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet, AlertTriangle, Check, Layout } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { showSuccess, showError } from '@/utils/toast';
 import { processImage } from '@/utils/imageProcessing';
+import { cn } from '@/lib/utils';
+
+const UI_PRESETS = [
+  { id: 'tactical', name: 'Tactical Command', primary: '#6366f1', bg: '#020617' },
+  { id: 'stealth', name: 'Stealth Ops', primary: '#10b981', bg: '#000000' },
+  { id: 'valor', name: 'Valor Red', primary: '#ef4444', bg: '#0a0a0a' },
+  { id: 'cyber', name: 'Cyber Neon', primary: '#d946ef', bg: '#050505' }
+];
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -20,7 +28,8 @@ const Settings = () => {
     rankAlerts: true,
     sessionReminders: false,
     seasonGoal: '',
-    tacticalOverlay: false
+    tacticalOverlay: false,
+    uiPreset: 'tactical'
   });
 
   const [customization, setCustomization] = useState({
@@ -50,11 +59,21 @@ const Settings = () => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     localStorage.setItem('combat_settings', JSON.stringify(newSettings));
+    
     if (key === 'tacticalOverlay') {
       document.body.classList.toggle('tactical-overlay', value);
       document.body.classList.toggle('scanline-effect', value);
     }
+    
     showSuccess("Configuration updated.");
+  };
+
+  const applyPreset = (preset: any) => {
+    updateSetting('uiPreset', preset.id);
+    updateCustomization('bgColor', preset.bg);
+    // In a real app, we'd update CSS variables here
+    document.documentElement.style.setProperty('--primary', preset.primary);
+    showSuccess(`Applied ${preset.name} preset.`);
   };
 
   const updateCustomization = (key: keyof typeof customization, value: string) => {
@@ -73,31 +92,6 @@ const Settings = () => {
       } catch (err) {
         showError("Failed to process image.");
       }
-    }
-  };
-
-  const exportData = () => {
-    try {
-      const games = JSON.parse(localStorage.getItem('combat_games') || '[]');
-      let csvContent = "Game,Mode,Rank,Tier,Timestamp\n";
-      games.forEach((game: any) => {
-        game.modes.forEach((mode: any) => {
-          (mode.history || []).forEach((log: any) => {
-            csvContent += `"${game.title}","${mode.name}","${log.rank}","${log.tier || ''}","${log.timestamp}"\n`;
-          });
-        });
-      });
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `gtracker_export_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showSuccess("Data exported successfully.");
-    } catch (err) {
-      showError("Failed to export data.");
     }
   };
 
@@ -123,6 +117,27 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
+          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
+            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Layout className="text-indigo-500" size={20} /> UI Presets</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {UI_PRESETS.map(preset => (
+                  <button
+                    key={preset.id}
+                    onClick={() => applyPreset(preset)}
+                    className={cn(
+                      "p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-3 group",
+                      settings.uiPreset === preset.id ? "border-indigo-500 bg-indigo-500/10" : "border-slate-800 bg-slate-950 hover:border-slate-700"
+                    )}
+                  >
+                    <div className="w-10 h-10 rounded-full shadow-lg" style={{ backgroundColor: preset.primary }} />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-center">{preset.name}</span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-slate-900 border-slate-800 shadow-2xl">
             <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-indigo-500" size={20} /> Customization</CardTitle></CardHeader>
             <CardContent className="space-y-6">
@@ -150,19 +165,6 @@ const Settings = () => {
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg" onChange={handleBgImageUpload} />
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Download className="text-indigo-500" size={20} /> Data Management</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-bold text-white">Export History</Label>
-                  <p className="text-sm text-slate-400">Download your match history and stats as a CSV file.</p>
-                </div>
-                <Button onClick={exportData} className="bg-indigo-600 hover:bg-indigo-500"><FileSpreadsheet className="mr-2" size={18} /> Export CSV</Button>
               </div>
             </CardContent>
           </Card>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft } from 'lucide-react';
+import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,61 +10,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { processImage } from '@/utils/imageProcessing';
-
-const DEFAULT_REGISTRY = {
-  "Valorant": { 
-    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
-    modes: ["Competitive", "Premier"]
-  },
-  "Counter-Strike 2": { 
-    ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
-    modes: ["Premier", "Competitive (Per Map)", "Wingman", "Faceit"]
-  },
-  "Overwatch 2": {
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
-    modes: ["Tank", "Damage", "Support", "Open Queue"]
-  },
-  "League of Legends": {
-    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
-    modes: ["Ranked Solo/Duo", "Ranked Flex"]
-  },
-  "Apex Legends": {
-    ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
-    modes: ["Battle Royale", "Arenas"]
-  },
-  "Rainbow Six Siege": {
-    ranks: ["Copper", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Champion"],
-    modes: ["Ranked"]
-  },
-  "The Finals": {
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ruby"],
-    modes: ["World Tour", "Ranked Tournament"]
-  },
-  "Marvel Rivals": {
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Grandmaster", "Celestial", "Eternity"],
-    modes: ["Competitive"]
-  },
-  "Aim Lab": {
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"],
-    modes: ["Ranked"]
-  }
-};
+import { cn } from '@/lib/utils';
 
 const AddGame = () => {
   const navigate = useNavigate();
   const [registry, setRegistry] = useState<any>({});
   const [selectedGame, setSelectedGame] = useState('');
-  const [selectedMode, setSelectedMode] = useState('');
+  const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState('');
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('combat_game_registry') || 'null');
-    if (saved && Object.keys(saved).length > 0) {
-      setRegistry(saved);
-    } else {
-      localStorage.setItem('combat_game_registry', JSON.stringify(DEFAULT_REGISTRY));
-      setRegistry(DEFAULT_REGISTRY);
-    }
+    const saved = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
+    setRegistry(saved);
   }, []);
 
   const gameOptions = Object.keys(registry);
@@ -72,6 +29,12 @@ const AddGame = () => {
     if (!selectedGame || !registry[selectedGame]) return [];
     return registry[selectedGame].modes || [];
   }, [selectedGame, registry]);
+
+  const toggleMode = (mode: string) => {
+    setSelectedModes(prev => 
+      prev.includes(mode) ? prev.filter(m => m !== mode) : [...prev, mode]
+    );
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,43 +51,42 @@ const AddGame = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGame) return;
+    if (!selectedGame || selectedModes.length === 0) return;
 
-    const finalModeName = selectedMode || 'Standard';
-    const gameDef = registry[selectedGame] || { image: '', modes: [] };
-    
+    const gameDef = registry[selectedGame];
     const existingGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const existingGameIndex = existingGames.findIndex((g: any) => g.title === selectedGame);
     
-    const newMode = {
-      name: finalModeName,
+    const newModes = selectedModes.map(modeName => ({
+      name: modeName,
       rank: 'Unranked',
       tier: '',
       peakRank: 'Unranked',
       history: []
-    };
+    }));
+
+    const existingGameIndex = existingGames.findIndex((g: any) => g.title === selectedGame);
 
     if (existingGameIndex > -1) {
       const game = existingGames[existingGameIndex];
-      const modeExists = game.modes.some((m: any) => m.name === finalModeName);
-      
-      if (!modeExists) {
-        game.modes.push(newMode);
-      }
+      newModes.forEach(nm => {
+        if (!game.modes.some((m: any) => m.name === nm.name)) {
+          game.modes.push(nm);
+        }
+      });
       if (imageUrl) game.image = imageUrl;
     } else {
       existingGames.push({
         id: Date.now().toString(),
         title: selectedGame,
         image: imageUrl || gameDef.image || '',
-        modes: [newMode],
+        modes: newModes,
         winRate: '0%',
         hoursPlayed: '0h'
       });
     }
     
     localStorage.setItem('combat_games', JSON.stringify(existingGames));
-    showSuccess(`${selectedGame} (${finalModeName}) tracker initialized.`);
+    showSuccess(`${selectedGame} trackers initialized.`);
     navigate('/');
   };
 
@@ -140,14 +102,14 @@ const AddGame = () => {
 
         <div className="mb-10">
           <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">Initialize Tracker</h1>
-          <p className="text-slate-400 font-medium">Select your operation environment from your custom registry.</p>
+          <p className="text-slate-400 font-medium">Select your operation environment and modes.</p>
         </div>
 
         <Card className="bg-slate-900 border-slate-800 shadow-2xl overflow-hidden">
-          <div className="h-2 w-full bg-blue-600" />
+          <div className="h-2 w-full bg-indigo-600" />
           <CardHeader>
             <CardTitle className="text-xl font-bold flex items-center gap-2 text-white">
-              <Gamepad2 className="text-blue-500" />
+              <Gamepad2 className="text-indigo-500" />
               Deployment Config
             </CardTitle>
           </CardHeader>
@@ -156,44 +118,45 @@ const AddGame = () => {
               <div className="space-y-6">
                 <div className="grid gap-2">
                   <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Game</Label>
-                  <Select onValueChange={(v) => { setSelectedGame(v); setSelectedMode(''); }} required>
+                  <Select onValueChange={(v) => { setSelectedGame(v); setSelectedModes([]); }} required>
                     <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base text-white">
                       <SelectValue placeholder="Choose an operation..." />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
                       {gameOptions.map(game => (
-                        <SelectItem key={game} value={game} className="py-3 focus:bg-blue-600 focus:text-white">{game}</SelectItem>
+                        <SelectItem key={game} value={game}>{game}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 {modeOptions.length > 0 && (
-                  <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
-                    <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Mode</Label>
-                    <Select onValueChange={setSelectedMode} required>
-                      <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base text-white">
-                        <SelectValue placeholder="Choose a mode..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {modeOptions.map(mode => (
-                          <SelectItem key={mode} value={mode} className="py-3 focus:bg-blue-600 focus:text-white">{mode}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid gap-3 animate-in fade-in slide-in-from-top-2">
+                    <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Modes (Multiple Allowed)</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {modeOptions.map((mode: string) => (
+                        <Button
+                          key={mode}
+                          type="button"
+                          variant="outline"
+                          onClick={() => toggleMode(mode)}
+                          className={cn(
+                            "h-12 justify-between px-4 border-slate-800 bg-slate-950 text-xs font-bold uppercase tracking-widest transition-all",
+                            selectedModes.includes(mode) ? "border-indigo-500 bg-indigo-500/10 text-white" : "text-slate-500"
+                          )}
+                        >
+                          {mode}
+                          {selectedModes.includes(mode) && <Check size={14} className="text-indigo-500" />}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="image" className="text-xs font-bold uppercase text-slate-300 tracking-widest">Override Cover Image</Label>
                   <div className="space-y-4">
-                    <input 
-                      id="image" 
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
+                    <input id="image" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                     <Button 
                       type="button"
                       variant="outline" 
@@ -212,8 +175,8 @@ const AddGame = () => {
                 </div>
               </div>
 
-              <Button type="submit" disabled={!selectedGame || (modeOptions.length > 0 && !selectedMode)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                Deploy Tracker
+              <Button type="submit" disabled={!selectedGame || selectedModes.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                Deploy Trackers
               </Button>
             </form>
           </CardContent>
