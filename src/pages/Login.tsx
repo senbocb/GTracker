@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Shield, Lock, Mail, LogIn, Key, RefreshCw, ArrowLeft, Clock } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 type AuthView = 'login' | 'signup' | 'forgot-password';
 
