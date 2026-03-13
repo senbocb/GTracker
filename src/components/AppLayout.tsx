@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 
 const VERSION_HISTORY = [
   { version: "v2.5", type: "Update", title: "Social & Teams", date: "Today", notes: "Added Social tab with friend requests and Team management." },
@@ -25,13 +26,29 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user && location.pathname !== '/login') {
+    if (!loading && !user && location.pathname !== '/login' && location.pathname !== '/reset-password') {
       navigate('/login');
+    }
+
+    // Fallback: Ensure profile exists if user is logged in
+    if (user) {
+      const checkProfile = async () => {
+        const { data, error } = await supabase.from('profiles').select('id').eq('id', user.id).single();
+        if (error || !data) {
+          console.log("Profile missing, re-creating...");
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            username: user.user_metadata?.username || user.email?.split('@')[0],
+            xp: 0
+          });
+        }
+      };
+      checkProfile();
     }
   }, [user, loading, navigate, location.pathname]);
 
   if (loading) return <div className="min-h-screen bg-[#020617] flex items-center justify-center text-indigo-500 font-black italic uppercase">Initializing System...</div>;
-  if (!user && location.pathname !== '/login') return null;
+  if (!user && location.pathname !== '/login' && location.pathname !== '/reset-password') return null;
 
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/' },

@@ -18,6 +18,9 @@ import ConfigManager from "./pages/ConfigManager";
 import Achievements from "./pages/Achievements";
 import HabitTracker from "./pages/HabitTracker";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
+import Social from "./pages/Social";
+import Teams from "./pages/Teams";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +35,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/add-game" element={<AddGame />} />
             <Route path="/settings" element={<Settings />} />
@@ -44,6 +48,8 @@ const App = () => (
             <Route path="/configs" element={<ConfigManager />} />
             <Route path="/achievements" element={<Achievements />} />
             <Route path="/habits" element={<HabitTracker />} />
+            <Route path="/social" element={<Social />} />
+            <Route path="/teams" element={<Teams />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
