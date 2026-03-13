@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft, Check } from 'lucide-react';
+import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft, Check, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,13 +11,17 @@ import { showSuccess, showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 const AddGame = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [registry, setRegistry] = useState<any>({});
   const [selectedGame, setSelectedGame] = useState('');
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
@@ -49,45 +53,46 @@ const AddGame = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGame || selectedModes.length === 0) return;
+    if (!selectedGame || selectedModes.length === 0 || !user) return;
 
-    const gameDef = registry[selectedGame];
-    const existingGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    
-    const newModes = selectedModes.map(modeName => ({
-      name: modeName,
-      rank: 'Unranked',
-      tier: '',
-      peakRank: 'Unranked',
-      history: []
-    }));
+    setLoading(true);
+    try {
+      // 1. Create or find the game
+      const { data: game, error: gameError } = await supabase
+        .from('games')
+        .insert({
+          user_id: user.id,
+          title: selectedGame,
+          image: imageUrl || registry[selectedGame].image || ''
+        })
+        .select()
+        .single();
+      
+      if (gameError) throw gameError;
 
-    const existingGameIndex = existingGames.findIndex((g: any) => g.title === selectedGame);
+      // 2. Create modes
+      const modesToInsert = selectedModes.map(name => ({
+        game_id: game.id,
+        name: name,
+        rank: 'Unranked',
+        peak_rank: 'Unranked'
+      }));
 
-    if (existingGameIndex > -1) {
-      const game = existingGames[existingGameIndex];
-      newModes.forEach(nm => {
-        if (!game.modes.some((m: any) => m.name === nm.name)) {
-          game.modes.push(nm);
-        }
-      });
-      if (imageUrl) game.image = imageUrl;
-    } else {
-      existingGames.push({
-        id: Date.now().toString(),
-        title: selectedGame,
-        image: imageUrl || gameDef.image || '',
-        modes: newModes,
-        winRate: '0%',
-        hoursPlayed: '0h'
-      });
+      const { error: modesError } = await supabase
+        .from('game_modes')
+        .insert(modesToInsert);
+      
+      if (modesError) throw modesError;
+
+      showSuccess(`${selectedGame} trackers initialized in cloud.`);
+      navigate('/');
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
     }
-    
-    localStorage.setItem('combat_games', JSON.stringify(existingGames));
-    showSuccess(`${selectedGame} trackers initialized.`);
-    navigate('/');
   };
 
   return (
@@ -175,7 +180,8 @@ const AddGame = () => {
                 </div>
               </div>
 
-              <Button type="submit" disabled={!selectedGame || selectedModes.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Button type="submit" disabled={loading || !selectedGame || selectedModes.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                {loading ? <Loader2 className="animate-spin mr-2" /> : null}
                 Deploy Trackers
               </Button>
             </form>

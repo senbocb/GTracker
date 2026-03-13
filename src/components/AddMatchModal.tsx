@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Swords, Plus, Zap, Trophy, Target, Calendar, Map as MapIcon, Activity, BarChart3, User } from 'lucide-react';
+import { Swords, Plus, Zap, Trophy, Target, Calendar, Map as MapIcon, Activity, BarChart3, User, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 const CS_LEGACY_RANKS = [
   "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master",
@@ -80,13 +82,15 @@ const GAME_METADATA: Record<string, any> = {
 };
 
 const AddMatchModal = () => {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'quick' | 'detailed'>('quick');
   const [games, setGames] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState<any>({
     gameId: '',
-    gameMode: '',
+    modeId: '',
     rank: '',
     tier: '',
     map: '',
@@ -97,33 +101,46 @@ const AddMatchModal = () => {
   });
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    setGames(saved);
-    if (saved.length > 0 && !formData.gameId) {
-      setFormData((prev: any) => ({ 
-        ...prev, 
-        gameId: saved[0].id,
-        gameMode: saved[0].modes[0]?.name || ''
-      }));
+    if (open && user) {
+      fetchGames();
     }
-  }, [open]);
+  }, [open, user]);
+
+  const fetchGames = async () => {
+    const { data } = await supabase
+      .from('games')
+      .select('*, game_modes(*)')
+      .eq('user_id', user?.id);
+    
+    if (data) {
+      setGames(data);
+      if (data.length > 0 && !formData.gameId) {
+        setFormData((prev: any) => ({ 
+          ...prev, 
+          gameId: data[0].id,
+          modeId: data[0].game_modes[0]?.id || ''
+        }));
+      }
+    }
+  };
 
   const selectedGameObj = useMemo(() => games.find(g => g.id === formData.gameId), [games, formData.gameId]);
+  const selectedModeObj = useMemo(() => selectedGameObj?.game_modes.find((m: any) => m.id === formData.modeId), [selectedGameObj, formData.modeId]);
   
   const metadata = useMemo(() => {
     const base = GAME_METADATA[selectedGameObj?.title] || { ranks: [], tierCount: 0, stats: [] };
-    if (selectedGameObj?.title === 'Counter-Strike 2' && formData.gameMode === 'Wingman') {
+    if (selectedGameObj?.title === 'Counter-Strike 2' && selectedModeObj?.name === 'Wingman') {
       return { ...base, ranks: CS_LEGACY_RANKS };
     }
     return base;
-  }, [selectedGameObj, formData.gameMode]);
+  }, [selectedGameObj, selectedModeObj]);
 
   const getRankValue = (gameTitle: string, rankName: string, tierName?: string) => {
     if (!rankName) return 0;
     const numeric = parseInt(rankName.replace(/\D/g, ''));
     
     if (gameTitle === 'osu!') return 10000000 - numeric;
-    if (gameTitle === 'Counter-Strike 2' && formData.gameMode !== 'Wingman') return numeric;
+    if (gameTitle === 'Counter-Strike 2' && selectedModeObj?.name !== 'Wingman') return numeric;
     
     const meta = GAME_METADATA[gameTitle] || { ranks: [] };
     const rankIdx = meta.ranks.indexOf(rankName);
@@ -140,52 +157,55 @@ const AddMatchModal = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const updatedGames = savedGames.map((g: any) => {
-      if (g.id === formData.gameId) {
-        const modeIdx = g.modes.findIndex((m: any) => m.name === formData.gameMode);
-        if (modeIdx === -1) return g;
+    if (!formData.modeId) return;
 
-        const currentMode = g.modes[modeIdx];
-        const newRankVal = getRankValue(g.title, formData.rank, formData.tier);
-        const peakRankVal = getRankValue(g.title, currentMode.peakRank?.split(' ')[0] || '', currentMode.peakRank?.split(' ')[1] || '');
-        
-        const newPeakRank = newRankVal > peakRankVal 
-          ? `${formData.rank} ${formData.tier || ''}`.trim() 
-          : currentMode.peakRank;
+    setLoading(true);
+    try {
+      const newRankVal = getRankValue(selectedGameObj.title, formData.rank, formData.tier);
+      const peakRankVal = getRankValue(selectedGameObj.title, selectedModeObj.peak_rank?.split(' ')[0] || '', selectedModeObj.peak_rank?.split(' ')[1] || '');
+      
+      const newPeakRank = newRankVal > peakRankVal 
+        ? `${formData.rank} ${formData.tier || ''}`.trim() 
+        : selectedModeObj.peak_rank;
 
-        const historyEntry = {
-          id: Date.now().toString(),
-          type: mode,
+      // 1. Update Mode Rank
+      const { error: modeError } = await supabase
+        .from('game_modes')
+        .update({
+          rank: formData.rank || selectedModeObj.rank,
+          tier: formData.tier || selectedModeObj.tier,
+          peak_rank: newPeakRank
+        })
+        .eq('id', formData.modeId);
+      
+      if (modeError) throw modeError;
+
+      // 2. Insert History Entry
+      const { error: historyError } = await supabase
+        .from('game_history')
+        .insert({
+          mode_id: formData.modeId,
           rank: formData.rank,
           tier: formData.tier,
           map: formData.map,
           result: formData.result,
           agent: formData.agent,
           stats: formData.stats,
-          timestamp: new Date(formData.timestamp).toISOString(),
-        };
+          timestamp: new Date(formData.timestamp).toISOString()
+        });
+      
+      if (historyError) throw historyError;
 
-        const newModes = [...g.modes];
-        newModes[modeIdx] = {
-          ...g.modes[modeIdx],
-          rank: formData.rank || g.modes[modeIdx].rank,
-          tier: formData.tier || g.modes[modeIdx].tier,
-          peakRank: newPeakRank,
-          history: [historyEntry, ...(g.modes[modeIdx].history || [])]
-        };
-        return { ...g, modes: newModes };
-      }
-      return g;
-    });
-
-    localStorage.setItem('combat_games', JSON.stringify(updatedGames));
-    showSuccess(mode === 'quick' ? "Rank updated." : "Match data logged.");
-    setOpen(false);
-    window.location.reload();
+      showSuccess(mode === 'quick' ? "Rank updated in cloud." : "Match data logged to cloud.");
+      setOpen(false);
+      window.location.reload();
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -227,7 +247,10 @@ const AddMatchModal = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-slate-300">Operation</Label>
-              <Select value={formData.gameId} onValueChange={(v) => setFormData({...formData, gameId: v})}>
+              <Select value={formData.gameId} onValueChange={(v) => {
+                const g = games.find(x => x.id === v);
+                setFormData({...formData, gameId: v, modeId: g?.game_modes[0]?.id || ''});
+              }}>
                 <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                   <SelectValue placeholder="Select Game" />
                 </SelectTrigger>
@@ -238,13 +261,13 @@ const AddMatchModal = () => {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase text-slate-300">Mode</Label>
-              <Select value={formData.gameMode} onValueChange={(v) => setFormData({...formData, gameMode: v})}>
+              <Select value={formData.modeId} onValueChange={(v) => setFormData({...formData, modeId: v})}>
                 <SelectTrigger className="bg-slate-900 border-slate-800 text-white">
                   <SelectValue placeholder="Select Mode" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                  {selectedGameObj?.modes.map((m: any) => (
-                    <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
+                  {selectedGameObj?.game_modes.map((m: any) => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -378,7 +401,8 @@ const AddMatchModal = () => {
           </div>
 
           <DialogFooter className="pt-4">
-            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase py-8 rounded-2xl text-lg">
+            <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase py-8 rounded-2xl text-lg">
+              {loading ? <Loader2 className="animate-spin mr-2" /> : null}
               {mode === 'quick' ? 'UPDATE RANK' : 'LOG MATCH'}
             </Button>
           </DialogFooter>
