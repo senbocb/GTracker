@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Lock, Mail, LogIn, Key, RefreshCw, ArrowLeft, Clock } from 'lucide-react';
+import { Shield, Lock, Mail, Key, RefreshCw, ArrowLeft } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -19,21 +19,12 @@ const Login = () => {
   const [view, setView] = useState<AuthView>('login');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [cooldown, setCooldown] = useState(0);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     username: '',
     pin: ''
   });
-
-  // Handle cooldown timer
-  useEffect(() => {
-    if (cooldown > 0) {
-      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [cooldown]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,12 +47,6 @@ const Login = () => {
         });
         
         if (error) {
-          // Handle Rate Limit (429)
-          if (error.status === 429 || error.message.toLowerCase().includes("rate limit")) {
-            setCooldown(300); // 5 minute cooldown on UI
-            throw new Error("Supabase Security: Email rate limit reached. Please wait 15 minutes or try logging in if you already have an account.");
-          }
-          
           if (error.message.includes("User already registered")) {
             showError("Account already exists. Redirecting to Login...");
             setView('login');
@@ -75,7 +60,6 @@ const Login = () => {
           navigate('/');
         } else {
           showSuccess("Verification email sent. Please check your inbox.");
-          setCooldown(60);
         }
       } else if (view === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -85,7 +69,7 @@ const Login = () => {
         
         if (error) {
           if (error.message.includes("Email not confirmed")) {
-            showError("Email not verified. Please check your inbox or use 'Resend Verification'.");
+            showError("Email not verified. Please check your inbox.");
             return;
           }
           throw error;
@@ -103,15 +87,8 @@ const Login = () => {
         const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
-        if (error) {
-          if (error.status === 429 || error.message.toLowerCase().includes("rate limit")) {
-            setCooldown(300);
-            throw new Error("Rate limit reached. Please wait before requesting another reset.");
-          }
-          throw error;
-        }
+        if (error) throw error;
         showSuccess("Password reset link sent to your email.");
-        setCooldown(60);
         setView('login');
       }
     } catch (err: any) {
@@ -126,7 +103,6 @@ const Login = () => {
       showError("Please enter your email first.");
       return;
     }
-    if (cooldown > 0) return;
 
     setLoading(true);
     try {
@@ -136,14 +112,8 @@ const Login = () => {
       });
       if (error) throw error;
       showSuccess("Verification email resent.");
-      setCooldown(60);
     } catch (err: any) {
-      if (err.status === 429 || err.message.toLowerCase().includes("rate limit")) {
-        showError("Still rate limited. Please wait 15 minutes.");
-        setCooldown(300);
-      } else {
-        showError(err.message || "Failed to resend email.");
-      }
+      showError(err.message || "Failed to resend email.");
     } finally {
       setLoading(false);
     }
@@ -249,10 +219,10 @@ const Login = () => {
             )}
 
             <Button 
-              disabled={loading || cooldown > 0} 
+              disabled={loading} 
               className="w-full bg-indigo-600 hover:bg-indigo-500 font-black uppercase py-7 rounded-2xl shadow-xl shadow-indigo-600/20"
             >
-              {loading ? 'Processing...' : cooldown > 0 ? `Wait ${Math.ceil(cooldown / 60)}m` : view === 'signup' ? 'Create Account' : view === 'forgot-password' ? 'Send Reset Link' : 'Authorize Access'}
+              {loading ? 'Processing...' : view === 'signup' ? 'Create Account' : view === 'forgot-password' ? 'Send Reset Link' : 'Authorize Access'}
             </Button>
           </form>
 
@@ -274,15 +244,11 @@ const Login = () => {
                 </button>
                 {view === 'login' && (
                   <button 
-                    disabled={cooldown > 0}
                     onClick={resendVerification}
-                    className={cn(
-                      "text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-colors",
-                      cooldown > 0 ? "text-slate-700 cursor-not-allowed" : "text-slate-600 hover:text-slate-400"
-                    )}
+                    className="text-[10px] font-black uppercase flex items-center justify-center gap-2 text-slate-600 hover:text-slate-400 transition-colors"
                   >
-                    {cooldown > 0 ? <Clock size={12} /> : <RefreshCw size={12} />}
-                    {cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend Verification Email'}
+                    <RefreshCw size={12} />
+                    Resend Verification Email
                   </button>
                 )}
               </>
