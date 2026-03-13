@@ -14,7 +14,6 @@ import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import SeasonManager, { Season } from '@/components/SeasonManager';
 import CS2MapRanks from '@/components/CS2MapRanks';
-import BenchmarkManager from '@/components/BenchmarkManager';
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
@@ -84,12 +83,6 @@ const GAME_METADATA: Record<string, any> = {
   },
   "Aim Lab": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"],
-    tierCount: 0,
-    tierDirection: 'asc',
-    noTierRanks: []
-  },
-  "Kovaaks": {
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Nova", "Astra", "Celestial"],
     tierCount: 0,
     tierDirection: 'asc',
     noTierRanks: []
@@ -222,6 +215,11 @@ const GameDetail = () => {
     showSuccess(editingLogId ? "Log entry updated." : "Rank update logged.");
   };
 
+  const openLogForMap = (mapName: string) => {
+    setLogData({ ...logData, map: mapName, rank: '', tier: '', timestamp: new Date().toISOString().slice(0, 16) });
+    setIsLogOpen(true);
+  };
+
   if (!game) return null;
   const activeBanner = currentModeData?.image || game.image;
   const allTrackers = [...externalLinks, ...linkedSocials.map(s => ({ name: s.name, url: s.url, icon: s.icon, isLinked: true }))];
@@ -238,6 +236,17 @@ const GameDetail = () => {
             <DialogContent className="bg-slate-950 border-slate-800 text-white">
               <DialogHeader><DialogTitle className="italic uppercase font-black">{editingLogId ? 'Edit History Entry' : 'Log Rank Change'}</DialogTitle></DialogHeader>
               <div className="space-y-6 py-4">
+                {activeMode === 'Per-Map Rank' && (
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-300">Select Map</Label>
+                    <Select onValueChange={(v) => setLogData({...logData, map: v})} value={logData.map}>
+                      <SelectTrigger className="bg-slate-900 border-slate-800"><SelectValue placeholder="Choose Map" /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {CS2_MAPS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-300">Rank / Rating</Label>
                   {metadata.ranks.length > 0 ? (
@@ -277,13 +286,13 @@ const GameDetail = () => {
                 </TabsList>
               </Tabs>
             </div>
-            <RankBadge rank={currentModeData?.rank} tier={currentModeData?.tier} gameTitle={game.title} className="scale-110" />
+            {activeMode !== 'Per-Map Rank' && <RankBadge rank={currentModeData?.rank} tier={currentModeData?.tier} gameTitle={game.title} className="scale-110" />}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
-            {(game.title === 'Kovaaks' || game.title === 'Aim Lab') && <BenchmarkManager gameId={game.id} />}
+            {activeMode === 'Per-Map Rank' && <CS2MapRanks gameId={game.id} onLogClick={openLogForMap} />}
             
             <ProgressChart history={currentModeData?.history} rankNames={metadata.ranks} getRankValue={getRankValue} />
 
@@ -308,7 +317,7 @@ const GameDetail = () => {
                         <td className="px-6 py-4 border-r border-slate-800/50">
                           <div className="flex items-center gap-3">
                             <RankBadge rank={h.rank} tier={h.tier} gameTitle={game.title} className="scale-90" />
-                            <span className="text-xs font-black text-white uppercase">{h.rank} {h.tier}</span>
+                            <span className="text-xs font-black text-white uppercase">{h.map ? `${h.map}: ` : ''}{h.rank} {h.tier}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">

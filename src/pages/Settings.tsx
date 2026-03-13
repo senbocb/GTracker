@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet, AlertTriangle, Check, Layout, Sparkles } from 'lucide-react';
+import { ChevronLeft, Settings as SettingsIcon, Bell, Shield, Monitor, Palette, Image as ImageIcon, Trash2, Plus, GripVertical, Download, FileSpreadsheet, AlertTriangle, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -9,16 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { showSuccess, showError } from '@/utils/toast';
 import { processImage } from '@/utils/imageProcessing';
-import { cn } from '@/lib/utils';
-
-const UI_PRESETS = [
-  { id: 'tactical', name: 'Tactical Command', color: '#6366f1', radius: '0.75rem', border: 'border-slate-800' },
-  { id: 'cyberpunk', name: 'Neon Protocol', color: '#f43f5e', radius: '0rem', border: 'border-rose-500/50' },
-  { id: 'minimal', name: 'Stealth Ops', color: '#94a3b8', radius: '1.5rem', border: 'border-slate-900' },
-];
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -28,8 +20,7 @@ const Settings = () => {
     rankAlerts: true,
     sessionReminders: false,
     seasonGoal: '',
-    tacticalOverlay: false,
-    uiPreset: 'tactical'
+    tacticalOverlay: false
   });
 
   const [customization, setCustomization] = useState({
@@ -59,20 +50,11 @@ const Settings = () => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     localStorage.setItem('combat_settings', JSON.stringify(newSettings));
-    
     if (key === 'tacticalOverlay') {
       document.body.classList.toggle('tactical-overlay', value);
       document.body.classList.toggle('scanline-effect', value);
     }
-
-    if (key === 'uiPreset') {
-      const preset = UI_PRESETS.find(p => p.id === value);
-      if (preset) {
-        document.documentElement.style.setProperty('--radius', preset.radius);
-        document.documentElement.style.setProperty('--primary', preset.color);
-        showSuccess(`UI Preset: ${preset.name} applied.`);
-      }
-    }
+    showSuccess("Configuration updated.");
   };
 
   const updateCustomization = (key: keyof typeof customization, value: string) => {
@@ -141,31 +123,6 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Layout className="text-indigo-500" size={20} /> UI Presets</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {UI_PRESETS.map(preset => (
-                  <button
-                    key={preset.id}
-                    onClick={() => updateSetting('uiPreset', preset.id)}
-                    className={cn(
-                      "p-4 rounded-2xl border-2 transition-all text-left group",
-                      settings.uiPreset === preset.id 
-                        ? "bg-indigo-600/10 border-indigo-500" 
-                        : "bg-slate-950 border-slate-800 hover:border-slate-700"
-                    )}
-                  >
-                    <div className="w-8 h-8 rounded-lg mb-3 flex items-center justify-center" style={{ backgroundColor: preset.color + '20' }}>
-                      <Sparkles size={16} style={{ color: preset.color }} />
-                    </div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white">{preset.name}</p>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="bg-slate-900 border-slate-800 shadow-2xl">
             <CardHeader><CardTitle className="text-lg font-bold flex items-center gap-2 text-white"><Palette className="text-indigo-500" size={20} /> Customization</CardTitle></CardHeader>
             <CardContent className="space-y-6">

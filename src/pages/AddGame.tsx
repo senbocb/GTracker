@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft, Check } from 'lucide-react';
+import { Gamepad2, Image as ImageIcon, Plus, Info, ChevronLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { processImage } from '@/utils/imageProcessing';
-import { cn } from '@/lib/utils';
 
 const DEFAULT_REGISTRY = {
   "Valorant": { 
@@ -47,11 +46,7 @@ const DEFAULT_REGISTRY = {
   },
   "Aim Lab": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"],
-    modes: ["Ranked", "Voltaic Benchmarks"]
-  },
-  "Kovaaks": {
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Nova", "Astra", "Celestial"],
-    modes: ["Voltaic Benchmarks", "EVXL Benchmarks"]
+    modes: ["Ranked"]
   }
 };
 
@@ -59,7 +54,7 @@ const AddGame = () => {
   const navigate = useNavigate();
   const [registry, setRegistry] = useState<any>({});
   const [selectedGame, setSelectedGame] = useState('');
-  const [selectedModes, setSelectedModes] = useState<string[]>([]);
+  const [selectedMode, setSelectedMode] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
   useEffect(() => {
@@ -78,12 +73,6 @@ const AddGame = () => {
     return registry[selectedGame].modes || [];
   }, [selectedGame, registry]);
 
-  const toggleMode = (mode: string) => {
-    setSelectedModes(prev => 
-      prev.includes(mode) ? prev.filter(m => m !== mode) : [...prev, mode]
-    );
-  };
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -99,41 +88,43 @@ const AddGame = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGame || selectedModes.length === 0) return;
+    if (!selectedGame) return;
 
+    const finalModeName = selectedMode || 'Standard';
     const gameDef = registry[selectedGame] || { image: '', modes: [] };
+    
     const existingGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     const existingGameIndex = existingGames.findIndex((g: any) => g.title === selectedGame);
     
-    const newModes = selectedModes.map(modeName => ({
-      name: modeName,
+    const newMode = {
+      name: finalModeName,
       rank: 'Unranked',
       tier: '',
       peakRank: 'Unranked',
       history: []
-    }));
+    };
 
     if (existingGameIndex > -1) {
       const game = existingGames[existingGameIndex];
-      newModes.forEach(newMode => {
-        if (!game.modes.some((m: any) => m.name === newMode.name)) {
-          game.modes.push(newMode);
-        }
-      });
+      const modeExists = game.modes.some((m: any) => m.name === finalModeName);
+      
+      if (!modeExists) {
+        game.modes.push(newMode);
+      }
       if (imageUrl) game.image = imageUrl;
     } else {
       existingGames.push({
         id: Date.now().toString(),
         title: selectedGame,
         image: imageUrl || gameDef.image || '',
-        modes: newModes,
+        modes: [newMode],
         winRate: '0%',
         hoursPlayed: '0h'
       });
     }
     
     localStorage.setItem('combat_games', JSON.stringify(existingGames));
-    showSuccess(`${selectedGame} (${selectedModes.join(', ')}) tracker initialized.`);
+    showSuccess(`${selectedGame} (${finalModeName}) tracker initialized.`);
     navigate('/');
   };
 
@@ -149,7 +140,7 @@ const AddGame = () => {
 
         <div className="mb-10">
           <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">Initialize Tracker</h1>
-          <p className="text-slate-400 font-medium">Select your operation environment and modes.</p>
+          <p className="text-slate-400 font-medium">Select your operation environment from your custom registry.</p>
         </div>
 
         <Card className="bg-slate-900 border-slate-800 shadow-2xl overflow-hidden">
@@ -165,7 +156,7 @@ const AddGame = () => {
               <div className="space-y-6">
                 <div className="grid gap-2">
                   <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Game</Label>
-                  <Select onValueChange={(v) => { setSelectedGame(v); setSelectedModes([]); }} required>
+                  <Select onValueChange={(v) => { setSelectedGame(v); setSelectedMode(''); }} required>
                     <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base text-white">
                       <SelectValue placeholder="Choose an operation..." />
                     </SelectTrigger>
@@ -178,26 +169,18 @@ const AddGame = () => {
                 </div>
 
                 {modeOptions.length > 0 && (
-                  <div className="grid gap-3 animate-in fade-in slide-in-from-top-2">
-                    <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Modes (Multiple Allowed)</Label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {modeOptions.map(mode => (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => toggleMode(mode)}
-                          className={cn(
-                            "flex items-center justify-between p-4 rounded-xl border transition-all text-left",
-                            selectedModes.includes(mode) 
-                              ? "bg-indigo-600/20 border-indigo-500 text-white" 
-                              : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
-                          )}
-                        >
-                          <span className="text-xs font-black uppercase tracking-tight">{mode}</span>
-                          {selectedModes.includes(mode) && <Check size={16} className="text-indigo-400" />}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="grid gap-2 animate-in fade-in slide-in-from-top-2">
+                    <Label className="text-xs font-bold uppercase text-slate-300 tracking-widest">Select Mode</Label>
+                    <Select onValueChange={setSelectedMode} required>
+                      <SelectTrigger className="bg-slate-950 border-slate-800 h-14 text-base text-white">
+                        <SelectValue placeholder="Choose a mode..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {modeOptions.map(mode => (
+                          <SelectItem key={mode} value={mode} className="py-3 focus:bg-blue-600 focus:text-white">{mode}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
 
@@ -229,7 +212,7 @@ const AddGame = () => {
                 </div>
               </div>
 
-              <Button type="submit" disabled={!selectedGame || selectedModes.length === 0} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Button type="submit" disabled={!selectedGame || (modeOptions.length > 0 && !selectedMode)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-8 rounded-2xl text-lg shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
                 Deploy Tracker
               </Button>
             </form>
