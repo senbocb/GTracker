@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, ChevronDown } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ActivityHeatmap = () => {
@@ -32,9 +32,7 @@ const ActivityHeatmap = () => {
 
   const weeks = useMemo(() => {
     const result = [];
-    // Start from Jan 1st of the selected year
     const start = new Date(selectedYear, 0, 1);
-    // Adjust to the first Sunday of the year
     start.setDate(start.getDate() - start.getDay());
 
     let current = new Date(start);
@@ -87,25 +85,26 @@ const ActivityHeatmap = () => {
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="grid grid-cols-[repeat(52,minmax(0,1fr))] gap-1">
+        <div className="grid grid-cols-[repeat(52,minmax(0,1fr))] gap-1.5">
           <TooltipProvider delayDuration={0}>
             {weeks.map((week, wi) => (
-              <div key={wi} className={cn(
-                "flex flex-col gap-1",
-                wi === 0 && "ring-1 ring-yellow-400/50 ring-offset-2 ring-offset-slate-950 rounded-sm p-0.5 -m-0.5"
-              )}>
+              <div key={wi} className="flex flex-col gap-1.5">
                 {week.map((day, di) => (
                   <Tooltip key={di}>
                     <TooltipTrigger asChild>
                       <div 
                         className={cn(
-                          "aspect-square w-full rounded-[1px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
+                          "aspect-square w-full rounded-[2px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
                           getColor(day)
                         )} 
                       />
                     </TooltipTrigger>
                     {!day.isFuture && day.isCurrentYear && (
-                      <TooltipContent className="bg-slate-950 border-slate-800 text-[10px] font-bold uppercase tracking-widest p-2">
+                      <TooltipContent 
+                        side="top" 
+                        className="bg-slate-950 border-slate-800 text-[10px] font-bold uppercase tracking-widest p-2 z-[100]"
+                        collisionPadding={10}
+                      >
                         <p className="text-white">{day.count} Changes</p>
                         <p className="text-slate-500">{new Date(day.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       </TooltipContent>

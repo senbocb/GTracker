@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, History, Target, FileCode, User, Settings, Bell, LogOut, ChevronDown, Zap, Info, Sparkles, ListChecks } from 'lucide-react';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, History, Target, FileCode, User, Settings, Bell, LogOut, LogIn, Zap, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthProvider";
 
 const VERSION_HISTORY = [
   { version: "v2.4", type: "Update", title: "Auth & PIN Security", date: "Today", notes: "Implemented Supabase auth with mandatory PIN security and cross-device sync." },
@@ -17,20 +18,7 @@ const VERSION_HISTORY = [
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { user } = useAuth();
 
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/' },
@@ -134,9 +122,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                       <p className="text-[10px] text-slate-400 leading-relaxed">{v.notes}</p>
                     </div>
                   ))}
-                </div>
-                <div className="p-3 bg-slate-900/50 text-center">
-                  <Button variant="ghost" className="text-[9px] font-black uppercase text-indigo-400 hover:text-white h-auto py-1">View Full Changelog</Button>
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
