@@ -29,6 +29,16 @@ const DEFAULT_REGISTRY = {
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
     modes: ["Ranked Solo/Duo", "Ranked Flex"],
     image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+  },
+  "Overwatch 2": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
+    modes: ["Role Queue", "Open Queue"],
+    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
+  },
+  "Apex Legends": {
+    ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"],
+    modes: ["Battle Royale Ranked"],
+    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop"
   }
 };
 
@@ -47,7 +57,7 @@ const AddGame = () => {
       try {
         const parsed = JSON.parse(saved);
         if (Object.keys(parsed).length > 0) {
-          setRegistry(parsed);
+          setRegistry({ ...DEFAULT_REGISTRY, ...parsed });
         }
       } catch (e) {
         console.error("Failed to parse registry", e);
