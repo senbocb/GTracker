@@ -98,7 +98,7 @@ const Profile = () => {
     createdAt: new Date().toISOString(),
     xp: 0,
     country: 'United States',
-    countryFlag: '🇺🇸',
+    country_flag: '🇺🇸',
     sensitivity: '',
     age: ''
   });
@@ -131,7 +131,7 @@ const Profile = () => {
         createdAt: globalProfile.updated_at,
         xp: globalProfile.xp || 0,
         country: globalProfile.country || 'United States',
-        countryFlag: globalProfile.country_flag || '🇺🇸',
+        country_flag: globalProfile.country_flag || '🇺🇸',
         sensitivity: globalProfile.sensitivity || '',
         age: ''
       });
@@ -178,7 +178,7 @@ const Profile = () => {
         .update({
           username: profile.username,
           country: profile.country,
-          country_flag: profile.countryFlag,
+          country_flag: profile.country_flag,
           sensitivity: profile.sensitivity,
           avatar_url: profile.avatar_url,
           banner_url: profile.banner_url
@@ -288,7 +288,7 @@ const Profile = () => {
           <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Profile Stats</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Joined</span><span className="text-sm font-black text-white">{new Date(profile.createdAt).toLocaleDateString()}</span></div>
-            <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Country</span><span className="text-sm font-black text-white flex items-center gap-2"><span>{profile.countryFlag}</span><span>{profile.country}</span></span></div>
+            <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Country</span><span className="text-sm font-black text-white flex items-center gap-2"><span>{profile.country_flag}</span><span>{profile.country}</span></span></div>
             <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Sensitivity</span><span className="text-sm font-black text-indigo-400">{profile.sensitivity ? `${profile.sensitivity} cm/360` : 'N/A'}</span></div>
           </div>
         </section>
@@ -331,7 +331,7 @@ const Profile = () => {
                 <div className="space-y-3 max-w-md animate-in fade-in slide-in-from-left-2">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1"><Label className="text-[10px] font-bold uppercase text-slate-400">Username</Label><Input value={profile.username} onChange={(e) => setProfile({...profile, username: e.target.value})} className="bg-slate-900 border-slate-800 text-white font-black italic h-10" /></div>
-                    <div className="space-y-1"><Label className="text-[10px] font-bold uppercase text-slate-400">Country</Label><Select onValueChange={(v) => { const c = COUNTRIES.find(x => x.name === v); if(c) setProfile({...profile, country: c.name, countryFlag: c.flag}); }} value={profile.country}><SelectTrigger className="bg-slate-900 border-slate-800 text-white h-10"><SelectValue /></SelectTrigger><SelectContent className="bg-slate-900 border-slate-800 text-white">{COUNTRIES.map(c => <SelectItem key={c.name} value={c.name}>{c.flag} {c.name}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-1"><Label className="text-[10px] font-bold uppercase text-slate-400">Country</Label><Select onValueChange={(v) => { const c = COUNTRIES.find(x => x.name === v); if(c) setProfile({...profile, country: c.name, country_flag: c.flag}); }} value={profile.country}><SelectTrigger className="bg-slate-900 border-slate-800 text-white h-10"><SelectValue /></SelectTrigger><SelectContent className="bg-slate-900 border-slate-800 text-white">{COUNTRIES.map(c => <SelectItem key={c.name} value={c.name}>{c.flag} {c.name}</SelectItem>)}</SelectContent></Select></div>
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 font-bold">
@@ -382,7 +382,7 @@ const Profile = () => {
                   <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 border-indigo-500 overflow-hidden shrink-0">{profile.avatar_url && <img src={profile.avatar_url} className="w-full h-full object-cover" />}</div>
                   <div>
                     <h2 className="text-3xl font-black italic uppercase text-white">{profile.username}</h2>
-                    <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Level {level} Operator • {profile.countryFlag} {profile.country}</p>
+                    <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Level {level} Operator • {profile.country_flag} {profile.country}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
