@@ -14,6 +14,7 @@ import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import SeasonManager, { Season } from '@/components/SeasonManager';
 import TournamentWidget from '@/components/TournamentWidget';
+import AppLayout from '@/components/AppLayout';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
