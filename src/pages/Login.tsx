@@ -56,8 +56,13 @@ const Login = () => {
         });
         
         if (error) {
-          if (error.message.includes("rate limit")) {
-            setCooldown(60); // Set a 60s cooldown on UI
+          if (error.message.includes("User already registered")) {
+            showError("Account already exists. Redirecting to Login...");
+            setView('login');
+            return;
+          }
+          if (error.message.includes("rate limit") || error.status === 429) {
+            setCooldown(60);
             throw new Error("Email rate limit reached. Please wait a few minutes before trying again.");
           }
           throw error;
@@ -76,7 +81,13 @@ const Login = () => {
           password: formData.password
         });
         
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes("Email not confirmed")) {
+            showError("Email not verified. Please check your inbox or use 'Resend Verification'.");
+            return;
+          }
+          throw error;
+        }
 
         const userPin = data.user?.user_metadata?.pin;
         if (userPin && userPin !== formData.pin) {
@@ -91,7 +102,7 @@ const Login = () => {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) {
-          if (error.message.includes("rate limit")) {
+          if (error.message.includes("rate limit") || error.status === 429) {
             setCooldown(60);
             throw new Error("Rate limit reached. Please wait before requesting another reset.");
           }
@@ -125,9 +136,9 @@ const Login = () => {
       showSuccess("Verification email resent.");
       setCooldown(60);
     } catch (err: any) {
-      if (err.message.includes("rate limit")) {
+      if (err.message.includes("rate limit") || err.status === 429) {
         showError("Still rate limited. Please wait a few more minutes.");
-        setCooldown(120); // Increase cooldown if they hit it again
+        setCooldown(120);
       } else {
         showError(err.message || "Failed to resend email.");
       }
