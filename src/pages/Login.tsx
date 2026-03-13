@@ -6,16 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Lock, Mail, LogIn, Key } from 'lucide-react';
+import { Shield, Lock, Mail, UserPlus, LogIn, Key } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const Login = () => {
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -35,29 +33,26 @@ const Login = () => {
 
     try {
       if (isSignUp) {
+        // Sign up with username in metadata so the trigger can pick it up
         const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
             data: {
               pin: formData.pin,
-              username: formData.username || formData.email.split('@')[0]
+              username: formData.username
             }
           }
         });
-        if (error) throw error;
         
-        // Create initial profile record
-        if (data.user) {
-          await supabase.from('profiles').insert({
-            id: data.user.id,
-            username: formData.username || formData.email.split('@')[0],
-            xp: 0
-          });
-        }
+        if (error) throw error;
 
-        showSuccess("Account created! Welcome to GTracker.");
-        navigate('/');
+        if (data.session) {
+          showSuccess("Account initialized. Welcome, Operator.");
+          navigate('/');
+        } else {
+          showSuccess("Registration successful. Please check your email for verification.");
+        }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
@@ -70,10 +65,10 @@ const Login = () => {
         const userPin = data.user?.user_metadata?.pin;
         if (userPin !== formData.pin) {
           await supabase.auth.signOut();
-          throw new Error("Invalid Security PIN. Access Denied.");
+          throw new Error("Security PIN mismatch. Access Denied.");
         }
         
-        showSuccess("Authorization successful. Welcome back.");
+        showSuccess("Authorization confirmed. Welcome back.");
         navigate('/');
       }
     } catch (err: any) {
@@ -128,7 +123,7 @@ const Login = () => {
             </div>
 
             {isSignUp && (
-              <div className="space-y-2">
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                 <Label className="text-[10px] font-black uppercase text-slate-400">Username</Label>
                 <Input 
                   required
