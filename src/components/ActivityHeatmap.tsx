@@ -37,8 +37,8 @@ const ActivityHeatmap = () => {
 
     let current = new Date(start);
 
-    // Strictly 52 weeks for consistent layout
-    for (let w = 0; w < 52; w++) {
+    // Strictly 53 weeks to ensure full year coverage and better fill
+    for (let w = 0; w < 53; w++) {
       const week = [];
       for (let d = 0; d < 7; d++) {
         const dateStr = current.toISOString().split('T')[0];
@@ -59,17 +59,17 @@ const ActivityHeatmap = () => {
   }, [data, selectedYear]);
 
   const getColor = (day: any) => {
-    if (!day.isCurrentYear) return 'bg-slate-950/20 border-transparent opacity-20';
+    if (!day.isCurrentYear) return 'bg-slate-950/20 border-transparent opacity-10';
     if (day.isFuture) return 'bg-transparent border-transparent opacity-0';
-    if (day.count === 0) return 'bg-slate-900/30 border-slate-800/50';
-    if (day.count <= 2) return 'bg-indigo-900/40 border-indigo-800/20';
-    if (day.count <= 5) return 'bg-indigo-700/70 border-indigo-600/30';
-    return 'bg-indigo-500 border-indigo-400/50 shadow-[0_0_8px_rgba(99,102,241,0.3)]';
+    if (day.count === 0) return 'bg-slate-900/40 border-slate-800/30';
+    if (day.count <= 2) return 'bg-indigo-900/60 border-indigo-800/20';
+    if (day.count <= 5) return 'bg-indigo-700/80 border-indigo-600/30';
+    return 'bg-indigo-500 border-indigo-400/50 shadow-[0_0_12px_rgba(99,102,241,0.4)]';
   };
 
   return (
-    <Card className="bg-slate-900/90 border-slate-800 backdrop-blur-sm overflow-hidden">
-      <CardHeader className="pb-4 border-b border-slate-800/50 bg-slate-900/50">
+    <Card className="bg-slate-900/90 border-slate-800 backdrop-blur-sm overflow-hidden h-full flex flex-col">
+      <CardHeader className="pb-4 border-b border-slate-800/50 bg-slate-900/50 shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
             <Activity size={14} className="text-indigo-500" />
@@ -85,20 +85,20 @@ const ActivityHeatmap = () => {
           </Select>
         </div>
       </CardHeader>
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-[repeat(52,minmax(0,1fr))] gap-1.5">
+      <CardContent className="pt-6 flex-1 flex flex-col justify-between">
+        <div className="grid grid-cols-[repeat(53,minmax(0,1fr))] gap-1.5 sm:gap-2">
           <TooltipProvider delayDuration={0}>
             {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-1.5">
+              <div key={wi} className="flex flex-col gap-1.5 sm:gap-2">
                 {week.map((day, di) => (
                   <Tooltip key={di}>
                     <TooltipTrigger asChild>
                       <div 
                         className={cn(
-                          "aspect-square w-full rounded-[2px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
+                          "aspect-square w-full rounded-[3px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
                           getColor(day)
                         )} 
-                        style={{ minWidth: '4px' }}
+                        style={{ minWidth: '6px' }}
                       />
                     </TooltipTrigger>
                     {!day.isFuture && day.isCurrentYear && (
@@ -118,20 +118,20 @@ const ActivityHeatmap = () => {
           </TooltipProvider>
         </div>
         
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-8 flex items-center justify-between border-t border-slate-800/30 pt-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-sm ring-1 ring-yellow-400 ring-offset-1 ring-offset-slate-950 bg-slate-900" />
-              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Year Start</span>
+              <div className="w-2.5 h-2.5 rounded-sm ring-1 ring-indigo-500/50 ring-offset-2 ring-offset-slate-950 bg-indigo-500/20" />
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Active Cycle</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Less</span>
-            <div className="flex gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm bg-slate-900/30 border border-slate-800/50" />
-              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-900/40 border-indigo-800/20" />
-              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-700/70 border-indigo-600/30" />
-              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-500 border border-indigo-400/50" />
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-slate-900/40 border border-slate-800/30" />
+              <div className="w-3 h-3 rounded-sm bg-indigo-900/60 border-indigo-800/20" />
+              <div className="w-3 h-3 rounded-sm bg-indigo-700/80 border-indigo-600/30" />
+              <div className="w-3 h-3 rounded-sm bg-indigo-500 border border-indigo-400/50 shadow-[0_0_8px_rgba(99,102,241,0.3)]" />
             </div>
             <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">More</span>
           </div>
