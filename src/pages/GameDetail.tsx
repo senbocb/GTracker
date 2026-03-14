@@ -14,6 +14,7 @@ import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import SeasonManager, { Season } from '@/components/SeasonManager';
 import TournamentWidget from '@/components/TournamentWidget';
+import CS2MapPopup from '@/components/CS2MapPopup';
 import AppLayout from '@/components/AppLayout';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
@@ -47,9 +48,6 @@ const GameDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logData, setLogData] = useState({ rank: '', tier: '', map: '', role: '', timestamp: new Date().toISOString().slice(0, 16) });
   const [registryData, setRegistryData] = useState<any>(null);
-  
-  const [benchmarks, setBenchmarks] = useState<any[]>([]);
-  const [isPulling, setIsPulling] = useState(false);
 
   useEffect(() => {
     fetchGameData();
@@ -64,7 +62,6 @@ const GameDetail = () => {
         return acc;
       }, {});
       setRegistryData(regMap);
-      localStorage.setItem('combat_game_registry', JSON.stringify(regMap));
     }
   };
 
@@ -94,8 +91,6 @@ const GameDetail = () => {
 
       const savedSeasons = JSON.parse(localStorage.getItem(`seasons_${id}`) || '[]');
       setSeasons(savedSeasons);
-      const savedBenchmarks = JSON.parse(localStorage.getItem(`benchmarks_${id}`) || '[]');
-      setBenchmarks(savedBenchmarks);
     } else {
       navigate('/');
     }
@@ -122,15 +117,18 @@ const GameDetail = () => {
       
       if (historyError) throw historyError;
 
-      const { error: modeError } = await supabase
-        .from('game_modes')
-        .update({
-          rank: logData.rank,
-          tier: logData.tier
-        })
-        .eq('id', mode.id);
-      
-      if (modeError) throw modeError;
+      // Only update global mode rank if not per-map
+      if (!(game.title === 'Counter-Strike 2' && activeMode === 'Competitive (Per Map)')) {
+        const { error: modeError } = await supabase
+          .from('game_modes')
+          .update({
+            rank: logData.rank,
+            tier: logData.tier
+          })
+          .eq('id', mode.id);
+        
+        if (modeError) throw modeError;
+      }
 
       showSuccess("Rank logged successfully.");
       setIsLogOpen(false);
@@ -148,9 +146,7 @@ const GameDetail = () => {
   const modeSpecificRanks = DEFAULT_METADATA[game.title]?.modeRanks?.[activeMode];
   const availableRanks = modeSpecificRanks || currentMetadata.ranks || [];
   
-  const isOW2RoleQueue = game.title === 'Overwatch 2' && activeMode === 'Role Queue';
-  const isCS2Premier = game.title === 'Counter-Strike 2' && activeMode === 'Premier';
-  const showMapField = game.title === 'Kovaaks' || game.title === 'Aim Lab';
+  const isCS2PerMap = game.title === 'Counter-Strike 2' && activeMode === 'Competitive (Per Map)';
 
   return (
     <AppLayout>
@@ -158,6 +154,9 @@ const GameDetail = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <Link to="/"><Button variant="ghost" className="text-slate-300 hover:text-white -ml-4"><ChevronLeft className="mr-2" size={20} /> Back</Button></Link>
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
+            {isCS2PerMap && (
+              <CS2MapPopup gameId={game.id} history={game.modes.find((m: any) => m.name === activeMode)?.history || []} />
+            )}
             <Dialog open={isLogOpen} onOpenChange={setIsLogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-indigo-600 hover:bg-indigo-500 font-bold flex-1 md:flex-none"><Plus size={16} className="mr-2" /> Log Rank</Button>
@@ -165,73 +164,32 @@ const GameDetail = () => {
               <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-md w-[95vw]">
                 <DialogHeader><DialogTitle className="italic uppercase font-black">Log Match Result</DialogTitle></DialogHeader>
                 <div className="space-y-4 py-4">
-                  {isOW2RoleQueue && (
-                    <div className="grid gap-2">
-                      <Label className="text-[10px] font-bold uppercase text-slate-400">Role</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {DEFAULT_METADATA["Overwatch 2"].roles.map((role: string) => (
-                          <Button
-                            key={role}
-                            variant={logData.role === role ? "default" : "outline"}
-                            className={cn(
-                              "h-12 flex flex-col gap-1 text-[10px] font-black uppercase",
-                              logData.role === role ? "bg-indigo-600 border-indigo-500" : "bg-slate-900 border-slate-800"
-                            )}
-                            onClick={() => setLogData({ ...logData, role })}
-                          >
-                            {role === 'Tank' && <Shield size={14} />}
-                            {role === 'Damage' && <Sword size={14} />}
-                            {role === 'Support' && <Heart size={14} />}
-                            {role}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-400">Rank</Label>
-                    {isCS2Premier ? (
-                      <Input 
-                        type="number" 
-                        min="0" 
-                        max="40000" 
-                        value={logData.rank} 
-                        onChange={(e) => setLogData({...logData, rank: e.target.value})} 
-                        className="bg-slate-900 border-slate-800" 
-                        placeholder="Enter ELO (0-40000)" 
-                      />
-                    ) : (
-                      <Select value={logData.rank} onValueChange={(v) => setLogData({...logData, rank: v})}>
-                        <SelectTrigger className="bg-slate-900 border-slate-800">
-                          <SelectValue placeholder="Select Rank" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                          {availableRanks.map((r: string) => (
-                            <SelectItem key={r} value={r}>{r}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Select value={logData.rank} onValueChange={(v) => setLogData({...logData, rank: v})}>
+                      <SelectTrigger className="bg-slate-900 border-slate-800">
+                        <SelectValue placeholder="Select Rank" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {availableRanks.map((r: string) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {!isCS2Premier && currentMetadata.tierCount > 0 && (
+                  {isCS2PerMap && (
                     <div className="grid gap-2">
-                      <Label className="text-[10px] font-bold uppercase text-slate-400">Tier</Label>
-                      <Select value={logData.tier} onValueChange={(v) => setLogData({...logData, tier: v})}>
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Map</Label>
+                      <Select value={logData.map} onValueChange={(v) => setLogData({...logData, map: v})}>
                         <SelectTrigger className="bg-slate-900 border-slate-800">
-                          <SelectValue placeholder="Select Tier" />
+                          <SelectValue placeholder="Select Map" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                          {Array.from({ length: currentMetadata.tierCount }, (_, i) => (i + 1).toString()).map(t => (
-                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          {["Anubis", "Overpass", "Inferno", "Mirage", "Dust 2", "Nuke", "Ancient", "Train", "Vertigo", "Warden", "Stronghold", "Alpine", "Office", "Italy"].map(m => (
+                            <SelectItem key={m} value={m}>{m}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                  )}
-                  {showMapField && (
-                    <div className="grid gap-2">
-                      <Label className="text-[10px] font-bold uppercase text-slate-400">Map / Scenario</Label>
-                      <Input value={logData.map} onChange={(e) => setLogData({...logData, map: e.target.value})} className="bg-slate-900 border-slate-800" placeholder="e.g. 1wall6targets" />
                     </div>
                   )}
                   <div className="grid gap-2">
@@ -273,7 +231,7 @@ const GameDetail = () => {
             <ProgressChart 
               history={game.modes.find((m: any) => m.name === activeMode)?.history} 
               rankNames={availableRanks} 
-              getRankValue={(r) => isCS2Premier ? parseInt(r) || 0 : availableRanks.indexOf(r)} 
+              getRankValue={(r) => availableRanks.indexOf(r)} 
             />
             <TournamentWidget gameId={id!} />
           </div>

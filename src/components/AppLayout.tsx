@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, History, Target, FileCode, User, Settings, 
-  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield, Search, Terminal, Menu, X, GitBranch, Loader2, ArrowRight
+  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield, Search, Terminal, Menu, X, GitBranch, Loader2, ArrowRight, Boxes, Tool
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const { user, profile, loading, signOut } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ profiles: any[], teams: any[] }>({ profiles: [], teams: [] });
@@ -78,28 +77,48 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     else navigate(`/teams?id=${id}`);
   };
 
-  const navItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/' },
-    { icon: <History size={20} />, label: 'History', path: '/history' },
-    { icon: <Zap size={20} />, label: 'Habits', path: '/habits' },
-    { icon: <Users size={20} />, label: 'Social', path: '/social' },
-    { icon: <Shield size={20} />, label: 'Teams', path: '/teams' },
-    { icon: <Target size={20} />, label: 'Crosshairs', path: '/crosshairs' },
-    { icon: <FileCode size={20} />, label: 'Configs', path: '/configs' },
-    { icon: <User size={20} />, label: 'Profile', path: '/profile' },
+  const navGroups = [
+    {
+      label: 'Command',
+      items: [
+        { icon: <LayoutDashboard size={18} />, label: 'Dashboard', path: '/' },
+        { icon: <History size={18} />, label: 'History', path: '/history' },
+        { icon: <Zap size={18} />, label: 'Habits', path: '/habits' },
+      ]
+    },
+    {
+      label: 'Intel',
+      items: [
+        { icon: <Users size={18} />, label: 'Social Hub', path: '/social' },
+        { icon: <Shield size={18} />, label: 'Teams', path: '/teams' },
+      ]
+    },
+    {
+      label: 'Armory',
+      items: [
+        { icon: <Target size={18} />, label: 'Crosshairs', path: '/crosshairs' },
+        { icon: <FileCode size={18} />, label: 'Configs', path: '/configs' },
+      ]
+    },
+    {
+      label: 'Personal',
+      items: [
+        { icon: <User size={18} />, label: 'Profile', path: '/profile' },
+        { icon: <Settings size={18} />, label: 'Settings', path: '/settings' },
+      ]
+    }
   ];
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 flex flex-col md:flex-row">
-      {/* Sidebar (Desktop) */}
       <aside className={cn(
         "hidden md:flex border-r border-slate-800 flex-col bg-slate-950/50 backdrop-blur-xl sticky top-0 h-screen z-50 transition-all duration-300",
         isCollapsed ? "w-20" : "w-64"
       )}>
-        <div className="p-6 mb-8 flex items-center justify-between">
+        <div className="p-6 mb-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 group-hover:scale-110 transition-transform">
-              <Target className="text-white" size={24} />
+              <Terminal className="text-white" size={24} />
             </div>
             {!isCollapsed && <span className="text-xl font-black italic tracking-tighter text-white uppercase">GTracker</span>}
           </Link>
@@ -113,49 +132,54 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </Button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2">
-          {navItems.map((item) => (
-            <Link key={item.path} to={item.path}>
-              <Button 
-                variant="ghost" 
-                className={cn(
-                  "w-full justify-start gap-4 h-12 rounded-xl transition-all group",
-                  location.pathname === item.path 
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/10" 
-                    : "text-slate-400 hover:text-white hover:bg-slate-900"
-                )}
-              >
-                <span className={cn(location.pathname === item.path ? "text-white" : "text-slate-500 group-hover:text-indigo-400")}>
-                  {item.icon}
-                </span>
-                {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">{item.label}</span>}
-              </Button>
-            </Link>
+        <div className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar py-4">
+          {navGroups.map((group) => (
+            <div key={group.label} className="space-y-2">
+              {!isCollapsed && (
+                <p className="px-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 mb-3">
+                  {group.label}
+                </p>
+              )}
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <Link key={item.path} to={item.path}>
+                    <Button 
+                      variant="ghost" 
+                      className={cn(
+                        "w-full justify-start gap-4 h-10 rounded-xl transition-all group",
+                        location.pathname === item.path 
+                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/10" 
+                          : "text-slate-400 hover:text-white hover:bg-slate-900"
+                      )}
+                    >
+                      <span className={cn(location.pathname === item.path ? "text-white" : "text-slate-500 group-hover:text-indigo-400")}>
+                        {item.icon}
+                      </span>
+                      {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">{item.label}</span>}
+                    </Button>
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
-        </nav>
+        </div>
 
         <div className="p-4 border-t border-slate-800 space-y-2">
           <Link to="/version-history">
             <Button variant="ghost" className={cn(
-              "w-full justify-start gap-4 h-12 rounded-xl",
+              "w-full justify-start gap-4 h-10 rounded-xl",
               location.pathname === '/version-history' ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
             )}>
-              <GitBranch size={20} />
+              <GitBranch size={18} />
               {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">Versions</span>}
-            </Button>
-          </Link>
-          <Link to="/settings">
-            <Button variant="ghost" className="w-full justify-start gap-4 h-12 text-slate-400 hover:text-white rounded-xl">
-              <Settings size={20} />
-              {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">Settings</span>}
             </Button>
           </Link>
           <Button 
             variant="ghost" 
             onClick={signOut}
-            className="w-full justify-start gap-4 h-12 text-slate-400 hover:text-red-400 rounded-xl"
+            className="w-full justify-start gap-4 h-10 text-slate-400 hover:text-red-400 rounded-xl"
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">Logout</span>}
           </Button>
         </div>

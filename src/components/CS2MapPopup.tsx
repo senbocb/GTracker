@@ -13,7 +13,7 @@ interface CS2MapPopupProps {
   history: any[];
 }
 
-const CS2MapPopup = ({ gameId, history = [] }: CS2MapPopupPopupProps) => {
+const CS2MapPopup = ({ gameId, history = [] }: CS2MapPopupProps) => {
   const getLatestRank = (mapName: string) => {
     const mapLogs = history.filter(h => h.map === mapName).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     return mapLogs[0] || { rank: 'Unranked', tier: '' };

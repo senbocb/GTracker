@@ -18,19 +18,20 @@ const Social = () => {
   const [friends, setFriends] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [discover, setDiscover] = useState<any[]>([]);
+  const [suggestedTeams, setSuggestedTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchSocialData();
+      fetchSuggestedTeams();
     }
   }, [user]);
 
   const fetchSocialData = async () => {
     setLoading(true);
     try {
-      // Fetch Friends
       const { data: friendsData } = await supabase
         .from('friends')
         .select('friend_id, profiles!friends_friend_id_fkey(*)')
@@ -38,7 +39,6 @@ const Social = () => {
       
       setFriends(friendsData?.map(f => f.profiles) || []);
 
-      // Fetch Incoming Requests
       const { data: requestsData } = await supabase
         .from('friend_requests')
         .select('*, sender:profiles!friend_requests_sender_id_fkey(*)')
@@ -51,6 +51,14 @@ const Social = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchSuggestedTeams = async () => {
+    const { data } = await supabase
+      .from('teams')
+      .select('*, team_members(count)')
+      .limit(3);
+    if (data) setSuggestedTeams(data);
   };
 
   const handleSearch = async () => {
@@ -252,11 +260,17 @@ const Social = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/30 transition-all cursor-pointer group">
-                  <h4 className="text-xs font-black text-white uppercase italic">Alpha_Squad</h4>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">12 Members • Active</p>
-                </div>
-                <Button variant="outline" className="w-full border-slate-800 bg-slate-950 text-[10px] font-black uppercase tracking-widest">View All Teams</Button>
+                {suggestedTeams.length > 0 ? suggestedTeams.map(team => (
+                  <div key={team.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/30 transition-all cursor-pointer group">
+                    <h4 className="text-xs font-black text-white uppercase italic">[{team.tag}] {team.name}</h4>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">{team.team_members?.[0]?.count || 0} Members • {team.main_game || 'Multi-Game'}</p>
+                  </div>
+                )) : (
+                  <p className="text-[10px] text-slate-600 uppercase font-bold text-center py-4">No teams found</p>
+                )}
+                <Link to="/teams">
+                  <Button variant="outline" className="w-full border-slate-800 bg-slate-950 text-[10px] font-black uppercase tracking-widest mt-2">View All Teams</Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
