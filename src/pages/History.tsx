@@ -1,73 +1,103 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { History as HistoryIcon, Filter, Search, Download, Calendar, Swords, Activity, Target } from 'lucide-react';
+import { History as HistoryIcon, Filter, Search, Download, Calendar, Swords, Activity, Target, Edit2, Trash2, Check, X, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import AppLayout from '@/components/AppLayout';
 import RankBadge from '@/components/RankBadge';
 import { cn } from '@/lib/utils';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { showSuccess, showError } from '@/utils/toast';
 
 const History = () => {
+  const { user } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
   const [filter, setFilter] = useState<'all' | 'rank' | 'match'>('all');
+  const [gameFilter, setGameFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  
+  const [editingLog, setEditingLog] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const allLogs: any[] = [];
+    if (user) fetchLogs();
+  }, [user]);
 
-    savedGames.forEach((game: any) => {
-      game.modes.forEach((mode: any) => {
-        (mode.history || []).forEach((entry: any) => {
-          allLogs.push({
-            ...entry,
-            gameTitle: game.title,
-            modeName: mode.name,
-            // If entry.type exists (from AddMatchModal), use it, otherwise it's a rank update
-            logType: entry.type || 'rank' 
-          });
-        });
-      });
-    });
+  const fetchLogs = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('game_history')
+      .select('*, game_modes(name, games(title))')
+      .order('timestamp', { ascending: false });
+    
+    if (data) {
+      const formatted = data.map(log => ({
+        ...log,
+        gameTitle: log.game_modes?.games?.title,
+        modeName: log.game_modes?.name,
+        logType: log.result ? 'match' : 'rank'
+      }));
+      setLogs(formatted);
+    }
+    setLoading(false);
+  };
 
-    setLogs(allLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
-  }, []);
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this log?")) return;
+    const { error } = await supabase.from('game_history').delete().eq('id', id);
+    if (error) showError(error.message);
+    else {
+      showSuccess("Log removed.");
+      fetchLogs();
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editingLog) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('game_history')
+        .update({
+          rank: editingLog.rank,
+          tier: editingLog.tier,
+          map: editingLog.map,
+          result: editingLog.result,
+          timestamp: editingLog.timestamp
+        })
+        .eq('id', editingLog.id);
+      
+      if (error) throw error;
+      showSuccess("Log updated.");
+      setEditingLog(null);
+      fetchLogs();
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
-      const matchesFilter = filter === 'all' || 
-        (filter === 'rank' && log.logType === 'rank') || 
-        (filter === 'match' && log.logType === 'detailed');
-      
+      const matchesType = filter === 'all' || log.logType === filter;
+      const matchesGame = gameFilter === 'all' || log.gameTitle === gameFilter;
       const matchesSearch = !search || 
         log.gameTitle.toLowerCase().includes(search.toLowerCase()) ||
         log.modeName.toLowerCase().includes(search.toLowerCase()) ||
-        (log.map && log.map.toLowerCase().includes(search.toLowerCase())) ||
-        (log.rank && log.rank.toLowerCase().includes(search.toLowerCase()));
+        (log.map && log.map.toLowerCase().includes(search.toLowerCase()));
 
-      return matchesFilter && matchesSearch;
+      return matchesType && matchesGame && matchesSearch;
     });
-  }, [logs, filter, search]);
+  }, [logs, filter, gameFilter, search]);
 
-  const exportHistory = () => {
-    let csvContent = "Date,Game,Mode,Type,Result,Rank,Map,Stats\n";
-    filteredLogs.forEach(log => {
-      const date = new Date(log.timestamp).toLocaleString();
-      const stats = log.stats ? JSON.stringify(log.stats).replace(/"/g, '""') : "";
-      csvContent += `"${date}","${log.gameTitle}","${log.modeName}","${log.logType}","${log.result || ''}","${log.rank} ${log.tier || ''}","${log.map || ''}","${stats}"\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `gtracker_history_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const uniqueGames = useMemo(() => Array.from(new Set(logs.map(l => l.gameTitle))), [logs]);
 
   return (
     <AppLayout>
@@ -77,46 +107,55 @@ const History = () => {
             <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">History Archive</h1>
             <p className="text-slate-400 font-medium">Comprehensive record of all rank updates and match logs.</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={exportHistory} className="border-slate-800 bg-slate-900/50 hover:bg-slate-800 text-white">
-              <Download className="mr-2" size={18} />
-              Export View
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => {}} className="border-slate-800 bg-slate-900/50 text-white">
+            <Download className="mr-2" size={18} /> Export CSV
+          </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="md:col-span-2 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             <Input 
               placeholder="Search by game, map, or rank..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-slate-900 border-slate-800 pl-10 h-12 focus:ring-blue-500 text-white"
+              className="bg-slate-900 border-slate-800 pl-10 h-12 text-white"
             />
           </div>
           <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
-            <SelectTrigger className="w-full md:w-48 bg-slate-900 border-slate-800 h-12 text-white">
+            <SelectTrigger className="bg-slate-900 border-slate-800 h-12 text-white">
               <Filter className="mr-2" size={18} />
-              <SelectValue placeholder="Filter Type" />
+              <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-800 text-white">
-              <SelectItem value="all">All Updates</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="rank">Rank Changes</SelectItem>
               <SelectItem value="match">Match Logs</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={gameFilter} onValueChange={setGameFilter}>
+            <SelectTrigger className="bg-slate-900 border-slate-800 h-12 text-white">
+              <Target className="mr-2" size={18} />
+              <SelectValue placeholder="Game" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800 text-white">
+              <SelectItem value="all">All Games</SelectItem>
+              {uniqueGames.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-4">
-          {filteredLogs.length > 0 ? filteredLogs.map((log) => (
-            <div key={log.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-indigo-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {loading ? (
+            <div className="flex justify-center py-20"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>
+          ) : filteredLogs.length > 0 ? filteredLogs.map((log) => (
+            <div key={log.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-indigo-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                  log.logType === 'detailed' ? "bg-indigo-600/20 text-indigo-400" : "bg-emerald-600/20 text-emerald-400"
+                  log.logType === 'match' ? "bg-indigo-600/20 text-indigo-400" : "bg-emerald-600/20 text-emerald-400"
                 )}>
-                  {log.logType === 'detailed' ? <Swords size={20} /> : <Activity size={20} />}
+                  {log.logType === 'match' ? <Swords size={20} /> : <Activity size={20} />}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -130,33 +169,59 @@ const History = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-6 justify-between sm:justify-end">
-                {log.logType === 'detailed' && (
-                  <div className="text-right">
-                    <span className={cn(
-                      "text-[10px] font-black uppercase px-2 py-0.5 rounded",
-                      log.result === 'win' ? "bg-emerald-500/20 text-emerald-400" : 
-                      log.result === 'loss' ? "bg-red-500/20 text-red-400" : "bg-slate-500/20 text-slate-400"
-                    )}>
-                      {log.result || 'Logged'}
-                    </span>
-                  </div>
-                )}
+              <div className="flex items-center gap-4">
                 <div className="flex flex-col items-end">
                   <RankBadge rank={log.rank} tier={log.tier} gameTitle={log.gameTitle} className="scale-90 origin-right" />
+                  {log.result && (
+                    <span className={cn(
+                      "text-[8px] font-black uppercase px-1.5 py-0.5 rounded mt-1",
+                      log.result === 'win' ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+                    )}>{log.result}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" onClick={() => setEditingLog(log)} className="h-8 w-8 text-slate-500 hover:text-white"><Edit2 size={14} /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(log.id)} className="h-8 w-8 text-slate-500 hover:text-red-400"><Trash2 size={14} /></Button>
                 </div>
               </div>
             </div>
           )) : (
             <div className="p-20 text-center border-2 border-dashed border-slate-800 rounded-[2.5rem] bg-slate-900/20">
-              <div className="w-16 h-16 rounded-3xl bg-slate-900 flex items-center justify-center mx-auto mb-6 text-slate-700">
-                <HistoryIcon size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-300 mb-2">No History Found</h3>
-              <p className="text-slate-500 max-w-xs mx-auto text-sm">Adjust your filters or start logging your progress to see data here.</p>
+              <p className="text-slate-500 max-w-xs mx-auto text-sm">No history found matching your criteria.</p>
             </div>
           )}
         </div>
+
+        {editingLog && (
+          <Dialog open={!!editingLog} onOpenChange={() => setEditingLog(null)}>
+            <DialogContent className="bg-slate-950 border-slate-800 text-white">
+              <DialogHeader><DialogTitle className="italic uppercase font-black">Edit Log Entry</DialogTitle></DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-bold uppercase text-slate-400">Rank</Label>
+                  <Input value={editingLog.rank} onChange={(e) => setEditingLog({...editingLog, rank: e.target.value})} className="bg-slate-900 border-slate-800" />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-bold uppercase text-slate-400">Tier</Label>
+                  <Input value={editingLog.tier || ''} onChange={(e) => setEditingLog({...editingLog, tier: e.target.value})} className="bg-slate-900 border-slate-800" />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-bold uppercase text-slate-400">Map</Label>
+                  <Input value={editingLog.map || ''} onChange={(e) => setEditingLog({...editingLog, map: e.target.value})} className="bg-slate-900 border-slate-800" />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-bold uppercase text-slate-400">Timestamp</Label>
+                  <Input type="datetime-local" value={new Date(editingLog.timestamp).toISOString().slice(0, 16)} onChange={(e) => setEditingLog({...editingLog, timestamp: e.target.value})} className="bg-slate-900 border-slate-800" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleUpdate} disabled={isSubmitting} className="w-full bg-indigo-600 font-black uppercase py-6">
+                  {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </main>
     </AppLayout>
   );

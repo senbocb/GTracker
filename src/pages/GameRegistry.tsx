@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Gamepad2, Palette, List, Check, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Save, Gamepad2, Palette, List, Check, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,45 @@ import { Switch } from "@/components/ui/switch";
 import AppLayout from '@/components/AppLayout';
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from "@/integrations/supabase/client";
+
+const DEFAULT_GAMES = [
+  {
+    title: 'Valorant',
+    image: 'https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?q=80&w=1000&auto=format&fit=crop',
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
+    rank_configs: {
+      'Iron': { color: '#525252' }, 'Bronze': { color: '#a855f7' }, 'Silver': { color: '#94a3b8' },
+      'Gold': { color: '#eab308' }, 'Platinum': { color: '#22d3ee' }, 'Diamond': { color: '#818cf8' },
+      'Ascendant': { color: '#10b981' }, 'Immortal': { color: '#ef4444' }, 'Radiant': { color: '#fde047' }
+    },
+    modes: ['Competitive'],
+    enable_rainbow: true
+  },
+  {
+    title: 'Counter-Strike 2',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
+    ranks: ["Silver", "Gold Nova", "Master Guardian", "Elite", "Global Elite"],
+    rank_configs: {
+      'Silver': { color: '#94a3b8' }, 'Gold Nova': { color: '#eab308' }, 'Master Guardian': { color: '#3b82f6' },
+      'Elite': { color: '#a855f7' }, 'Global Elite': { color: '#fde047' }
+    },
+    modes: ['Premier', 'Competitive', 'Wingman', 'Faceit'],
+    enable_rainbow: true
+  },
+  {
+    title: 'League of Legends',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
+    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
+    rank_configs: {
+      'Iron': { color: '#525252' }, 'Bronze': { color: '#92400e' }, 'Silver': { color: '#94a3b8' },
+      'Gold': { color: '#eab308' }, 'Platinum': { color: '#22d3ee' }, 'Emerald': { color: '#10b981' },
+      'Diamond': { color: '#3b82f6' }, 'Master': { color: '#a855f7' }, 'Grandmaster': { color: '#ef4444' },
+      'Challenger': { color: '#fde047' }
+    },
+    modes: ['Ranked Solo/Duo', 'Ranked Flex'],
+    enable_rainbow: true
+  }
+];
 
 const GameRegistry = () => {
   const [games, setGames] = useState<any[]>([]);
@@ -25,6 +64,11 @@ const GameRegistry = () => {
     if (error) showError(error.message);
     else setGames(data || []);
     setIsLoading(false);
+  };
+
+  const seedDefaults = () => {
+    setGames([...games, ...DEFAULT_GAMES.filter(dg => !games.some(g => g.title === dg.title))]);
+    showSuccess("Default games added to list. Save to confirm.");
   };
 
   const addGame = () => {
@@ -80,13 +124,18 @@ const GameRegistry = () => {
   return (
     <AppLayout>
       <main className="max-w-5xl mx-auto p-6 md:p-10">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">Game Registry</h1>
             <p className="text-slate-400 text-sm">Define custom games, ranks, and visual styles.</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={addGame} className="border-slate-800 bg-slate-900/50"><Plus size={16} className="mr-2" /> Add Game</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={seedDefaults} className="border-slate-800 bg-slate-900/50">
+              <RefreshCw size={16} className="mr-2" /> Seed Defaults
+            </Button>
+            <Button variant="outline" onClick={addGame} className="border-slate-800 bg-slate-900/50">
+              <Plus size={16} className="mr-2" /> Add Game
+            </Button>
             <Button onClick={handleSave} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-500">
               {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
               Save Changes

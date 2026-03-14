@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, History, Target, FileCode, User, Settings, 
-  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield, Search, Terminal, Menu, X, GitBranch
+  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield, Search, Terminal, Menu, X, GitBranch, Loader2, ArrowRight
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,48 +15,67 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 
-const VERSION_HISTORY_PREVIEW = [
-  { version: "v2.8.0", type: "Update", title: "Team Integration", date: "Today", notes: "Added team tags, primary team selection, and enhanced settings." },
-  { version: "v2.5.0", type: "Update", title: "Game Registry", date: "Yesterday", notes: "Custom game definitions and dynamic rank coloring." }
-];
-
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, loading, signOut } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [primaryTeam, setPrimaryTeam] = useState<any>(null);
+  const [searchResults, setSearchResults] = useState<{ profiles: any[], teams: any[] }>({ profiles: [], teams: [] });
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchPrimaryTeam();
-    }
-  }, [user]);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  const fetchPrimaryTeam = async () => {
-    const { data } = await supabase
-      .from('team_members')
-      .select('teams(tag)')
-      .eq('user_id', user?.id)
-      .eq('is_primary', true)
-      .single();
-    
-    if (data?.teams) setPrimaryTeam(data.teams);
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery.trim().length > 1) {
+        performSearch();
+      } else {
+        setSearchResults({ profiles: [], teams: [] });
+        setShowResults(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const performSearch = async () => {
+    setIsSearching(true);
+    setShowResults(true);
+    try {
+      const [profilesRes, teamsRes] = await Promise.all([
+        supabase.from('profiles').select('*').ilike('username', `%${searchQuery}%`).limit(5),
+        supabase.from('teams').select('*').or(`name.ilike.%${searchQuery}%,tag.ilike.%${searchQuery}%`).limit(5)
+      ]);
+
+      setSearchResults({
+        profiles: profilesRes.data || [],
+        teams: teamsRes.data || []
+      });
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  if (loading) return <div className="min-h-screen bg-[#020617] flex items-center justify-center text-indigo-500 font-black italic uppercase">Initializing System...</div>;
-  if (!user && location.pathname !== '/login' && location.pathname !== '/reset-password') {
-    navigate('/login');
-    return null;
-  }
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    navigate(`/social?q=${encodeURIComponent(searchQuery)}`);
-    setIsMobileMenuOpen(false);
+  const handleResultClick = (type: 'profile' | 'team', id: string) => {
+    setShowResults(false);
+    setSearchQuery('');
+    if (type === 'profile') navigate(`/social?q=${id}`);
+    else navigate(`/teams?id=${id}`);
   };
 
   const navItems = [
@@ -72,19 +91,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 flex flex-col md:flex-row">
-      {/* Mobile Header */}
-      <header className="md:hidden h-16 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <Target className="text-white" size={18} />
-          </div>
-          <span className="text-sm font-black italic uppercase tracking-tighter text-white">GTracker</span>
-        </Link>
-        <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </Button>
-      </header>
-
       {/* Sidebar (Desktop) */}
       <aside className={cn(
         "hidden md:flex border-r border-slate-800 flex-col bg-slate-950/50 backdrop-blur-xl sticky top-0 h-screen z-50 transition-all duration-300",
@@ -155,60 +161,83 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </aside>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-slate-950 z-40 md:hidden pt-20 px-6 animate-in fade-in slide-in-from-top-4">
-          <form onSubmit={handleSearch} className="relative mb-8">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-            <Input 
-              placeholder="Search..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-900 border-slate-800 pl-10 h-12"
-            />
-          </form>
-          <nav className="space-y-4">
-            {navItems.map((item) => (
-              <Link key={item.path} to={item.path} onClick={() => setIsMobileMenuOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start gap-4 h-14 text-lg font-black uppercase italic">
-                  {item.icon} {item.label}
-                </Button>
-              </Link>
-            ))}
-            <Link to="/version-history" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start gap-4 h-14 text-lg font-black uppercase italic">
-                <GitBranch size={20} /> Versions
-              </Button>
-            </Link>
-            <Link to="/settings" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start gap-4 h-14 text-lg font-black uppercase italic">
-                <Settings size={20} /> Settings
-              </Button>
-            </Link>
-            <Button variant="ghost" onClick={signOut} className="w-full justify-start gap-4 h-14 text-lg font-black uppercase italic text-red-500">
-              <LogOut size={20} /> Logout
-            </Button>
-          </nav>
-        </div>
-      )}
-
       <div className="flex-1 flex flex-col min-w-0">
         <header className="hidden md:flex h-20 border-b border-slate-800 items-center justify-between px-8 bg-slate-950/30 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-8 flex-1">
             <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-              Operator: {primaryTeam && <span className="text-indigo-500 mr-1">[{primaryTeam.tag}]</span>}
-              <span className="text-indigo-400">{profile?.username || 'Authenticating...'}</span>
+              Operator: <span className="text-indigo-400">{profile?.username || 'Authenticating...'}</span>
             </h2>
             
-            <form onSubmit={handleSearch} className="relative max-w-md w-full">
+            <div className="relative max-w-md w-full" ref={searchRef}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
               <Input 
                 placeholder="Search operators, teams, intel..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchQuery.length > 1 && setShowResults(true)}
                 className="bg-slate-900/50 border-slate-800 pl-10 h-10 text-xs font-bold uppercase tracking-widest focus:ring-indigo-500"
               />
-            </form>
+              
+              {showResults && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                  {isSearching ? (
+                    <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-indigo-500" /></div>
+                  ) : (
+                    <div className="max-h-[400px] overflow-y-auto">
+                      {searchResults.profiles.length > 0 && (
+                        <div className="p-2">
+                          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-3 py-2">Operators</p>
+                          {searchResults.profiles.map(p => (
+                            <button 
+                              key={p.id} 
+                              onClick={() => handleResultClick('profile', p.username)}
+                              className="w-full flex items-center gap-3 p-2 hover:bg-slate-900 rounded-lg transition-colors text-left"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center overflow-hidden">
+                                {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover" /> : <User size={16} className="text-slate-500" />}
+                              </div>
+                              <span className="text-xs font-bold text-white">{p.username}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {searchResults.teams.length > 0 && (
+                        <div className="p-2 border-t border-slate-800/50">
+                          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-3 py-2">Teams</p>
+                          {searchResults.teams.map(t => (
+                            <button 
+                              key={t.id} 
+                              onClick={() => handleResultClick('team', t.id)}
+                              className="w-full flex items-center gap-3 p-2 hover:bg-slate-900 rounded-lg transition-colors text-left"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center overflow-hidden">
+                                {t.icon_url ? <img src={t.icon_url} className="w-full h-full object-cover" /> : <Shield size={16} className="text-indigo-500" />}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-white">[{t.tag}] {t.name}</span>
+                                <span className="text-[8px] text-slate-500 uppercase">{t.main_game || 'Multi-Game'}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {searchResults.profiles.length === 0 && searchResults.teams.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-slate-500 uppercase font-bold">No results found</div>
+                      ) : (
+                        <button 
+                          onClick={() => navigate(`/social?q=${searchQuery}`)}
+                          className="w-full p-3 bg-slate-900/50 hover:bg-slate-900 text-[10px] font-black uppercase text-indigo-400 flex items-center justify-center gap-2 border-t border-slate-800"
+                        >
+                          See all results <ArrowRight size={12} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -221,25 +250,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80 bg-slate-950 border-slate-800 text-white p-0 overflow-hidden">
                 <DropdownMenuLabel className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest">Version History</span>
-                  <Link to="/version-history" className="text-[8px] font-bold text-indigo-400 uppercase hover:underline">View All</Link>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Notifications</span>
                 </DropdownMenuLabel>
-                <div className="max-h-[400px] overflow-y-auto">
-                  {VERSION_HISTORY_PREVIEW.map((v, i) => (
-                    <div key={i} className="p-4 border-b border-slate-800/50 hover:bg-slate-900/50 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={cn(
-                          "text-[8px] font-black uppercase px-1.5 py-0.5 rounded",
-                          v.type === 'Update' ? "bg-emerald-500/20 text-emerald-400" :
-                          v.type === 'Change' ? "bg-indigo-500/20 text-indigo-400" : "bg-slate-500/20 text-slate-400"
-                        )}>{v.type}</span>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase">{v.date}</span>
-                      </div>
-                      <h4 className="text-xs font-black uppercase italic tracking-tight mb-1">{v.title} <span className="text-slate-600 ml-1">{v.version}</span></h4>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">{v.notes}</p>
-                    </div>
-                  ))}
-                </div>
+                <div className="p-8 text-center text-xs text-slate-500 uppercase font-bold">No new alerts</div>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link to="/profile">
