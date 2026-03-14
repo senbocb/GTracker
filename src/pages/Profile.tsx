@@ -16,6 +16,7 @@ import { processImage } from '@/utils/imageProcessing';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import ProfileGallery from '@/components/ProfileGallery';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
+import TournamentWidget from '@/components/TournamentWidget';
 import { getIconFromUrl, SOCIAL_PRESETS } from '@/utils/iconFetcher';
 import RankBadge from '@/components/RankBadge';
 import html2canvas from 'html2canvas';
@@ -75,6 +76,7 @@ const DEFAULT_PROFILE_LAYOUT: LayoutSection[] = [
   { id: 'medals', label: 'Medals & Achievements', enabled: true },
   { id: 'profile_gallery', label: 'Screenshots & Gallery', enabled: true },
   { id: 'profile_stats', label: 'Profile Stats', enabled: true },
+  { id: 'tournament_history', label: 'Tournament History', enabled: true },
 ];
 
 const Profile = () => {
@@ -82,6 +84,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingSocial, setIsAddingSocial] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isStatsConfigOpen, setIsStatsConfigOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exportConfig, setExportConfig] = useState({
     showCurrent: true,
@@ -108,6 +111,7 @@ const Profile = () => {
   const [games, setGames] = useState<any[]>([]);
   const [profileLayout, setProfileLayout] = useState<LayoutSection[]>(DEFAULT_PROFILE_LAYOUT);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [customStats, setCustomStats] = useState<any[]>([]);
   
   const [newSocial, setNewSocial] = useState({ name: '', url: '', icon: '', category: 'socials', gameId: '' });
   
@@ -121,9 +125,8 @@ const Profile = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Sync local state with global profile when not editing
   useEffect(() => {
-    if (globalProfile && !isEditing) {
+    if (globalProfile) {
       setProfile({
         username: globalProfile.username || 'OPERATOR',
         avatar_url: globalProfile.avatar_url || '',
@@ -135,16 +138,16 @@ const Profile = () => {
         sensitivity: globalProfile.sensitivity || '',
         age: ''
       });
+      if (globalProfile.layout_settings) setProfileLayout(globalProfile.layout_settings);
+      if (globalProfile.stat_configs) setCustomStats(globalProfile.stat_configs);
     }
-  }, [globalProfile, isEditing]);
+  }, [globalProfile]);
 
   useEffect(() => {
     const savedSocials = JSON.parse(localStorage.getItem('combat_socials') || '[]');
     setSocials(savedSocials);
     const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
     setGames(savedGames);
-    const savedLayout = JSON.parse(localStorage.getItem('combat_profile_layout') || 'null');
-    if (savedLayout) setProfileLayout(savedLayout);
     const savedFavs = JSON.parse(localStorage.getItem('combat_achievement_favs') || '[]');
     setFavorites(savedFavs);
   }, []);
@@ -181,7 +184,9 @@ const Profile = () => {
           country_flag: profile.country_flag,
           sensitivity: profile.sensitivity,
           avatar_url: profile.avatar_url,
-          banner_url: profile.banner_url
+          banner_url: profile.banner_url,
+          layout_settings: profileLayout,
+          stat_configs: customStats
         })
         .eq('id', user.id);
       
@@ -205,8 +210,6 @@ const Profile = () => {
         else {
           const field = type === 'avatar' ? 'avatar_url' : 'banner_url';
           setProfile(prev => ({ ...prev, [field]: processed }));
-          
-          // Auto-save image to Supabase
           if (user) {
             await supabase.from('profiles').update({ [field]: processed }).eq('id', user.id);
             showSuccess(`${type} updated.`);
@@ -283,13 +286,25 @@ const Profile = () => {
         </section>
       );
       case 'profile_gallery': return <ProfileGallery key="profile_gallery" />;
+      case 'tournament_history': return <TournamentWidget key="tournament_history" gameId="all" />;
       case 'profile_stats': return (
-        <section key="profile_stats" className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-sm">
-          <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Profile Stats</h3>
+        <section key="profile_stats" className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-sm relative group">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Profile Stats</h3>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setIsStatsConfigOpen(true)}>
+              <Settings2 size={16} />
+            </Button>
+          </div>
           <div className="space-y-4">
             <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Joined</span><span className="text-sm font-black text-white">{new Date(profile.createdAt).toLocaleDateString()}</span></div>
             <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Country</span><span className="text-sm font-black text-white flex items-center gap-2"><span>{profile.country_flag}</span><span>{profile.country}</span></span></div>
             <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-300 uppercase">Sensitivity</span><span className="text-sm font-black text-indigo-400">{profile.sensitivity ? `${profile.sensitivity} cm/360` : 'N/A'}</span></div>
+            {customStats.map((stat, i) => (
+              <div key={i} className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-300 uppercase">{stat.label}</span>
+                <span className="text-sm font-black text-white">{stat.value}</span>
+              </div>
+            ))}
           </div>
         </section>
       );
@@ -309,9 +324,12 @@ const Profile = () => {
       <main className="max-w-6xl mx-auto p-6 md:p-10">
         <div className="flex justify-between items-center mb-8">
           <Link to="/"><Button variant="ghost" className="text-slate-300 hover:text-white -ml-4 hover-highlight"><ChevronLeft className="mr-2" size={20} /> Back</Button></Link>
-          <Button onClick={() => setIsExportOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 font-black uppercase">
-            <FileImage className="mr-2" size={18} /> Download Profile
-          </Button>
+          <div className="flex gap-2">
+            <LayoutSettings sections={profileLayout} onUpdate={(s) => { setProfileLayout(s); handleSave(); }} />
+            <Button onClick={() => setIsExportOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 font-black uppercase">
+              <FileImage className="mr-2" size={18} /> Download Profile
+            </Button>
+          </div>
         </div>
 
         <div className="relative mb-12">
@@ -362,9 +380,46 @@ const Profile = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
-          <div className="md:col-span-2 space-y-8">{profileLayout.filter(s => ['career_overview', 'activity_heatmap', 'medals', 'profile_gallery'].includes(s.id)).map(s => renderSection(s.id))}</div>
+          <div className="md:col-span-2 space-y-8">{profileLayout.filter(s => ['career_overview', 'activity_heatmap', 'medals', 'profile_gallery', 'tournament_history'].includes(s.id)).map(s => renderSection(s.id))}</div>
           <div className="space-y-6">{profileLayout.filter(s => ['profile_stats'].includes(s.id)).map(s => renderSection(s.id))}</div>
         </div>
+
+        <Dialog open={isStatsConfigOpen} onOpenChange={setIsStatsConfigOpen}>
+          <DialogContent className="bg-slate-950 border-slate-800 text-white">
+            <DialogHeader><DialogTitle className="italic uppercase font-black">Configure Profile Stats</DialogTitle></DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-bold uppercase text-slate-400">Sensitivity (cm/360)</Label>
+                  <Input value={profile.sensitivity} onChange={(e) => setProfile({...profile, sensitivity: e.target.value})} className="bg-slate-900 border-slate-800" />
+                </div>
+                <div className="h-px bg-slate-800" />
+                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Custom Metrics</p>
+                {customStats.map((stat, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Input placeholder="Label" value={stat.label} onChange={(e) => {
+                      const updated = [...customStats];
+                      updated[i].label = e.target.value;
+                      setCustomStats(updated);
+                    }} className="bg-slate-900 border-slate-800 flex-1" />
+                    <Input placeholder="Value" value={stat.value} onChange={(e) => {
+                      const updated = [...customStats];
+                      updated[i].value = e.target.value;
+                      setCustomStats(updated);
+                    }} className="bg-slate-900 border-slate-800 flex-1" />
+                    <Button variant="ghost" size="icon" className="text-red-500" onClick={() => setCustomStats(customStats.filter((_, idx) => idx !== i))}>
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" className="w-full border-dashed border-slate-800" onClick={() => setCustomStats([...customStats, { label: '', value: '' }])}>
+                  <Plus size={16} className="mr-2" /> Add Metric
+                </Button>
+              </div>
+            </div>
+            <DialogFooter><Button onClick={() => { handleSave(); setIsStatsConfigOpen(false); }} className="w-full bg-indigo-600 font-black uppercase py-6">Save Configuration</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={isExportOpen} onOpenChange={setIsExportOpen}>
           <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-[700px] p-0 overflow-hidden">

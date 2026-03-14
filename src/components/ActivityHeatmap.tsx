@@ -1,34 +1,40 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity } from 'lucide-react';
+import { Activity, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 const ActivityHeatmap = () => {
+  const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [activityData, setActivityData] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
 
-  const data = useMemo(() => {
-    const savedGames = JSON.parse(localStorage.getItem('combat_games') || '[]');
-    const activityMap: Record<string, number> = {};
+  useEffect(() => {
+    if (user) fetchActivity();
+  }, [user]);
+
+  const fetchActivity = async () => {
+    const { data, error } = await supabase
+      .from('game_history')
+      .select('timestamp')
+      .eq('user_id', user?.id);
     
-    savedGames.forEach((game: any) => {
-      game.modes.forEach((mode: any) => {
-        (mode.history || []).forEach((log: any) => {
-          const date = new Date(log.timestamp).toISOString().split('T')[0];
-          activityMap[date] = (activityMap[date] || 0) + 1;
-        });
+    if (data) {
+      const map: Record<string, number> = {};
+      data.forEach(log => {
+        const date = new Date(log.timestamp).toISOString().split('T')[0];
+        map[date] = (map[date] || 0) + 1;
       });
-    });
-    return activityMap;
-  }, []);
-
-  const years = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    return [currentYear, currentYear - 1, currentYear - 2];
-  }, []);
+      setActivityData(map);
+    }
+    setLoading(false);
+  };
 
   const weeks = useMemo(() => {
     const result = [];
@@ -37,12 +43,11 @@ const ActivityHeatmap = () => {
 
     let current = new Date(start);
 
-    // Strictly 53 weeks to ensure full year coverage and better fill
     for (let w = 0; w < 53; w++) {
       const week = [];
       for (let d = 0; d < 7; d++) {
         const dateStr = current.toISOString().split('T')[0];
-        const count = data[dateStr] || 0;
+        const count = activityData[dateStr] || 0;
         const isCurrentYear = current.getFullYear() === selectedYear;
         
         week.push({ 
@@ -56,7 +61,7 @@ const ActivityHeatmap = () => {
       result.push(week);
     }
     return result;
-  }, [data, selectedYear]);
+  }, [activityData, selectedYear]);
 
   const getColor = (day: any) => {
     if (!day.isCurrentYear) return 'bg-slate-950/20 border-transparent opacity-10';
@@ -80,43 +85,49 @@ const ActivityHeatmap = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-slate-950 border-slate-800 text-white">
-              {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+              {[2024, 2023, 2022].map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
       </CardHeader>
       <CardContent className="pt-6 flex-1 flex flex-col justify-between">
-        <div className="grid grid-cols-[repeat(53,minmax(0,1fr))] gap-1.5 sm:gap-2">
-          <TooltipProvider delayDuration={0}>
-            {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-1.5 sm:gap-2">
-                {week.map((day, di) => (
-                  <Tooltip key={di}>
-                    <TooltipTrigger asChild>
-                      <div 
-                        className={cn(
-                          "aspect-square w-full rounded-[3px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
-                          getColor(day)
-                        )} 
-                        style={{ minWidth: '6px' }}
-                      />
-                    </TooltipTrigger>
-                    {!day.isFuture && day.isCurrentYear && (
-                      <TooltipContent 
-                        side="top" 
-                        className="bg-slate-950 border-slate-800 text-[10px] font-bold uppercase tracking-widest p-2 z-[100]"
-                        collisionPadding={10}
-                      >
-                        <p className="text-white">{day.count} Changes</p>
-                        <p className="text-slate-500">{new Date(day.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                ))}
-              </div>
-            ))}
-          </TooltipProvider>
-        </div>
+        {loading ? (
+          <div className="flex-1 flex items-center justify-center py-12">
+            <Loader2 className="animate-spin text-indigo-500" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-[repeat(53,minmax(0,1fr))] gap-1.5 sm:gap-2">
+            <TooltipProvider delayDuration={0}>
+              {weeks.map((week, wi) => (
+                <div key={wi} className="flex flex-col gap-1.5 sm:gap-2">
+                  {week.map((day, di) => (
+                    <Tooltip key={di}>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className={cn(
+                            "aspect-square w-full rounded-[3px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
+                            getColor(day)
+                          )} 
+                          style={{ minWidth: '6px' }}
+                        />
+                      </TooltipTrigger>
+                      {!day.isFuture && day.isCurrentYear && (
+                        <TooltipContent 
+                          side="top" 
+                          className="bg-slate-950 border-slate-800 text-[10px] font-bold uppercase tracking-widest p-2 z-[100]"
+                          collisionPadding={10}
+                        >
+                          <p className="text-white">{day.count} Changes</p>
+                          <p className="text-slate-500">{new Date(day.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  ))}
+                </div>
+              ))}
+            </TooltipProvider>
+          </div>
+        )}
         
         <div className="mt-8 flex items-center justify-between border-t border-slate-800/30 pt-4">
           <div className="flex items-center gap-4">
