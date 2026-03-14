@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar, BarChart3, Map as MapIcon, RefreshCw, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar, BarChart3, Map as MapIcon, RefreshCw, Eye, EyeOff, Loader2, Shield, Sword, Heart } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 const GAME_METADATA: Record<string, any> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"], tierCount: 3 },
-  "Counter-Strike 2": { ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"], tierCount: 0 },
+  "Counter-Strike 2": { 
+    ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"], 
+    tierCount: 0,
+    modeRanks: {
+      "Faceit": Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`)
+    }
+  },
+  "Overwatch 2": { 
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Champion"], 
+    tierCount: 5,
+    roles: ["Tank", "Damage", "Support"]
+  },
   "Kovaaks": { ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Jade", "Master", "Grandmaster", "Nova", "Celestial"], tierCount: 0 },
   "Aim Lab": { ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"], tierCount: 0 }
 };
@@ -34,7 +45,7 @@ const GameDetail = () => {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [logData, setLogData] = useState({ rank: '', tier: '', map: '', timestamp: new Date().toISOString().slice(0, 16) });
+  const [logData, setLogData] = useState({ rank: '', tier: '', map: '', role: '', timestamp: new Date().toISOString().slice(0, 16) });
   
   // Kovaaks Specific
   const [benchmarks, setBenchmarks] = useState<any[]>([]);
@@ -94,6 +105,7 @@ const GameDetail = () => {
           rank: logData.rank,
           tier: logData.tier,
           map: logData.map,
+          agent: logData.role, // Using agent column for role in OW2
           timestamp: logData.timestamp
         });
       
@@ -145,6 +157,9 @@ const GameDetail = () => {
   if (!game) return null;
 
   const currentMetadata = GAME_METADATA[game.title] || { ranks: [], tierCount: 0 };
+  const modeSpecificRanks = currentMetadata.modeRanks?.[activeMode];
+  const availableRanks = modeSpecificRanks || currentMetadata.ranks;
+  const isOW2RoleQueue = game.title === 'Overwatch 2' && activeMode === 'Role Queue';
 
   return (
     <AppLayout>
@@ -165,6 +180,29 @@ const GameDetail = () => {
               <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-md w-[95vw]">
                 <DialogHeader><DialogTitle className="italic uppercase font-black">Log Match Result</DialogTitle></DialogHeader>
                 <div className="space-y-4 py-4">
+                  {isOW2RoleQueue && (
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Role</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {currentMetadata.roles.map((role: string) => (
+                          <Button
+                            key={role}
+                            variant={logData.role === role ? "default" : "outline"}
+                            className={cn(
+                              "h-12 flex flex-col gap-1 text-[10px] font-black uppercase",
+                              logData.role === role ? "bg-indigo-600 border-indigo-500" : "bg-slate-900 border-slate-800"
+                            )}
+                            onClick={() => setLogData({ ...logData, role })}
+                          >
+                            {role === 'Tank' && <Shield size={14} />}
+                            {role === 'Damage' && <Sword size={14} />}
+                            {role === 'Support' && <Heart size={14} />}
+                            {role}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-400">Rank</Label>
                     <Select value={logData.rank} onValueChange={(v) => setLogData({...logData, rank: v})}>
@@ -172,7 +210,7 @@ const GameDetail = () => {
                         <SelectValue placeholder="Select Rank" />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {currentMetadata.ranks.map((r: string) => (
+                        {availableRanks.map((r: string) => (
                           <SelectItem key={r} value={r}>{r}</SelectItem>
                         ))}
                       </SelectContent>
@@ -257,7 +295,7 @@ const GameDetail = () => {
               </Card>
             )}
             
-            <ProgressChart history={game.modes.find((m: any) => m.name === activeMode)?.history} rankNames={currentMetadata.ranks} getRankValue={(r) => currentMetadata.ranks.indexOf(r)} />
+            <ProgressChart history={game.modes.find((m: any) => m.name === activeMode)?.history} rankNames={availableRanks} getRankValue={(r) => availableRanks.indexOf(r)} />
             
             <TournamentWidget gameId={id!} />
           </div>
