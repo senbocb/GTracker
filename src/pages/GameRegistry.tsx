@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { showSuccess, showError } from '@/utils/toast';
 import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 import {
   DndContext,
@@ -30,19 +32,6 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
-const DEFAULT_REGISTRY = {
-  "Valorant": { 
-    ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
-    modes: ["Competitive", "Premier"],
-    enableRainbow: true
-  },
-  "Counter-Strike 2": { 
-    ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
-    modes: ["Premier", "Competitive (Per Map)", "Wingman", "Faceit"],
-    enableRainbow: true
-  }
-};
 
 const SortableRankItem = ({ 
   id, 
@@ -83,105 +72,96 @@ const SortableRankItem = ({
 };
 
 const GameRegistry = () => {
-  const [registry, setRegistry] = useState<any>({});
-  const [editingGame, setEditingGame] = useState<string | null>(null);
-  const [tempGame, setTempGame] = useState<any>(null);
+  const { user } = useAuth();
+  const [registry, setRegistry] = useState<any[]>([]);
+  const [editingGame, setEditingGame] = useState<any>(null);
   const [newRank, setNewRank] = useState('');
   const [newMode, setNewMode] = useState('');
   const [editingRank, setEditingRank] = useState<{ oldName: string, newName: string, color: string } | null>(null);
+  const [loading, setLoading] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('combat_game_registry') || 'null');
-    if (saved) setRegistry(saved);
-    else {
-      localStorage.setItem('combat_game_registry', JSON.stringify(DEFAULT_REGISTRY));
-      setRegistry(DEFAULT_REGISTRY);
-    }
-  }, []);
+    if (user) fetchRegistry();
+  }, [user]);
 
-  const startEditing = (name: string) => {
-    const gameData = registry[name] || { ranks: [], modes: [], image: '', rankConfigs: {}, enableRainbow: true };
-    setEditingGame(name);
-    setTempGame({ 
-      name, 
-      ranks: gameData.ranks || [], 
-      modes: gameData.modes || [], 
-      image: gameData.image || '',
-      rankConfigs: gameData.rankConfigs || {},
-      enableRainbow: gameData.enableRainbow !== false
-    });
+  const fetchRegistry = async () => {
+    const { data } = await supabase.from('game_registry').select('*').eq('user_id', user?.id);
+    setRegistry(data || []);
+    setLoading(false);
   };
 
-  const saveChanges = () => {
-    if (!tempGame) return;
-    const { name, ...data } = tempGame;
-    const updated = { ...registry };
-    if (editingGame && editingGame !== name) delete updated[editingGame];
-    updated[name] = data;
-    setRegistry(updated);
-    localStorage.setItem('combat_game_registry', JSON.stringify(updated));
-    setEditingGame(null);
-    showSuccess("Registry updated.");
+  const handleSaveGame = async () => {
+    if (!editingGame) return;
+    try {
+      const { error } = await supabase
+        .from('game_registry')
+        .upsert({
+          ...editingGame,
+          user_id: user?.id
+        });
+      
+      if (error) throw error;
+      showSuccess("Registry updated.");
+      setEditingGame(null);
+      fetchRegistry();
+    } catch (err: any) {
+      showError(err.message);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIndex = tempGame.ranks.indexOf(active.id);
-      const newIndex = tempGame.ranks.indexOf(over.id);
-      setTempGame({ ...tempGame, ranks: arrayMove(tempGame.ranks, oldIndex, newIndex) });
+      const oldIndex = editingGame.ranks.indexOf(active.id);
+      const newIndex = editingGame.ranks.indexOf(over.id);
+      setEditingGame({ ...editingGame, ranks: arrayMove(editingGame.ranks, oldIndex, newIndex) });
     }
   };
 
   const updateRankConfig = () => {
-    if (!editingRank || !tempGame) return;
-    const newRanks = tempGame.ranks.map((r: string) => r === editingRank.oldName ? editingRank.newName : r);
-    const newConfigs = { ...tempGame.rankConfigs };
+    if (!editingRank || !editingGame) return;
+    const newRanks = editingGame.ranks.map((r: string) => r === editingRank.oldName ? editingRank.newName : r);
+    const newConfigs = { ...editingGame.rank_configs };
     delete newConfigs[editingRank.oldName];
     newConfigs[editingRank.newName] = { color: editingRank.color };
     
-    setTempGame({ ...tempGame, ranks: newRanks, rankConfigs: newConfigs });
+    setEditingGame({ ...editingGame, ranks: newRanks, rank_configs: newConfigs });
     setEditingRank(null);
   };
 
   return (
     <AppLayout>
       <main className="max-w-6xl mx-auto p-6 md:p-10">
-        <div className="mb-10">
-          <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">Game Registry</h1>
-          <p className="text-slate-400 font-medium">Define rank hierarchies and visual styles for your tracked operations.</p>
+        <div className="mb-10 flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl font-black tracking-tight text-white mb-2 italic uppercase">Game Registry</h1>
+            <p className="text-slate-400 font-medium">Define rank hierarchies and visual styles for your tracked operations.</p>
+          </div>
+          <Button onClick={() => setEditingGame({ title: 'New Game', ranks: [], modes: [], rank_configs: {}, enable_rainbow: true })} className="bg-indigo-600">
+            <Plus className="mr-2" /> Add Game
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <button 
-            onClick={() => startEditing("NEW_GAME_" + Date.now().toString().slice(-4))}
-            className="h-64 rounded-3xl border-2 border-dashed border-slate-800 bg-slate-900/20 hover:bg-slate-900/40 hover:border-indigo-500/50 transition-all flex flex-col items-center justify-center gap-4 group"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center text-slate-600 group-hover:text-indigo-500 group-hover:scale-110 transition-all">
-              <Plus size={32} />
-            </div>
-            <span className="text-xs font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-300">Initialize New Game</span>
-          </button>
-
-          {Object.entries(registry).map(([name, data]: [string, any]) => (
-            <Card key={name} onClick={() => startEditing(name)} className="h-64 bg-slate-900 border-slate-800 overflow-hidden group cursor-pointer hover:border-indigo-500/50 transition-all">
+          {registry.map((game) => (
+            <Card key={game.id} onClick={() => setEditingGame(game)} className="h-64 bg-slate-900 border-slate-800 overflow-hidden group cursor-pointer hover:border-indigo-500/50 transition-all">
               <div className="relative h-32 bg-slate-950">
-                {data.image ? <img src={data.image} alt={name} className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-slate-800"><Gamepad2 size={48} /></div>}
+                {game.image ? <img src={game.image} alt={game.title} className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-slate-800"><Gamepad2 size={48} /></div>}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
-                <div className="absolute bottom-4 left-4"><h3 className="text-xl font-black italic uppercase tracking-tighter text-white">{name}</h3></div>
+                <div className="absolute bottom-4 left-4"><h3 className="text-xl font-black italic uppercase tracking-tighter text-white">{game.title}</h3></div>
               </div>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                  <span className="flex items-center gap-1"><ListOrdered size={12} /> {data.ranks?.length || 0} Ranks</span>
-                  <span className="flex items-center gap-1"><Layers size={12} /> {data.modes?.length || 0} Modes</span>
+                  <span className="flex items-center gap-1"><ListOrdered size={12} /> {game.ranks?.length || 0} Ranks</span>
+                  <span className="flex items-center gap-1"><Layers size={12} /> {game.modes?.length || 0} Modes</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {data.ranks?.slice(0, 3).map((r: string) => (
+                  {game.ranks?.slice(0, 5).map((r: string) => (
                     <div key={r} className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-white/5">
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: data.rankConfigs?.[r]?.color || '#64748b' }} />
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: game.rank_configs?.[r]?.color || '#64748b' }} />
                       <span className="text-[8px] font-black text-slate-400 uppercase">{r}</span>
                     </div>
                   ))}
@@ -193,21 +173,21 @@ const GameRegistry = () => {
 
         <Dialog open={!!editingGame} onOpenChange={(v) => !v && setEditingGame(null)}>
           <DialogContent className="bg-slate-950 border-slate-800 text-white sm:max-w-[600px] p-0 overflow-hidden">
-            {tempGame && (
+            {editingGame && (
               <>
                 <div className="relative h-40 bg-slate-900">
-                  {tempGame.image ? <img src={tempGame.image} alt="" className="w-full h-full object-cover opacity-50" /> : <div className="w-full h-full flex items-center justify-center text-slate-800"><Gamepad2 size={64} /></div>}
+                  {editingGame.image ? <img src={editingGame.image} alt="" className="w-full h-full object-cover opacity-50" /> : <div className="w-full h-full flex items-center justify-center text-slate-800"><Gamepad2 size={64} /></div>}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent" />
                   <Button variant="ghost" size="icon" className="absolute top-4 right-4 bg-slate-950/50 rounded-full" onClick={() => fileInputRef.current?.click()}><Camera size={18} /></Button>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       const processed = await processImage(file, 800, 450, 0.7);
-                      setTempGame({ ...tempGame, image: processed });
+                      setEditingGame({ ...editingGame, image: processed });
                     }
                   }} />
                   <div className="absolute bottom-6 left-6 right-6">
-                    <Input value={tempGame.name} onChange={(e) => setTempGame({ ...tempGame, name: e.target.value })} className="bg-transparent border-none text-3xl font-black italic uppercase tracking-tighter p-0 h-auto focus-visible:ring-0" />
+                    <Input value={editingGame.title} onChange={(e) => setEditingGame({ ...editingGame, title: e.target.value })} className="bg-transparent border-none text-3xl font-black italic uppercase tracking-tighter p-0 h-auto focus-visible:ring-0" />
                   </div>
                 </div>
 
@@ -216,26 +196,26 @@ const GameRegistry = () => {
                     <div className="flex items-center justify-between">
                       <Label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2"><ListOrdered size={14} /> Rank Hierarchy</Label>
                       <div className="flex items-center gap-2">
-                        <Sparkles size={12} className={cn(tempGame.enableRainbow ? "text-yellow-500" : "text-slate-600")} />
+                        <Sparkles size={12} className={cn(editingGame.enable_rainbow ? "text-yellow-500" : "text-slate-600")} />
                         <span className="text-[9px] font-bold uppercase text-slate-500">Elite Rainbow</span>
-                        <Switch checked={tempGame.enableRainbow} onCheckedChange={(v) => setTempGame({...tempGame, enableRainbow: v})} />
+                        <Switch checked={editingGame.enable_rainbow} onCheckedChange={(v) => setEditingGame({...editingGame, enable_rainbow: v})} />
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Input placeholder="Add Rank (e.g. Gold I)" value={newRank} onChange={(e) => setNewRank(e.target.value)} className="bg-slate-900 border-slate-800 h-10" onKeyDown={(e) => e.key === 'Enter' && (setTempGame({ ...tempGame, ranks: [...tempGame.ranks, newRank] }), setNewRank(''))} />
-                      <Button onClick={() => { setTempGame({ ...tempGame, ranks: [...tempGame.ranks, newRank] }); setNewRank(''); }} className="bg-indigo-600"><Plus size={18} /></Button>
+                      <Input placeholder="Add Rank (e.g. Gold I)" value={newRank} onChange={(e) => setNewRank(e.target.value)} className="bg-slate-900 border-slate-800 h-10" onKeyDown={(e) => e.key === 'Enter' && (setEditingGame({ ...editingGame, ranks: [...editingGame.ranks, newRank] }), setNewRank(''))} />
+                      <Button onClick={() => { setEditingGame({ ...editingGame, ranks: [...editingGame.ranks, newRank] }); setNewRank(''); }} className="bg-indigo-600"><Plus size={18} /></Button>
                     </div>
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                      <SortableContext items={tempGame.ranks} strategy={verticalListSortingStrategy}>
+                      <SortableContext items={editingGame.ranks} strategy={verticalListSortingStrategy}>
                         <div className="space-y-2">
-                          {tempGame.ranks.map((rank: string) => (
+                          {editingGame.ranks.map((rank: string) => (
                             <SortableRankItem 
                               key={rank} 
                               id={rank} 
                               rank={rank} 
-                              color={tempGame.rankConfigs?.[rank]?.color || '#64748b'}
-                              onRemove={(r) => setTempGame({ ...tempGame, ranks: tempGame.ranks.filter((x: string) => x !== r) })} 
-                              onEdit={(r) => setEditingRank({ oldName: r, newName: r, color: tempGame.rankConfigs?.[r]?.color || '#64748b' })}
+                              color={editingGame.rank_configs?.[rank]?.color || '#64748b'}
+                              onRemove={(r) => setEditingGame({ ...editingGame, ranks: editingGame.ranks.filter((x: string) => x !== r) })} 
+                              onEdit={(r) => setEditingRank({ oldName: r, newName: r, color: editingGame.rank_configs?.[r]?.color || '#64748b' })}
                             />
                           ))}
                         </div>
@@ -246,14 +226,14 @@ const GameRegistry = () => {
                   <section className="space-y-4">
                     <Label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2"><Layers size={14} /> Available Modes</Label>
                     <div className="flex gap-2">
-                      <Input placeholder="Add Mode (e.g. Ranked)" value={newMode} onChange={(e) => setNewMode(e.target.value)} className="bg-slate-900 border-slate-800 h-10" onKeyDown={(e) => e.key === 'Enter' && (setTempGame({ ...tempGame, modes: [...tempGame.modes, newMode] }), setNewMode(''))} />
-                      <Button onClick={() => { setTempGame({ ...tempGame, modes: [...tempGame.modes, newMode] }); setNewMode(''); }} className="bg-indigo-600"><Plus size={18} /></Button>
+                      <Input placeholder="Add Mode (e.g. Ranked)" value={newMode} onChange={(e) => setNewMode(e.target.value)} className="bg-slate-900 border-slate-800 h-10" onKeyDown={(e) => e.key === 'Enter' && (setEditingGame({ ...editingGame, modes: [...editingGame.modes, newMode] }), setNewMode(''))} />
+                      <Button onClick={() => { setEditingGame({ ...editingGame, modes: [...editingGame.modes, newMode] }); setNewMode(''); }} className="bg-indigo-600"><Plus size={18} /></Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {tempGame.modes.map((mode: string) => (
+                      {editingGame.modes.map((mode: string) => (
                         <div key={mode} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 group">
                           <span className="text-xs font-bold uppercase">{mode}</span>
-                          <button onClick={() => setTempGame({ ...tempGame, modes: tempGame.modes.filter((m: string) => m !== mode) })} className="text-slate-600 hover:text-red-400"><Trash2 size={12} /></button>
+                          <button onClick={() => setEditingGame({ ...editingGame, modes: editingGame.modes.filter((m: string) => m !== mode) })} className="text-slate-600 hover:text-red-400"><Trash2 size={12} /></button>
                         </div>
                       ))}
                     </div>
@@ -262,8 +242,8 @@ const GameRegistry = () => {
 
                 <DialogFooter className="p-6 bg-slate-900 border-t border-slate-800">
                   <div className="flex gap-3 w-full">
-                    <Button variant="destructive" className="flex-1 font-black uppercase" onClick={() => { const updated = { ...registry }; delete updated[editingGame!]; setRegistry(updated); localStorage.setItem('combat_game_registry', JSON.stringify(updated)); setEditingGame(null); showSuccess("Game removed."); }}>Delete Game</Button>
-                    <Button onClick={saveChanges} className="flex-[2] bg-indigo-600 hover:bg-indigo-500 font-black uppercase"><Save size={18} className="mr-2" /> Save Definition</Button>
+                    <Button variant="destructive" className="flex-1 font-black uppercase" onClick={async () => { if(editingGame.id) await supabase.from('game_registry').delete().eq('id', editingGame.id); setEditingGame(null); fetchRegistry(); }}>Delete Game</Button>
+                    <Button onClick={handleSaveGame} className="flex-[2] bg-indigo-600 hover:bg-indigo-500 font-black uppercase"><Save size={18} className="mr-2" /> Save Definition</Button>
                   </div>
                 </DialogFooter>
               </>
@@ -290,10 +270,6 @@ const GameRegistry = () => {
             <DialogFooter><Button onClick={updateRankConfig} className="w-full bg-indigo-600 font-black uppercase py-6"><Check size={18} className="mr-2" /> Update Rank</Button></DialogFooter>
           </DialogContent>
         </Dialog>
-
-        <footer className="mt-20 pb-10 border-t border-slate-800 pt-10">
-          <p className="text-center text-slate-600 text-[10px] font-bold uppercase tracking-widest">GTracker Registry System v2.0</p>
-        </footer>
       </main>
     </AppLayout>
   );

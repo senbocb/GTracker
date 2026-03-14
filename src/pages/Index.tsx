@@ -8,13 +8,14 @@ import SessionTracker from '@/components/SessionTracker';
 import AddMatchModal from '@/components/AddMatchModal';
 import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
 import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
-import { Plus, Gamepad2, Activity, LayoutGrid, List, Trophy, Terminal } from 'lucide-react';
+import { Plus, Gamepad2, Activity, LayoutGrid, List, Trophy, Terminal, Settings2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/components/AppLayout';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { showSuccess } from '@/utils/toast';
 
 const DEFAULT_LAYOUT: LayoutSection[] = [
   { id: 'quick_stats', label: 'Overview', enabled: true },
@@ -42,9 +43,31 @@ const Index = () => {
         .eq('user_id', user.id);
       
       if (gamesData) {
-        const formattedGames = gamesData.map(g => ({
+        // Merge Duplicates Logic
+        const mergedGames: Record<string, any> = {};
+        const duplicatesToRemove: string[] = [];
+
+        gamesData.forEach(game => {
+          if (!mergedGames[game.title]) {
+            mergedGames[game.title] = { ...game, modes: game.game_modes };
+          } else {
+            // Duplicate found! Move modes to the first instance
+            duplicatesToRemove.push(game.id);
+            // We'd need to update mode game_ids in DB, but for UI we just merge
+            mergedGames[game.title].modes = [...mergedGames[game.title].modes, ...game.game_modes];
+          }
+        });
+
+        if (duplicatesToRemove.length > 0) {
+          // Cleanup DB duplicates (async)
+          supabase.from('games').delete().in('id', duplicatesToRemove).then(() => {
+            showSuccess(`Merged ${duplicatesToRemove.length} duplicate game entries.`);
+          });
+        }
+
+        const formattedGames = Object.values(mergedGames).map(g => ({
           ...g,
-          modes: g.game_modes.map((m: any) => ({
+          modes: g.modes.map((m: any) => ({
             ...m,
             history: m.game_history.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
           }))
@@ -128,6 +151,12 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Link to="/registry">
+              <Button variant="outline" size="sm" className="border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white">
+                <Settings2 className="mr-2" size={16} />
+                Registry
+              </Button>
+            </Link>
             <LayoutSettings sections={layout} onUpdate={updateLayout} />
             <Link to="/add-game" className="flex-1 sm:flex-none">
               <Button variant="outline" size="sm" className="w-full border-slate-800 bg-slate-950 text-slate-400 hover:text-white">

@@ -12,15 +12,16 @@ interface RankBadgeProps {
 
 const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) => {
   const customStyle = useMemo(() => {
+    // This would ideally come from a context or prop, but for now we'll check local storage or a global registry
     const registry = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
     const gameData = registry[gameTitle];
     if (!gameData) return null;
 
-    const rankData = gameData.rankConfigs?.[rank];
+    const rankData = gameData.rank_configs?.[rank];
     if (!rankData) return null;
 
     const isTopRank = gameData.ranks?.[gameData.ranks.length - 1] === rank;
-    const useRainbow = gameData.enableRainbow !== false && isTopRank;
+    const useRainbow = gameData.enable_rainbow !== false && isTopRank;
 
     if (useRainbow) return { isRainbow: true };
 

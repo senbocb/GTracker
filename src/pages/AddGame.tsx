@@ -17,7 +17,7 @@ import { useAuth } from "@/components/AuthProvider";
 const DEFAULT_REGISTRY = {
   "Valorant": { 
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
-    modes: ["Competitive", "Premier"],
+    modes: ["Competitive"],
     image: "https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?q=80&w=1000&auto=format&fit=crop"
   },
   "Counter-Strike 2": { 
@@ -32,7 +32,7 @@ const DEFAULT_REGISTRY = {
   },
   "Overwatch 2": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
-    modes: ["Tank", "Damage", "Support", "Open Queue"],
+    modes: ["Tank", "Damage", "Support", "Open Queue", "Stadium Mode"],
     image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop"
   },
   "Apex Legends": {
