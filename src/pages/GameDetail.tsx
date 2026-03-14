@@ -19,7 +19,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 
-const GAME_METADATA: Record<string, any> = {
+const DEFAULT_METADATA: Record<string, any> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"], tierCount: 3 },
   "Counter-Strike 2": { 
     ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"], 
@@ -46,14 +46,27 @@ const GameDetail = () => {
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logData, setLogData] = useState({ rank: '', tier: '', map: '', role: '', timestamp: new Date().toISOString().slice(0, 16) });
+  const [registryData, setRegistryData] = useState<any>(null);
   
-  // Kovaaks Specific
   const [benchmarks, setBenchmarks] = useState<any[]>([]);
   const [isPulling, setIsPulling] = useState(false);
 
   useEffect(() => {
     fetchGameData();
+    fetchRegistry();
   }, [id]);
+
+  const fetchRegistry = async () => {
+    const { data } = await supabase.from('game_registry').select('*');
+    if (data) {
+      const regMap = data.reduce((acc: any, curr: any) => {
+        acc[curr.title] = curr;
+        return acc;
+      }, {});
+      setRegistryData(regMap);
+      localStorage.setItem('combat_game_registry', JSON.stringify(regMap));
+    }
+  };
 
   const fetchGameData = async () => {
     const { data: gameData } = await supabase
@@ -74,7 +87,6 @@ const GameDetail = () => {
       const initialMode = formatted.modes[0]?.name || '';
       setActiveMode(initialMode);
       
-      // Set initial log data based on current mode's rank
       const currentMode = formatted.modes.find((m: any) => m.name === initialMode);
       if (currentMode) {
         setLogData(prev => ({ ...prev, rank: currentMode.rank || '', tier: currentMode.tier || '' }));
@@ -97,7 +109,6 @@ const GameDetail = () => {
       const mode = game.modes.find((m: any) => m.name === activeMode);
       if (!mode) throw new Error("Mode not found");
 
-      // 1. Add to history
       const { error: historyError } = await supabase
         .from('game_history')
         .insert({
@@ -105,13 +116,12 @@ const GameDetail = () => {
           rank: logData.rank,
           tier: logData.tier,
           map: logData.map,
-          agent: logData.role, // Using agent column for role in OW2
+          agent: logData.role,
           timestamp: logData.timestamp
         });
       
       if (historyError) throw historyError;
 
-      // 2. Update current mode rank
       const { error: modeError } = await supabase
         .from('game_modes')
         .update({
@@ -132,34 +142,15 @@ const GameDetail = () => {
     }
   };
 
-  const handlePullBenchmarks = () => {
-    setIsPulling(true);
-    setTimeout(() => {
-      const mockBenchmarks = [
-        { id: '1', name: 'Voltaic Novice', rank: 'Silver', visible: true },
-        { id: '2', name: 'Voltaic Intermediate', rank: 'Platinum', visible: true },
-        { id: '3', name: 'Voltaic Advanced', rank: 'Master', visible: false },
-        { id: '4', name: 'rA Benchmarks', rank: 'Diamond', visible: true }
-      ];
-      setBenchmarks(mockBenchmarks);
-      setIsPulling(false);
-      showSuccess("Benchmarks synchronized from evxl.app");
-      localStorage.setItem(`benchmarks_${id}`, JSON.stringify(mockBenchmarks));
-    }, 1500);
-  };
-
-  const toggleBenchmarkVisibility = (benchId: string) => {
-    const updated = benchmarks.map(b => b.id === benchId ? { ...b, visible: !b.visible } : b);
-    setBenchmarks(updated);
-    localStorage.setItem(`benchmarks_${id}`, JSON.stringify(updated));
-  };
-
   if (!game) return null;
 
-  const currentMetadata = GAME_METADATA[game.title] || { ranks: [], tierCount: 0 };
-  const modeSpecificRanks = currentMetadata.modeRanks?.[activeMode];
-  const availableRanks = modeSpecificRanks || currentMetadata.ranks;
+  const currentMetadata = registryData?.[game.title] || DEFAULT_METADATA[game.title] || { ranks: [], tierCount: 0 };
+  const modeSpecificRanks = DEFAULT_METADATA[game.title]?.modeRanks?.[activeMode];
+  const availableRanks = modeSpecificRanks || currentMetadata.ranks || [];
+  
   const isOW2RoleQueue = game.title === 'Overwatch 2' && activeMode === 'Role Queue';
+  const isCS2Premier = game.title === 'Counter-Strike 2' && activeMode === 'Premier';
+  const showMapField = game.title === 'Kovaaks' || game.title === 'Aim Lab';
 
   return (
     <AppLayout>
@@ -167,12 +158,6 @@ const GameDetail = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <Link to="/"><Button variant="ghost" className="text-slate-300 hover:text-white -ml-4"><ChevronLeft className="mr-2" size={20} /> Back</Button></Link>
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
-            {game.title === 'Kovaaks' && (
-              <Button variant="outline" onClick={handlePullBenchmarks} disabled={isPulling} className="border-slate-800 bg-slate-900/50 text-indigo-400 flex-1 md:flex-none">
-                <RefreshCw size={16} className={cn("mr-2", isPulling && "animate-spin")} />
-                Sync evxl.app
-              </Button>
-            )}
             <Dialog open={isLogOpen} onOpenChange={setIsLogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-indigo-600 hover:bg-indigo-500 font-bold flex-1 md:flex-none"><Plus size={16} className="mr-2" /> Log Rank</Button>
@@ -184,7 +169,7 @@ const GameDetail = () => {
                     <div className="grid gap-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Role</Label>
                       <div className="grid grid-cols-3 gap-2">
-                        {currentMetadata.roles.map((role: string) => (
+                        {DEFAULT_METADATA["Overwatch 2"].roles.map((role: string) => (
                           <Button
                             key={role}
                             variant={logData.role === role ? "default" : "outline"}
@@ -205,18 +190,30 @@ const GameDetail = () => {
                   )}
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-400">Rank</Label>
-                    <Select value={logData.rank} onValueChange={(v) => setLogData({...logData, rank: v})}>
-                      <SelectTrigger className="bg-slate-900 border-slate-800">
-                        <SelectValue placeholder="Select Rank" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {availableRanks.map((r: string) => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {isCS2Premier ? (
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        max="40000" 
+                        value={logData.rank} 
+                        onChange={(e) => setLogData({...logData, rank: e.target.value})} 
+                        className="bg-slate-900 border-slate-800" 
+                        placeholder="Enter ELO (0-40000)" 
+                      />
+                    ) : (
+                      <Select value={logData.rank} onValueChange={(v) => setLogData({...logData, rank: v})}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800">
+                          <SelectValue placeholder="Select Rank" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                          {availableRanks.map((r: string) => (
+                            <SelectItem key={r} value={r}>{r}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
-                  {currentMetadata.tierCount > 0 && (
+                  {!isCS2Premier && currentMetadata.tierCount > 0 && (
                     <div className="grid gap-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Tier</Label>
                       <Select value={logData.tier} onValueChange={(v) => setLogData({...logData, tier: v})}>
@@ -231,10 +228,12 @@ const GameDetail = () => {
                       </Select>
                     </div>
                   )}
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-400">Map / Scenario</Label>
-                    <Input value={logData.map} onChange={(e) => setLogData({...logData, map: e.target.value})} className="bg-slate-900 border-slate-800" placeholder="e.g. Bind, 1wall6targets" />
-                  </div>
+                  {showMapField && (
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Map / Scenario</Label>
+                      <Input value={logData.map} onChange={(e) => setLogData({...logData, map: e.target.value})} className="bg-slate-900 border-slate-800" placeholder="e.g. 1wall6targets" />
+                    </div>
+                  )}
                   <div className="grid gap-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-400">Timestamp</Label>
                     <Input type="datetime-local" value={logData.timestamp} onChange={(e) => setLogData({...logData, timestamp: e.target.value})} className="bg-slate-900 border-slate-800" />
@@ -271,35 +270,13 @@ const GameDetail = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           <div className="lg:col-span-2 space-y-6 md:space-y-8">
-            {game.title === 'Kovaaks' && benchmarks.length > 0 && (
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2"><Trophy size={16} className="text-yellow-500" /> Verified Benchmarks</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {benchmarks.map(bench => (
-                    <div key={bench.id} className={cn(
-                      "p-4 rounded-2xl border transition-all flex items-center justify-between",
-                      bench.visible ? "bg-slate-900 border-slate-800" : "bg-slate-950 border-slate-900 opacity-50"
-                    )}>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{bench.name}</p>
-                        <RankBadge rank={bench.rank} gameTitle="Kovaaks" className="mt-1" />
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={() => toggleBenchmarkVisibility(bench.id)} className="text-slate-600 hover:text-white">
-                        {bench.visible ? <Eye size={16} /> : <EyeOff size={16} />}
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-            
-            <ProgressChart history={game.modes.find((m: any) => m.name === activeMode)?.history} rankNames={availableRanks} getRankValue={(r) => availableRanks.indexOf(r)} />
-            
+            <ProgressChart 
+              history={game.modes.find((m: any) => m.name === activeMode)?.history} 
+              rankNames={availableRanks} 
+              getRankValue={(r) => isCS2Premier ? parseInt(r) || 0 : availableRanks.indexOf(r)} 
+            />
             <TournamentWidget gameId={id!} />
           </div>
-
           <div className="space-y-6">
             <SeasonManager gameId={game.id} seasons={seasons} onUpdate={(s) => { setSeasons(s); localStorage.setItem(`seasons_${id}`, JSON.stringify(s)); }} />
           </div>

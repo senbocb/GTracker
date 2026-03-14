@@ -12,9 +12,9 @@ interface RankBadgeProps {
 
 const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) => {
   const customStyle = useMemo(() => {
-    // This would ideally come from a context or prop, but for now we'll check local storage or a global registry
     const registry = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
-    const gameData = registry[gameTitle];
+    const gameData = Object.values(registry).find((g: any) => g.title === gameTitle) as any;
+    
     if (!gameData) return null;
 
     const rankData = gameData.rank_configs?.[rank];
@@ -35,7 +35,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
   const getRankStyle = () => {
     if (customStyle) {
       if (customStyle.isRainbow) return 'rainbow-gradient border-none shadow-[0_0_15px_rgba(99,102,241,0.4)]';
-      return ""; // Handled by inline style
+      return ""; 
     }
 
     const r = rank?.toLowerCase() || "";
@@ -43,7 +43,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     const g = gameTitle?.toLowerCase() || "";
     const rankNum = parseInt(rank) || 0;
 
-    // Default Peak Ranks (Elite Status)
+    // Elite Status
     const isPeak = 
       (g.includes('valorant') && r === 'radiant') ||
       (g.includes('overwatch') && r === 'top 500') ||
@@ -51,14 +51,13 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
       (g.includes('apex') && r === 'apex predator') ||
       (g.includes('counter-strike') && (t.includes('level 10') || r.includes('global elite'))) ||
       (g.includes('counter-strike') && rankNum >= 30000) ||
-      (g.includes('osu!') && rankNum > 0 && rankNum <= 100) ||
       (g.includes('the finals') && r === 'ruby') ||
       (g.includes('marvel rivals') && r === 'eternity');
 
     if (isPeak) return 'rainbow-gradient border-none shadow-[0_0_15px_rgba(99,102,241,0.4)]';
 
-    // Default CS2 Premier ELO Logic
-    if (g.includes('counter-strike') && !isNaN(rankNum) && !t.includes('level')) {
+    // CS2 Premier ELO
+    if (g.includes('counter-strike') && !isNaN(rankNum) && !t.includes('level') && !r.includes('silver')) {
       if (rankNum >= 25000) return 'bg-yellow-500/20 border-yellow-500/40 text-yellow-400';
       if (rankNum >= 20000) return 'bg-red-500/20 border-red-500/40 text-red-400';
       if (rankNum >= 15000) return 'bg-pink-500/20 border-pink-500/40 text-pink-400';
@@ -67,7 +66,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
       return 'bg-slate-400/20 border-slate-400/40 text-slate-300';
     }
 
-    // Standard Tier Logic
+    // Standard Tiers
     if (r.includes('iron') || r.includes('rookie') || r.includes('copper')) return 'bg-zinc-500/20 border-zinc-500/40 text-zinc-400';
     if (r.includes('bronze')) return 'bg-orange-800/20 border-orange-800/40 text-orange-700';
     if (r.includes('silver')) return 'bg-slate-300/20 border-slate-300/40 text-slate-200';
