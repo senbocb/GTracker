@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, History, Target, FileCode, User, Settings, 
-  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield, Search, Terminal, Menu, X
+  Bell, LogOut, Zap, ChevronLeft, ChevronRight, Users, Shield, Search, Terminal, Menu, X, GitBranch
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +15,9 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 
-const VERSION_HISTORY = [
-  { version: "v2.8", type: "Update", title: "Team Integration", date: "Today", notes: "Added team tags, primary team selection, and enhanced settings." },
-  { version: "v2.7", type: "Update", title: "Global Sync", date: "Yesterday", notes: "Fixed cross-browser synchronization issues." }
+const VERSION_HISTORY_PREVIEW = [
+  { version: "v2.8.0", type: "Update", title: "Team Integration", date: "Today", notes: "Added team tags, primary team selection, and enhanced settings." },
+  { version: "v2.5.0", type: "Update", title: "Game Registry", date: "Yesterday", notes: "Custom game definitions and dynamic rank coloring." }
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
@@ -129,6 +129,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </nav>
 
         <div className="p-4 border-t border-slate-800 space-y-2">
+          <Link to="/version-history">
+            <Button variant="ghost" className={cn(
+              "w-full justify-start gap-4 h-12 rounded-xl",
+              location.pathname === '/version-history' ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+            )}>
+              <GitBranch size={20} />
+              {!isCollapsed && <span className="font-bold uppercase tracking-widest text-[10px]">Versions</span>}
+            </Button>
+          </Link>
           <Link to="/settings">
             <Button variant="ghost" className="w-full justify-start gap-4 h-12 text-slate-400 hover:text-white rounded-xl">
               <Settings size={20} />
@@ -166,6 +175,11 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 </Button>
               </Link>
             ))}
+            <Link to="/version-history" onClick={() => setIsMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start gap-4 h-14 text-lg font-black uppercase italic">
+                <GitBranch size={20} /> Versions
+              </Button>
+            </Link>
             <Link to="/settings" onClick={() => setIsMobileMenuOpen(false)}>
               <Button variant="ghost" className="w-full justify-start gap-4 h-14 text-lg font-black uppercase italic">
                 <Settings size={20} /> Settings
@@ -208,10 +222,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               <DropdownMenuContent align="end" className="w-80 bg-slate-950 border-slate-800 text-white p-0 overflow-hidden">
                 <DropdownMenuLabel className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest">Version History</span>
-                  <span className="text-[8px] font-bold text-indigo-400 uppercase">Latest: v2.8</span>
+                  <Link to="/version-history" className="text-[8px] font-bold text-indigo-400 uppercase hover:underline">View All</Link>
                 </DropdownMenuLabel>
                 <div className="max-h-[400px] overflow-y-auto">
-                  {VERSION_HISTORY.map((v, i) => (
+                  {VERSION_HISTORY_PREVIEW.map((v, i) => (
                     <div key={i} className="p-4 border-b border-slate-800/50 hover:bg-slate-900/50 transition-colors">
                       <div className="flex items-center justify-between mb-1">
                         <span className={cn(
