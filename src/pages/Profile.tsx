@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   User, Settings, Trophy, Target, Zap, 
   Edit3, Save, Camera, Gamepad2, Globe, 
-  Plus, Trash2, Share2, Download, Check, Loader2,
-  Shield // Added missing Shield import
+  Plus, Trash2, Share2, Download, Check, Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
