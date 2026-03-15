@@ -188,9 +188,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="hidden md:flex h-20 border-b border-slate-800 items-center justify-between px-8 bg-slate-950/30 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-8 flex-1">
-            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
-              Operator: <span className="text-indigo-400">{profile?.username || 'Authenticating...'}</span>
-            </h2>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                Operator: <span className="text-white">{profile?.username || 'Authenticating...'}</span>
+              </h2>
+            </div>
             
             <div className="relative max-w-md w-full" ref={searchRef}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
