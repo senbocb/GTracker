@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, profileLoading, signOut } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +26,13 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Auth Guard
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -109,6 +116,14 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-500" size={48} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 flex flex-col md:flex-row">
       <aside className={cn(
@@ -191,7 +206,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-                Operator: <span className="text-white">{profile?.username || 'Authenticating...'}</span>
+                Operator: <span className="text-white">{profile?.username || user?.email || 'Authenticating...'}</span>
               </h2>
             </div>
             

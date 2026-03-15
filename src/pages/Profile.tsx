@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Profile = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, profileLoading, refreshProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedProfile, setEditedProfile] = useState<any>(null);
@@ -22,8 +22,18 @@ const Profile = () => {
   useEffect(() => {
     if (profile) {
       setEditedProfile({ ...profile });
+    } else if (user && !profileLoading) {
+      // If we have a user but no profile record, initialize local state with defaults
+      setEditedProfile({
+        username: user.email?.split('@')[0] || 'Operator',
+        avatar_url: null,
+        main_game: '',
+        region: '',
+        bio: '',
+        level: 1
+      });
     }
-  }, [profile]);
+  }, [profile, user, profileLoading]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -31,15 +41,15 @@ const Profile = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           username: editedProfile.username,
           avatar_url: editedProfile.avatar_url,
           main_game: editedProfile.main_game,
           region: editedProfile.region,
           bio: editedProfile.bio,
-          custom_stats: editedProfile.custom_stats
-        })
-        .eq('id', user.id);
+          updated_at: new Date().toISOString()
+        });
 
       if (error) throw error;
       
@@ -54,13 +64,15 @@ const Profile = () => {
     }
   };
 
-  if (!profile || !editedProfile) {
+  if (profileLoading || !editedProfile) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full min-h-[60vh]">
         <Loader2 className="animate-spin text-indigo-500" size={40} />
       </div>
     );
   }
+
+  const displayProfile = profile || editedProfile;
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
@@ -90,11 +102,11 @@ const Profile = () => {
                   className="bg-slate-950/50 border-slate-700 text-2xl font-black uppercase tracking-tighter text-white h-12 w-64"
                 />
               ) : (
-                <h1 className="text-4xl font-black italic tracking-tighter text-white uppercase">{profile.username}</h1>
+                <h1 className="text-4xl font-black italic tracking-tighter text-white uppercase">{displayProfile.username}</h1>
               )}
               <div className="flex items-center gap-3 mt-2">
-                <Badge className="bg-indigo-600 text-white border-none text-[10px] font-black uppercase tracking-widest">Level {profile.level || 1}</Badge>
-                <span className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Operator ID: {profile.id.slice(0, 8)}</span>
+                <Badge className="bg-indigo-600 text-white border-none text-[10px] font-black uppercase tracking-widest">Level {displayProfile.level || 1}</Badge>
+                <span className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Operator ID: {user?.id.slice(0, 8)}</span>
               </div>
             </div>
           </div>
@@ -105,7 +117,7 @@ const Profile = () => {
                   variant="outline" 
                   onClick={() => {
                     setIsEditing(false);
-                    setEditedProfile({...profile});
+                    setEditedProfile(profile ? { ...profile } : editedProfile);
                   }}
                   className="border-slate-700 text-white hover:bg-slate-800 text-[10px] font-black uppercase tracking-widest"
                 >
@@ -132,6 +144,12 @@ const Profile = () => {
           </div>
         </div>
         <div className="pt-20 pb-8 px-8">
+          {!profile && !isEditing && (
+            <div className="mb-8 p-4 bg-indigo-600/10 border border-indigo-500/30 rounded-xl flex items-center justify-between">
+              <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Your profile record hasn't been initialized yet.</p>
+              <Button size="sm" onClick={() => setIsEditing(true)} className="bg-indigo-600 h-8 text-[10px] font-black uppercase">Initialize Now</Button>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2 space-y-8">
               <section>
@@ -145,7 +163,7 @@ const Profile = () => {
                   />
                 ) : (
                   <p className="text-slate-400 text-sm leading-relaxed bg-slate-950/30 border border-slate-800/50 rounded-xl p-4">
-                    {profile.bio || "No operational bio provided. Update your profile to add one."}
+                    {displayProfile.bio || "No operational bio provided. Update your profile to add one."}
                   </p>
                 )}
               </section>
@@ -185,7 +203,7 @@ const Profile = () => {
                         className="bg-slate-900 border-slate-700 h-8 w-32 text-[10px] font-bold uppercase"
                       />
                     ) : (
-                      <span className="text-[10px] font-black uppercase text-white">{profile.main_game || 'N/A'}</span>
+                      <span className="text-[10px] font-black uppercase text-white">{displayProfile.main_game || 'N/A'}</span>
                     )}
                   </div>
                   <div className="flex items-center justify-between">
@@ -200,7 +218,7 @@ const Profile = () => {
                         className="bg-slate-900 border-slate-700 h-8 w-32 text-[10px] font-bold uppercase"
                       />
                     ) : (
-                      <span className="text-[10px] font-black uppercase text-white">{profile.region || 'Global'}</span>
+                      <span className="text-[10px] font-black uppercase text-white">{displayProfile.region || 'Global'}</span>
                     )}
                   </div>
                 </div>

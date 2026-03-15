@@ -16,6 +16,10 @@ interface Profile {
   layout_settings: any;
   stat_configs: any;
   updated_at: string;
+  bio?: string;
+  main_game?: string;
+  region?: string;
+  level?: number;
 }
 
 interface AuthContextType {
@@ -23,6 +27,7 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  profileLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -32,25 +37,37 @@ const AuthContext = createContext<AuthContextType>({
   user: null, 
   profile: null,
   loading: true,
+  profileLoading: true,
   signOut: async () => {},
   refreshProfile: async () => {}
 });
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({ children }: { children: React.Node }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (data) {
-      setProfile(data);
+    setProfileLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (data) {
+        setProfile(data);
+      } else if (error && error.code === 'PGRST116') {
+        // Profile doesn't exist, we might want to create one or just leave it null
+        console.log("No profile found for user");
+      }
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -61,6 +78,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+      } else {
+        setProfileLoading(false);
       }
       setLoading(false);
     });
@@ -73,33 +92,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
+        setProfileLoading(false);
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Real-time profile listener
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel(`public:profiles:id=eq.${user.id}`)
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'profiles', 
-        filter: `id=eq.${user.id}` 
-      }, (payload) => {
-        setProfile(payload.new as Profile);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -111,7 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, profileLoading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
