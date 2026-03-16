@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import AppLayout from '@/components/AppLayout';
+import RankBadge from '@/components/RankBadge';
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -196,6 +197,7 @@ const GameRegistry = () => {
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                     {game.ranks.map((rank: string, rIdx: number) => (
                       <div key={rIdx} className="flex items-center gap-2">
+                        <RankBadge rank={rank} gameTitle={game.title} className="scale-75 shrink-0" />
                         <Input 
                           value={rank} 
                           onChange={(e) => {
