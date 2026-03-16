@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRegistry } from './RegistryProvider';
 
 interface RankBadgeProps {
   rank: string;
@@ -12,9 +13,10 @@ interface RankBadgeProps {
 }
 
 const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) => {
+  const { registry } = useRegistry();
+
   const registryInfo = useMemo(() => {
-    const registry = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
-    const gameData = Object.values(registry).find((g: any) => g.title === gameTitle) as any;
+    const gameData = registry.find((g: any) => g.title === gameTitle);
     
     if (!gameData) return null;
 
@@ -37,7 +39,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
       iconUrl: rankData?.icon_url,
       isRainbow: useRainbow
     };
-  }, [rank, gameTitle]);
+  }, [rank, gameTitle, registry]);
 
   const getRankStyle = () => {
     if (registryInfo?.isRainbow) return 'rainbow-gradient border-none shadow-[0_0_15px_rgba(99,102,241,0.4)]';

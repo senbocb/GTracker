@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./components/AuthProvider";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { RegistryProvider } from "./components/RegistryProvider";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import AddGame from "./pages/AddGame";
@@ -30,35 +31,37 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/add-game" element={<AddGame />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/add-social" element={<AddSocial />} />
-              <Route path="/game/:id" element={<GameDetail />} />
-              <Route path="/timer" element={<Timer />} />
-              <Route path="/registry" element={<GameRegistry />} />
-              <Route path="/crosshairs" element={<CrosshairManager />} />
-              <Route path="/configs" element={<ConfigManager />} />
-              <Route path="/achievements" element={<Achievements />} />
-              <Route path="/habits" element={<HabitTracker />} />
-              <Route path="/social" element={<Social />} />
-              <Route path="/teams" element={<Teams />} />
-              <Route path="/version-history" element={<VersionHistory />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
+      <RegistryProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/add-game" element={<AddGame />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/add-social" element={<AddSocial />} />
+                <Route path="/game/:id" element={<GameDetail />} />
+                <Route path="/timer" element={<Timer />} />
+                <Route path="/registry" element={<GameRegistry />} />
+                <Route path="/crosshairs" element={<CrosshairManager />} />
+                <Route path="/configs" element={<ConfigManager />} />
+                <Route path="/achievements" element={<Achievements />} />
+                <Route path="/habits" element={<HabitTracker />} />
+                <Route path="/social" element={<Social />} />
+                <Route path="/teams" element={<Teams />} />
+                <Route path="/version-history" element={<VersionHistory />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </RegistryProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

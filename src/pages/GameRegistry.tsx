@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Plus, Trash2, Save, Gamepad2, ImageIcon, List, Check, 
   Loader2, RefreshCw, ChevronLeft, Settings2, Upload, Layers, Lock,
-  GripVertical, ImagePlus, FileImage
+  GripVertical, ImagePlus, FileImage, Camera
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
 import { useAuth } from "@/components/AuthProvider";
+import { useRegistry } from '@/components/RegistryProvider';
 
 const CS2_RANKS = [
   "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", 
@@ -25,7 +26,6 @@ const CS2_RANKS = [
   "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
 ];
 
-// Mapping 1-18 to the official high-res PNG icons from Tracker.gg CDN
 const CS2_MM_CONFIG = CS2_RANKS.reduce((acc, rank, idx) => {
   acc[rank] = { icon_url: `https://trackercdn.com/cdn/tracker.gg/csgo/icons/ranks/rank${idx + 1}.png` };
   return acc;
@@ -94,43 +94,12 @@ const DEFAULT_GAMES = [
       }
     ],
     enable_rainbow: true
-  },
-  {
-    title: 'League of Legends',
-    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
-    modes: [
-      { 
-        name: 'Ranked Solo/Duo', 
-        ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"], 
-        rank_configs: {
-          'Challenger': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/5/5a/Season_2023_-_Challenger.png' }
-        } 
-      }
-    ],
-    enable_rainbow: true
-  },
-  {
-    title: 'Overwatch 2',
-    image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop',
-    modes: [
-      { name: 'Tank', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} },
-      { name: 'Damage', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} },
-      { name: 'Support', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} }
-    ],
-    enable_rainbow: true
-  },
-  {
-    title: 'Apex Legends',
-    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
-    modes: [
-      { name: 'Battle Royale Ranked', ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"], rank_configs: {} }
-    ],
-    enable_rainbow: true
   }
 ];
 
 const GameRegistry = () => {
   const { user } = useAuth();
+  const { registry, refreshRegistry } = useRegistry();
   const [games, setGames] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -139,38 +108,18 @@ const GameRegistry = () => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const rankIconInputRef = useRef<{idx: number, rank: string} | null>(null);
 
   useEffect(() => {
-    fetchRegistry();
-  }, []);
-
-  const fetchRegistry = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.from('game_registry').select('*');
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const formatted = data.map(g => ({
-          ...g,
-          modes: Array.isArray(g.modes) ? g.modes.map((m: any) => ({
-            ...m,
-            ranks: m.ranks || [],
-            rank_configs: m.rank_configs || {}
-          })) : [{ name: 'Default', ranks: g.ranks || [], rank_configs: g.rank_configs || {} }]
-        }));
-        setGames(formatted);
-      } else {
-        setGames(DEFAULT_GAMES);
-      }
-    } catch (err: any) {
-      showError(err.message);
+    if (registry.length > 0) {
+      setGames(registry);
+      setIsLoading(false);
+    } else {
       setGames(DEFAULT_GAMES);
-    } finally {
       setIsLoading(false);
     }
-  };
+  }, [registry]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -188,11 +137,25 @@ const GameRegistry = () => {
         if (error) throw error;
       }
       showSuccess("Registry synchronized successfully.");
-      fetchRegistry();
+      await refreshRegistry();
     } catch (err: any) {
       showError(err.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (activeGameIdx === null) return;
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const processed = await processImage(file, 1200, 600, 0.7);
+        updateGame(activeGameIdx, 'image', processed);
+        showSuccess("Banner processed. Sync to save.");
+      } catch (err) {
+        showError("Failed to process banner.");
+      }
     }
   };
 
@@ -305,9 +268,16 @@ const GameRegistry = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 space-y-6">
               <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
-                <div className="h-32 relative">
+                <div className="h-32 relative group">
                   {game.image ? <img src={game.image} className="w-full h-full object-cover opacity-50" /> : <div className="w-full h-full bg-slate-800" />}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
+                  <button 
+                    onClick={() => bannerInputRef.current?.click()}
+                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Camera className="text-white" size={24} />
+                  </button>
+                  <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={handleBannerUpload} />
                 </div>
                 <CardContent className="p-6 space-y-4">
                   <div className="grid gap-2">
