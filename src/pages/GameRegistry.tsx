@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from "@/components/AuthProvider";
 
 // Hardcoded owner ID for registry management
-const OWNER_ID = "00000000-0000-0000-0000-000000000000"; // Replace with actual owner ID if needed
+const OWNER_ID = "00000000-0000-0000-0000-000000000000"; 
 
 const DEFAULT_GAMES = [
   {
@@ -43,8 +43,13 @@ const DEFAULT_GAMES = [
     image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
     modes: [
       {
-        name: 'Competitive',
-        ranks: ["Silver I", "Silver II", "The Global Elite"],
+        name: 'Premier',
+        ranks: ["0-4999", "5000-9999", "10000-14999", "15000-19999", "20000-24999", "25000-29999", "30000+"],
+        rank_configs: {}
+      },
+      {
+        name: 'Competitive (Per Map)',
+        ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
         rank_configs: {
           'Silver I': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/1.png' },
           'The Global Elite': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/18.png' }
@@ -69,6 +74,49 @@ const DEFAULT_GAMES = [
       }
     ],
     enable_rainbow: true
+  },
+  {
+    title: 'League of Legends',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Ranked Solo/Duo', ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"], rank_configs: {} },
+      { name: 'Ranked Flex', ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"], rank_configs: {} }
+    ],
+    enable_rainbow: true
+  },
+  {
+    title: 'Overwatch 2',
+    image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Tank', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} },
+      { name: 'Damage', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} },
+      { name: 'Support', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} }
+    ],
+    enable_rainbow: true
+  },
+  {
+    title: 'Apex Legends',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Battle Royale Ranked', ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"], rank_configs: {} }
+    ],
+    enable_rainbow: true
+  },
+  {
+    title: 'Aim Lab',
+    image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Ranked Season', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"], rank_configs: {} }
+    ],
+    enable_rainbow: true
+  },
+  {
+    title: 'Kovaaks',
+    image: 'https://images.unsplash.com/photo-1542751110-97427bbecf20?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Voltaic Benchmarks', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Jade", "Master", "Grandmaster", "Nova", "Celestial"], rank_configs: {} }
+    ],
+    enable_rainbow: true
   }
 ];
 
@@ -83,7 +131,7 @@ const GameRegistry = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rankIconInputRef = useRef<{idx: number, rank: string} | null>(null);
 
-  const isOwner = user?.id === OWNER_ID || user?.email === "mizur@dyad.sh"; // Added a fallback for the user's email if known
+  const isOwner = user?.email === "mizur@dyad.sh"; 
 
   useEffect(() => {
     fetchRegistry();
@@ -108,8 +156,14 @@ const GameRegistry = () => {
 
   const seedDefaults = () => {
     if (!isOwner) return;
-    setGames([...games, ...DEFAULT_GAMES.filter(dg => !games.some(g => g.title === dg.title))]);
-    showSuccess("Default templates added.");
+    const newGames = [...games];
+    DEFAULT_GAMES.forEach(dg => {
+      if (!newGames.some(g => g.title === dg.title)) {
+        newGames.push(dg);
+      }
+    });
+    setGames(newGames);
+    showSuccess("Default templates added to local state. Sync to save.");
   };
 
   const addGame = () => {
@@ -148,7 +202,7 @@ const GameRegistry = () => {
           });
         if (error) throw error;
       }
-      showSuccess("Registry synchronized.");
+      showSuccess("Registry synchronized with database.");
       fetchRegistry();
     } catch (err: any) {
       showError(err.message);
@@ -163,7 +217,7 @@ const GameRegistry = () => {
     if (file && rankIconInputRef.current && activeGameIdx !== null) {
       try {
         const processed = await processImage(file, 128, 128, 0.8);
-        const { idx, rank } = rankIconInputRef.current;
+        const { rank } = rankIconInputRef.current;
         
         const updatedGames = [...games];
         const game = updatedGames[activeGameIdx];
@@ -175,7 +229,7 @@ const GameRegistry = () => {
             [rank]: { ...game.modes[modeIdx].rank_configs[rank], icon_url: processed }
           };
           setGames(updatedGames);
-          showSuccess(`Icon updated for ${rank}`);
+          showSuccess(`Icon updated for ${rank}. Sync to save.`);
         }
       } catch (err) {
         showError("Failed to process icon.");
@@ -198,7 +252,7 @@ const GameRegistry = () => {
             </Button>
             {isOwner && (
               <Button onClick={handleSave} disabled={isSaving} className="bg-indigo-600">
-                {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" />} Save Changes
+                {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" />} Sync Registry
               </Button>
             )}
           </div>
