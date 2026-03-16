@@ -6,7 +6,7 @@ import GameListItem from '@/components/GameListItem';
 import MatchHistory from '@/components/MatchHistory';
 import SessionTracker from '@/components/SessionTracker';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
-import { Plus, LayoutGrid, List, Terminal, Settings2, Activity, TrendingUp, Users } from 'lucide-react';
+import { Plus, LayoutGrid, List, Terminal, Settings2, Activity, TrendingUp, Users, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
