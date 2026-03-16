@@ -16,15 +16,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const ITEMS_PER_PAGE = 12;
 const VERIFIED_GAMES = ["Valorant", "Counter-Strike 2", "League of Legends", "Overwatch 2", "Apex Legends", "Aim Lab", "Kovaaks"];
 
 const Teams = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeTeam, setActiveTeam] = useState<any>(null);
   const [teams, setTeams] = useState<any[]>([]);
   const [discoverTeams, setDiscoverTeams] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -33,7 +33,6 @@ const Teams = () => {
   const [totalCount, setTotalCount] = useState(0);
   
   const [newTeam, setNewTeam] = useState({ name: '', tag: '', description: '', is_open: true, icon_url: '', main_game: '' });
-  const [settingsData, setSettingsData] = useState<any>(null);
   const [invites, setInvites] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,7 +47,7 @@ const Teams = () => {
   const fetchMyTeams = async () => {
     const { data: memberTeams } = await supabase
       .from('team_members')
-      .select('team_id, is_primary, teams(*, team_members(count, user_id, role, is_primary), team_announcements(*))')
+      .select('team_id, is_primary, teams(*, team_members(count, user_id, role, is_primary))')
       .eq('user_id', user?.id);
     
     const formatted = memberTeams?.map(m => ({
@@ -177,7 +176,7 @@ const Teams = () => {
                 <Card key={team.id} className={cn(
                   "bg-slate-900/90 border-slate-800 group hover:border-indigo-500/50 transition-all overflow-hidden cursor-pointer",
                   team.is_primary && "border-indigo-500/50 ring-1 ring-indigo-500/20"
-                )} onClick={() => setActiveTeam(team)}>
+                )} onClick={() => navigate(`/team/${team.id}`)}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
@@ -208,7 +207,7 @@ const Teams = () => {
               {loading ? (
                 <div className="col-span-full flex justify-center py-12"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>
               ) : discoverTeams.map(team => (
-                <Card key={team.id} className="bg-slate-900/90 border-slate-800 group hover:border-indigo-500/50 transition-all overflow-hidden">
+                <Card key={team.id} className="bg-slate-900/90 border-slate-800 group hover:border-indigo-500/50 transition-all overflow-hidden cursor-pointer" onClick={() => navigate(`/team/${team.id}`)}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">

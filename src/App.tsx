@@ -23,6 +23,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import Social from "./pages/Social";
 import Teams from "./pages/Teams";
+import TeamDetail from "./pages/TeamDetail";
 import VersionHistory from "./pages/VersionHistory";
 import NotFound from "./pages/NotFound";
 
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/habits" element={<HabitTracker />} />
                 <Route path="/social" element={<Social />} />
                 <Route path="/teams" element={<Teams />} />
+                <Route path="/team/:id" element={<TeamDetail />} />
                 <Route path="/version-history" element={<VersionHistory />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

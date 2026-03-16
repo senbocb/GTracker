@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  User, Edit3, Save, Camera, Loader2, ImageIcon
+  User, Edit3, Save, Camera, Loader2, ImageIcon, Shield, ChevronRight
 } from 'lucide-react';
 import ProfileGallery from '@/components/ProfileGallery';
 import ProfileEquipment from '@/components/ProfileEquipment';
@@ -14,12 +14,14 @@ import { processImage } from '@/utils/imageProcessing';
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { Link } from 'react-router-dom';
 
 const Profile = () => {
   const { user, profile, profileLoading, refreshProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedProfile, setEditedProfile] = useState<any>(null);
+  const [primaryTeam, setPrimaryTeam] = useState<any>(null);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +29,7 @@ const Profile = () => {
   useEffect(() => {
     if (profile) {
       setEditedProfile({ ...profile });
+      fetchPrimaryTeam();
     } else if (user && !profileLoading) {
       setEditedProfile({
         username: user.email?.split('@')[0] || 'Operator',
@@ -40,6 +43,17 @@ const Profile = () => {
       });
     }
   }, [profile, user, profileLoading]);
+
+  const fetchPrimaryTeam = async () => {
+    const { data } = await supabase
+      .from('team_members')
+      .select('teams(*)')
+      .eq('user_id', user?.id)
+      .eq('is_primary', true)
+      .single();
+    
+    if (data) setPrimaryTeam(data.teams);
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -213,6 +227,27 @@ const Profile = () => {
           </div>
 
           <div className="space-y-8">
+            {primaryTeam && (
+              <Link to={`/team/${primaryTeam.id}`}>
+                <div className="p-6 rounded-[2rem] bg-indigo-600/10 border border-indigo-500/30 hover:bg-indigo-600/20 transition-all group">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Primary Unit</span>
+                    <ChevronRight size={16} className="text-indigo-500 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden">
+                      {primaryTeam.icon_url ? <img src={primaryTeam.icon_url} className="w-full h-full object-cover" /> : <Shield size={24} className="text-indigo-500" />}
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black italic uppercase tracking-tight text-white">
+                        <span className="text-indigo-400">[{primaryTeam.tag}]</span> {primaryTeam.name}
+                      </h4>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{primaryTeam.main_game || 'Multi-Game'}</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
             <ProfileEquipment 
               isEditing={isEditing} 
               data={editedProfile} 
