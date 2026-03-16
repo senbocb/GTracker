@@ -17,8 +17,20 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     
     if (!gameData) return null;
 
-    const rankData = gameData.rank_configs?.[rank];
-    const isTopRank = gameData.ranks?.[gameData.ranks.length - 1] === rank;
+    // Find rank config across all modes if not specified (fallback)
+    let rankData = null;
+    let isTopRank = false;
+    
+    if (Array.isArray(gameData.modes)) {
+      for (const mode of gameData.modes) {
+        if (mode.rank_configs?.[rank]) {
+          rankData = mode.rank_configs[rank];
+          isTopRank = mode.ranks?.[mode.ranks.length - 1] === rank;
+          break;
+        }
+      }
+    }
+
     const useRainbow = gameData.enable_rainbow !== false && isTopRank;
 
     return {
