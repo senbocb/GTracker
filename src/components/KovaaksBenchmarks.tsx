@@ -17,7 +17,7 @@ interface BenchmarkSet {
 }
 
 const BENCHMARK_REGISTRY: BenchmarkSet[] = [
-  // Voltaic
+  // Voltaic Official
   { id: 'v-s5-adv', name: 'Voltaic S5 Advanced', category: 'Voltaic', scenarios: Array(18).fill('Scenario') },
   { id: 'v-s5-int', name: 'Voltaic S5 Intermediate', category: 'Voltaic', scenarios: Array(18).fill('Scenario') },
   { id: 'v-s5-nov', name: 'Voltaic S5 Novice', category: 'Voltaic', scenarios: Array(18).fill('Scenario') },
@@ -30,7 +30,7 @@ const BENCHMARK_REGISTRY: BenchmarkSet[] = [
   { id: 'v-daily', name: 'Voltaic Daily Improvement', category: 'Voltaic', scenarios: Array(12).fill('Scenario') },
   { id: 'v-fundamentals', name: 'Voltaic Fundamentals', category: 'Voltaic', scenarios: Array(10).fill('Scenario') },
   
-  // Revosect
+  // Revosect Official
   { id: 'r-s3', name: 'Revosect S3 Benchmarks', category: 'Revosect', scenarios: Array(15).fill('Scenario') },
   { id: 'r-s2', name: 'Revosect S2 Benchmarks', category: 'Revosect', scenarios: Array(15).fill('Scenario') },
   { id: 'r-s1', name: 'Revosect S1 Benchmarks', category: 'Revosect', scenarios: Array(15).fill('Scenario') },
