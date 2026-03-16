@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Lock, Mail, Key, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Shield, Lock, Mail, Key, RefreshCw, ArrowLeft, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from "@/components/AuthProvider";
@@ -55,14 +55,7 @@ const Login = () => {
           }
         });
         
-        if (error) {
-          if (error.message.includes("User already registered")) {
-            showError("Account already exists. Redirecting to Login...");
-            setView('login');
-            return;
-          }
-          throw error;
-        }
+        if (error) throw error;
 
         if (data.session) {
           showSuccess("Account initialized. Welcome, Operator.");
@@ -76,13 +69,7 @@ const Login = () => {
           password: formData.password
         });
         
-        if (error) {
-          if (error.message.includes("Email not confirmed")) {
-            showError("Email not verified. Please check your inbox.");
-            return;
-          }
-          throw error;
-        }
+        if (error) throw error;
 
         const userPin = data.user?.user_metadata?.pin;
         if (userPin && userPin !== formData.pin) {
@@ -107,28 +94,13 @@ const Login = () => {
     }
   };
 
-  const resendVerification = async () => {
-    if (!formData.email) {
-      showError("Please enter your email first.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: formData.email,
-      });
-      if (error) throw error;
-      showSuccess("Verification email resent.");
-    } catch (err: any) {
-      showError(err.message || "Failed to resend email.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (authLoading) return null;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-500" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
@@ -253,15 +225,6 @@ const Login = () => {
                 >
                   {view === 'login' ? 'New Operator? Create Account' : 'Already have an account? Login'}
                 </button>
-                {view === 'login' && (
-                  <button 
-                    onClick={resendVerification}
-                    className="text-[10px] font-black uppercase flex items-center justify-center gap-2 text-slate-600 hover:text-slate-400 transition-colors"
-                  >
-                    <RefreshCw size={12} />
-                    Resend Verification Email
-                  </button>
-                )}
               </>
             )}
           </div>

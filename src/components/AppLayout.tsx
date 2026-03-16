@@ -1,31 +1,27 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, History, Zap, Users, Shield, Target, FileCode, 
-  User, Settings, LogOut, Bell, Search, Terminal, Menu, X, 
-  GitBranch, Loader2, ArrowRight, ChevronLeft, ChevronRight
+  User, Settings, LogOut, Bell, Search, Terminal, Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel 
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./AuthProvider";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, loading, signOut } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) navigate('/login');
+    if (!loading && !user) {
+      navigate('/login');
+    }
   }, [user, loading, navigate]);
 
   const navGroups = [
@@ -53,7 +49,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     }
   ];
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
         <Loader2 className="animate-spin text-indigo-500" size={32} />

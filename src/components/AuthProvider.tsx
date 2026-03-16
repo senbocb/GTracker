@@ -42,7 +42,7 @@ const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {}
 });
 
-export const AuthProvider = ({ children }: { children: React.Node }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -60,9 +60,6 @@ export const AuthProvider = ({ children }: { children: React.Node }) => {
       
       if (data) {
         setProfile(data);
-      } else if (error && error.code === 'PGRST116') {
-        // Profile doesn't exist, we might want to create one or just leave it null
-        console.log("No profile found for user");
       }
     } catch (err) {
       console.error("Error fetching profile:", err);
