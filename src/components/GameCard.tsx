@@ -7,6 +7,7 @@ import { ChevronRight, MoreHorizontal, Target } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import KovaaksBenchmarks from './KovaaksBenchmarks';
+import OW2RoleRanks from './OW2RoleRanks';
 
 interface GameCardProps {
   id: string;
@@ -18,6 +19,12 @@ interface GameCardProps {
 const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
   const navigate = useNavigate();
   const isKovaaks = title.toLowerCase().includes('kovaaks');
+  const isOW2 = title.toLowerCase().includes('overwatch 2');
+
+  // Filter out Role Queue from standard list for OW2
+  const displayedModes = isOW2 
+    ? modes.filter(m => m.name !== 'Role Queue')
+    : modes;
 
   return (
     <Card 
@@ -39,24 +46,32 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
       </div>
       <CardContent className="p-5">
         <div className="space-y-3">
-          {isKovaaks ? (
+          {isKovaaks && (
             <div className="py-2">
               <KovaaksBenchmarks gameId={id} />
             </div>
-          ) : (
-            modes.slice(0, 2).map((mode, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/50 group/mode hover:bg-slate-900/50 transition-colors cursor-pointer" onClick={() => navigate(`/game/${id}`)}>
-                <div className="space-y-0.5">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{mode.name}</p>
+          )}
+          
+          {isOW2 && (
+            <div className="py-2">
+              <OW2RoleRanks gameId={id} onLogClick={() => navigate(`/game/${id}`)} />
+            </div>
+          )}
+
+          {displayedModes.slice(0, 3).map((mode, idx) => (
+            <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/50 group/mode hover:bg-slate-900/50 transition-colors cursor-pointer" onClick={() => navigate(`/game/${id}`)}>
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{mode.name}</p>
+                <div className="flex items-center gap-2">
                   <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-90 origin-left" />
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Peak</p>
-                  <p className="text-xs font-medium text-slate-300">{mode.peakRank || "N/A"}</p>
-                </div>
               </div>
-            ))
-          )}
+              <div className="text-right">
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Peak</p>
+                <p className="text-xs font-black text-indigo-400 uppercase italic">{mode.peak_rank || mode.peakRank || "N/A"}</p>
+              </div>
+            </div>
+          ))}
         </div>
         <div 
           className="mt-4 pt-4 border-t border-slate-800/50 flex items-center justify-between text-indigo-400 group-hover:text-indigo-300 transition-colors cursor-pointer"

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import RankBadge from './RankBadge';
-import { MoreVertical, ChevronRight } from 'lucide-react';
+import { MoreVertical, ChevronRight, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ interface GameMode {
   name: string;
   rank: string;
   tier?: string;
+  peak_rank?: string;
   peakRank?: string;
 }
 
@@ -26,7 +27,7 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
   const [currentModeIdx, setCurrentModeIdx] = useState(0);
 
   useEffect(() => {
-    if (modes.length > 3) {
+    if (modes.length > 1) {
       const interval = setInterval(() => {
         setCurrentModeIdx((prev) => (prev + 1) % modes.length);
       }, 4000);
@@ -34,7 +35,7 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
     }
   }, [modes.length]);
 
-  const displayedModes = modes.length > 3 ? [modes[currentModeIdx]] : modes;
+  const activeMode = modes[currentModeIdx];
 
   return (
     <div 
@@ -51,18 +52,23 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
         </div>
         <div>
           <h3 className="text-sm font-black text-white uppercase italic tracking-tight">{title}</h3>
-          {/* Removed the mode text list from here as requested */}
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{activeMode?.name}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="hidden sm:flex gap-4">
-          {displayedModes.map((mode, idx) => (
-            <div key={idx} className="flex flex-col items-end animate-in fade-in slide-in-from-right-1">
-              <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">{mode.name}</p>
-              <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-90 origin-right" />
+      <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col items-end">
+            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Current</p>
+            <RankBadge rank={activeMode?.rank} tier={activeMode?.tier} gameTitle={title} className="scale-90 origin-right" />
+          </div>
+          <div className="flex flex-col items-end min-w-[80px]">
+            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Peak</p>
+            <div className="flex items-center gap-1 text-indigo-400">
+              <Trophy size={10} />
+              <span className="text-[10px] font-black uppercase italic">{activeMode?.peak_rank || activeMode?.peakRank || "N/A"}</span>
             </div>
-          ))}
+          </div>
         </div>
         <ChevronRight size={16} className="text-slate-500 group-hover:text-indigo-400 transition-colors" />
       </div>
