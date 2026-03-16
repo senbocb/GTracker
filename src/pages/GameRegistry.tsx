@@ -62,6 +62,24 @@ const DEFAULT_GAMES = [
       { name: 'Ranked Solo/Duo', ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"], rank_configs: {} }
     ],
     enable_rainbow: true
+  },
+  {
+    title: 'Overwatch 2',
+    image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Tank', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} },
+      { name: 'Damage', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} },
+      { name: 'Support', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"], rank_configs: {} }
+    ],
+    enable_rainbow: true
+  },
+  {
+    title: 'Apex Legends',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Battle Royale Ranked', ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"], rank_configs: {} }
+    ],
+    enable_rainbow: true
   }
 ];
 
@@ -75,8 +93,8 @@ const GameRegistry = () => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const rankIconInputRef = useRef<{idx: number, rank: string} | null>(null);
 
+  // Check if user is the developer/owner
   const isOwner = user?.email === "mizur@dyad.sh"; 
 
   useEffect(() => {
@@ -84,24 +102,38 @@ const GameRegistry = () => {
   }, []);
 
   const fetchRegistry = async () => {
-    const { data, error } = await supabase.from('game_registry').select('*');
-    if (error) showError(error.message);
-    else {
-      const formatted = (data || []).map(g => ({
-        ...g,
-        modes: Array.isArray(g.modes) ? g.modes.map((m: any) => ({
-          ...m,
-          ranks: m.ranks || [],
-          rank_configs: m.rank_configs || {}
-        })) : [{ name: 'Default', ranks: g.ranks || [], rank_configs: g.rank_configs || {} }]
-      }));
-      setGames(formatted);
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.from('game_registry').select('*');
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const formatted = data.map(g => ({
+          ...g,
+          modes: Array.isArray(g.modes) ? g.modes.map((m: any) => ({
+            ...m,
+            ranks: m.ranks || [],
+            rank_configs: m.rank_configs || {}
+          })) : [{ name: 'Default', ranks: g.ranks || [], rank_configs: g.rank_configs || {} }]
+        }));
+        setGames(formatted);
+      } else {
+        // If DB is empty, show defaults
+        setGames(DEFAULT_GAMES);
+      }
+    } catch (err: any) {
+      showError(err.message);
+      setGames(DEFAULT_GAMES);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleSave = async () => {
-    if (!isOwner) return;
+    if (!isOwner) {
+      showError("Unauthorized: Only developers can sync the global registry.");
+      return;
+    }
     setIsSaving(true);
     try {
       for (const game of games) {
@@ -148,8 +180,10 @@ const GameRegistry = () => {
         const processed = await processImage(file, 128, 128, 0.8);
         const rankName = file.name.split('.')[0].replace(/[-_]/g, ' ');
         
-        // Add new rank
-        mode.ranks.push(rankName);
+        // Add new rank if it doesn't exist, or update icon
+        if (!mode.ranks.includes(rankName)) {
+          mode.ranks.push(rankName);
+        }
         mode.rank_configs[rankName] = { icon_url: processed };
       } catch (err) {
         console.error("Failed to process dropped image", err);
@@ -159,13 +193,6 @@ const GameRegistry = () => {
     setGames(updatedGames);
     showSuccess(`Imported ${imageFiles.length} ranks. Sync to save.`);
   }, [isOwner, activeGameIdx, activeModeName, games]);
-
-  const updateGame = (index: number, field: string, value: any) => {
-    if (!isOwner) return;
-    const updated = [...games];
-    updated[index] = { ...updated[index], [field]: value };
-    setGames(updated);
-  };
 
   if (isLoading) return <AppLayout><div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin text-indigo-500" /></div></AppLayout>;
 
@@ -240,7 +267,9 @@ const GameRegistry = () => {
                   <h2 className="text-sm font-black uppercase tracking-widest text-indigo-400 flex items-center gap-2">
                     <List size={16} /> {activeModeName} Hierarchy
                   </h2>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Drag PNGs here to bulk import</p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                    {isOwner ? "Drag PNGs here to bulk import" : "View-only mode"}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
@@ -272,7 +301,7 @@ const GameRegistry = () => {
                         />
                       </div>
                       {isOwner && (
-                        <Button variant="ghost" size="icon" className="text-slate-600 hover:text-red-500" onClick={() => {
+                        <Button variant="ghost" size="icon" className="text-slate-600 hover:text-red-400" onClick={() => {
                           const updatedGames = [...games];
                           const mIdx = updatedGames[activeGameIdx].modes.findIndex((m: any) => m.name === activeModeName);
                           updatedGames[activeGameIdx].modes[mIdx].ranks = updatedGames[activeGameIdx].modes[mIdx].ranks.filter((_: any, i: number) => i !== rIdx);
