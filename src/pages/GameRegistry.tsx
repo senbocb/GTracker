@@ -20,9 +20,9 @@ import { useAuth } from "@/components/AuthProvider";
 
 const CS2_RANKS = ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"];
 
-// Mapping 1-18 to the local matchmaking SVG icons
+// Mapping 1-18 to the standard CS2 rank icons from Tracker.gg CDN
 const CS2_MM_CONFIG = CS2_RANKS.reduce((acc, rank, idx) => {
-  acc[rank] = { icon_url: `/src/assets/ranks/cs2/matchmaking/${idx + 1}.svg` };
+  acc[rank] = { icon_url: `https://trackercdn.com/cdn/tracker.gg/csgo/icons/ranks/rank${idx + 1}.png` };
   return acc;
 }, {} as any);
 
