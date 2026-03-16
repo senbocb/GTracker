@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Gamepad2, Globe, Zap, Shield, Tool } from 'lucide-react';
+import { Gamepad2, Globe, Zap, Shield, Wrench } from 'lucide-react';
 
 interface ProfileEquipmentProps {
   isEditing: boolean;
@@ -17,7 +17,7 @@ const ProfileEquipment = ({ isEditing, data, onChange }: ProfileEquipmentProps) 
     <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
       <CardHeader className="pb-2 border-b border-slate-800/50">
         <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 flex items-center gap-2">
-          <Tool size={14} />
+          <Wrench size={14} />
           Tactical Equipment
         </CardTitle>
       </CardHeader>
