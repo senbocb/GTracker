@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Shield, Sword, Heart, Trophy, ChevronRight } from 'lucide-react';
 import RankBadge from './RankBadge';
 import { cn } from '@/lib/utils';
+import { supabase } from "@/integrations/supabase/client";
 
 const ROLES = [
   { name: 'Tank', icon: <Shield size={18} />, color: 'text-blue-400' },
@@ -23,7 +24,7 @@ const OW2RoleRanks = ({ gameId, onLogClick }: OW2RoleRanksProps) => {
 
   useEffect(() => {
     const fetchRanks = async () => {
-      const { data: gameData } = await (window as any).supabase
+      const { data: gameData } = await supabase
         .from('games')
         .select('*, game_modes(*, game_history(*))')
         .eq('id', gameId)
@@ -35,7 +36,6 @@ const OW2RoleRanks = ({ gameId, onLogClick }: OW2RoleRanksProps) => {
           const latest: Record<string, any> = {};
           const peak: Record<string, any> = {};
           
-          // Sort history by date descending
           const history = [...roleQueueMode.game_history].sort((a, b) => 
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           );
@@ -44,7 +44,6 @@ const OW2RoleRanks = ({ gameId, onLogClick }: OW2RoleRanksProps) => {
             if (h.agent && !latest[h.agent]) {
               latest[h.agent] = h;
             }
-            // Simple peak logic (could be improved with rank values)
             if (!peak[h.agent]) peak[h.agent] = h;
           });
           

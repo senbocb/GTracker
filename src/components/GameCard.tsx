@@ -21,16 +21,20 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
   const isKovaaks = title.toLowerCase().includes('kovaaks');
   const isOW2 = title.toLowerCase().includes('overwatch 2');
 
-  // Filter out Role Queue from standard list for OW2
   const displayedModes = isOW2 
     ? modes.filter(m => m.name !== 'Role Queue')
     : modes;
 
   return (
     <Card 
-      className="overflow-hidden bg-slate-900/40 border-slate-800/50 group hover:border-indigo-500/50 transition-all duration-300 saas-shadow rounded-2xl"
+      className="overflow-hidden bg-slate-900/40 border-slate-800/50 group hover:border-indigo-500/50 transition-all duration-300 saas-shadow rounded-2xl cursor-pointer"
+      onClick={(e) => {
+        // Prevent navigation if clicking buttons or interactive elements
+        if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('.interactive-element')) return;
+        navigate(`/game/${id}`);
+      }}
     >
-      <div className="relative h-32 overflow-hidden cursor-pointer" onClick={() => navigate(`/game/${id}`)}>
+      <div className="relative h-32 overflow-hidden">
         {image ? (
           <img src={image} alt={title} className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" />
         ) : (
@@ -47,19 +51,19 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
       <CardContent className="p-5">
         <div className="space-y-3">
           {isKovaaks && (
-            <div className="py-2">
+            <div className="py-2 interactive-element">
               <KovaaksBenchmarks gameId={id} />
             </div>
           )}
           
           {isOW2 && (
-            <div className="py-2">
+            <div className="py-2 interactive-element">
               <OW2RoleRanks gameId={id} onLogClick={() => navigate(`/game/${id}`)} />
             </div>
           )}
 
           {displayedModes.slice(0, 3).map((mode, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/50 group/mode hover:bg-slate-900/50 transition-colors cursor-pointer" onClick={() => navigate(`/game/${id}`)}>
+            <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/50 group/mode hover:bg-slate-900/50 transition-colors">
               <div className="space-y-0.5">
                 <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{mode.name}</p>
                 <div className="flex items-center gap-2">
@@ -73,11 +77,7 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
             </div>
           ))}
         </div>
-        <div 
-          className="mt-4 pt-4 border-t border-slate-800/50 flex items-center justify-between text-indigo-400 group-hover:text-indigo-300 transition-colors cursor-pointer"
-          onClick={() => navigate(`/game/${id}`)}
-        >
-          <span className="text-xs font-semibold uppercase tracking-wider">View Details</span>
+        <div className="mt-4 pt-4 border-t border-slate-800/50 flex items-center justify-end text-indigo-400 group-hover:text-indigo-300 transition-colors">
           <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
         </div>
       </CardContent>

@@ -13,9 +13,11 @@ import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { showSuccess, showError } from '@/utils/toast';
+import { useRegistry } from '@/components/RegistryProvider';
 
 const History = () => {
   const { user } = useAuth();
+  const { registry } = useRegistry();
   const [logs, setLogs] = useState<any[]>([]);
   const [filter, setFilter] = useState<'all' | 'rank' | 'match'>('all');
   const [gameFilter, setGameFilter] = useState('all');
@@ -99,6 +101,13 @@ const History = () => {
 
   const uniqueGames = useMemo(() => Array.from(new Set(logs.map(l => l.gameTitle))), [logs]);
 
+  const getAvailableRanks = (gameTitle: string, modeName: string) => {
+    const gameData = registry.find(g => g.title === gameTitle);
+    if (!gameData) return [];
+    const modeData = gameData.modes?.find((m: any) => m.name === modeName);
+    return modeData?.ranks || [];
+  };
+
   return (
     <AppLayout>
       <main className="max-w-6xl mx-auto p-6 md:p-10">
@@ -127,7 +136,7 @@ const History = () => {
               <Filter className="mr-2" size={18} />
               <SelectValue placeholder="Type" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-800 text-white">
+            <SelectContent className="bg-slate-950 border-slate-800 text-white">
               <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="rank">Rank Changes</SelectItem>
               <SelectItem value="match">Match Logs</SelectItem>
@@ -138,7 +147,7 @@ const History = () => {
               <Target className="mr-2" size={18} />
               <SelectValue placeholder="Game" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-800 text-white">
+            <SelectContent className="bg-slate-950 border-slate-800 text-white">
               <SelectItem value="all">All Games</SelectItem>
               {uniqueGames.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
@@ -199,7 +208,19 @@ const History = () => {
               <div className="space-y-4 py-4">
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-400">Rank</Label>
-                  <Input value={editingLog.rank} onChange={(e) => setEditingLog({...editingLog, rank: e.target.value})} className="bg-slate-900 border-slate-800" />
+                  <Select 
+                    value={editingLog.rank} 
+                    onValueChange={(v) => setEditingLog({...editingLog, rank: v})}
+                  >
+                    <SelectTrigger className="bg-slate-900 border-slate-800">
+                      <SelectValue placeholder="Select Rank" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-950 border-slate-800 text-white">
+                      {getAvailableRanks(editingLog.gameTitle, editingLog.modeName).map((r: string) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-400">Tier</Label>

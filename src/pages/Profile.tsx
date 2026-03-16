@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  User, Edit3, Save, Camera, Loader2, ImageIcon, Shield, ChevronRight
+  User, Edit3, Save, Camera, Loader2, ImageIcon, Shield, ChevronRight, Globe, Zap, Target, Activity
 } from 'lucide-react';
 import ProfileGallery from '@/components/ProfileGallery';
 import ProfileEquipment from '@/components/ProfileEquipment';
@@ -15,6 +15,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 const Profile = () => {
   const { user, profile, profileLoading, refreshProfile } = useAuth();
@@ -22,6 +23,7 @@ const Profile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editedProfile, setEditedProfile] = useState<any>(null);
   const [primaryTeam, setPrimaryTeam] = useState<any>(null);
+  const [socials, setSocials] = useState<any[]>([]);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -30,6 +32,7 @@ const Profile = () => {
     if (profile) {
       setEditedProfile({ ...profile });
       fetchPrimaryTeam();
+      fetchSocials();
     } else if (user && !profileLoading) {
       setEditedProfile({
         username: user.email?.split('@')[0] || 'Operator',
@@ -39,7 +42,8 @@ const Profile = () => {
         region: '',
         bio: '',
         level: 1,
-        sensitivity: ''
+        sensitivity: '',
+        peripherals: []
       });
     }
   }, [profile, user, profileLoading]);
@@ -53,6 +57,11 @@ const Profile = () => {
       .single();
     
     if (data) setPrimaryTeam(data.teams);
+  };
+
+  const fetchSocials = () => {
+    const saved = JSON.parse(localStorage.getItem('combat_socials') || '[]');
+    setSocials(saved);
   };
 
   const handleSave = async () => {
@@ -70,6 +79,7 @@ const Profile = () => {
           region: editedProfile.region,
           bio: editedProfile.bio,
           sensitivity: editedProfile.sensitivity,
+          peripherals: editedProfile.peripherals,
           updated_at: new Date().toISOString()
         });
 
@@ -123,6 +133,22 @@ const Profile = () => {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#020617] to-transparent" />
           
+          {/* Social Tags Overlay */}
+          <div className="absolute top-6 left-6 flex flex-wrap gap-2 max-w-[70%]">
+            {socials.map((s, i) => (
+              <div key={i} className="px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white">
+                <Globe size={12} className="text-indigo-400" />
+                {s.name}
+              </div>
+            ))}
+            {displayProfile.main_game && (
+              <div className="px-3 py-1.5 rounded-full bg-indigo-600/40 backdrop-blur-md border border-indigo-500/20 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white">
+                <Target size={12} />
+                {displayProfile.main_game}
+              </div>
+            )}
+          </div>
+
           {isEditing && (
             <button 
               onClick={() => bannerInputRef.current?.click()}
