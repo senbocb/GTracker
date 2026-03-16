@@ -38,7 +38,21 @@ const CS2_RANK_ICONS: Record<string, string> = {
   "Legendary Eagle": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/15.png",
   "Legendary Eagle Master": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/16.png",
   "Supreme Master First Class": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/17.png",
-  "The Global Elite": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/18.png"
+  "The Global Elite": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/18.png",
+  "Unranked": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/0.png"
+};
+
+const FACEIT_ICONS: Record<string, string> = {
+  "Level 1": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/1.png",
+  "Level 2": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/2.png",
+  "Level 3": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/3.png",
+  "Level 4": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/4.png",
+  "Level 5": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/5.png",
+  "Level 6": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/6.png",
+  "Level 7": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/7.png",
+  "Level 8": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/8.png",
+  "Level 9": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/9.png",
+  "Level 10": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/10.png"
 };
 
 const DEFAULT_METADATA: Record<string, any> = {
@@ -200,8 +214,8 @@ const GameDetail = () => {
                         {availableRanks.map((r: string) => (
                           <SelectItem key={r} value={r}>
                             <div className="flex items-center gap-2">
-                              {game.title === 'Counter-Strike 2' && CS2_RANK_ICONS[r] && (
-                                <img src={CS2_RANK_ICONS[r]} alt="" className="w-6 h-4 object-contain" />
+                              {(game.title === 'Counter-Strike 2' || game.title === 'CS2') && (CS2_RANK_ICONS[r] || FACEIT_ICONS[r]) && (
+                                <img src={CS2_RANK_ICONS[r] || FACEIT_ICONS[r]} alt="" className="w-6 h-4 object-contain" />
                               )}
                               {r}
                             </div>

@@ -120,7 +120,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     displayLabel = `#${Number(rank).toLocaleString()}`;
   }
 
-  const isCS2 = gameTitle?.toLowerCase().includes('counter-strike');
+  const isCS2 = gameTitle?.toLowerCase().includes('counter-strike') || gameTitle?.toLowerCase() === 'cs2';
   const cs2Icon = isCS2 ? (CS2_RANK_ICONS[rank] || FACEIT_ICONS[rank]) : null;
 
   return (
