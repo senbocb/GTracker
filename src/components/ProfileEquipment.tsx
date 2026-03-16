@@ -70,14 +70,6 @@ const ProfileEquipment = ({ isEditing, data, onChange }: ProfileEquipmentProps) 
               <span className="text-[10px] font-black uppercase text-white">{data.sensitivity || 'N/A'}</span>
             )}
           </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-slate-400">
-              <Shield size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Primary Unit</span>
-            </div>
-            <span className="text-[10px] font-black uppercase text-indigo-400">SQUAD_ALPHA</span>
-          </div>
         </div>
       </CardContent>
     </Card>
