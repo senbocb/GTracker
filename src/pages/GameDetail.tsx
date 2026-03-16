@@ -31,16 +31,9 @@ const DEFAULT_METADATA: Record<string, any> = {
     ], 
     tierCount: 0,
     modeRanks: {
-      "Faceit": Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`)
+      "Faceit": ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Challenger"]
     }
-  },
-  "Overwatch 2": { 
-    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Champion"], 
-    tierCount: 5,
-    roles: ["Tank", "Damage", "Support"]
-  },
-  "Kovaaks": { ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Jade", "Master", "Grandmaster", "Nova", "Celestial"], tierCount: 0 },
-  "Aim Lab": { ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster"], tierCount: 0 }
+  }
 };
 
 const GameDetail = () => {
@@ -146,9 +139,12 @@ const GameDetail = () => {
 
   if (!game) return null;
 
-  const currentMetadata = registryData?.[game.title] || DEFAULT_METADATA[game.title] || { ranks: [], tierCount: 0 };
-  const modeSpecificRanks = DEFAULT_METADATA[game.title]?.modeRanks?.[activeMode];
-  const availableRanks = modeSpecificRanks || currentMetadata.ranks || [];
+  // Resolve metadata from registry or defaults
+  const registryEntry = registryData?.[game.title];
+  const registryMode = registryEntry?.modes?.find((m: any) => m.name === activeMode);
+  
+  const availableRanks = registryMode?.ranks || DEFAULT_GAMES_FALLBACK[game.title]?.modeRanks?.[activeMode] || DEFAULT_METADATA[game.title]?.ranks || [];
+  const rankConfigs = registryMode?.rank_configs || {};
   
   const isCS2PerMap = game.title === 'Counter-Strike 2' && activeMode === 'Competitive (Per Map)';
 
@@ -176,7 +172,7 @@ const GameDetail = () => {
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         {availableRanks.map((r: string) => {
-                          const iconUrl = currentMetadata.rank_configs?.[r]?.icon_url;
+                          const iconUrl = rankConfigs[r]?.icon_url;
                           return (
                             <SelectItem key={r} value={r}>
                               <div className="flex items-center gap-2">
@@ -254,6 +250,14 @@ const GameDetail = () => {
       </main>
     </AppLayout>
   );
+};
+
+const DEFAULT_GAMES_FALLBACK: Record<string, any> = {
+  "Counter-Strike 2": {
+    modeRanks: {
+      "Faceit": ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Challenger"]
+    }
+  }
 };
 
 export default GameDetail;
