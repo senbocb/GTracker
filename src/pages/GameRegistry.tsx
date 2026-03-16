@@ -20,8 +20,15 @@ import { useAuth } from "@/components/AuthProvider";
 
 const CS2_RANKS = ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"];
 
+// Mapping 1-18 to the standard CS2 rank icons
 const CS2_MM_CONFIG = CS2_RANKS.reduce((acc, rank, idx) => {
-  acc[rank] = { icon_url: `/src/assets/ranks/cs2/matchmaking/${idx + 1}.svg` };
+  acc[rank] = { icon_url: `https://trackercdn.com/cdn/tracker.gg/csgo/icons/ranks/rank${idx + 1}.png` };
+  return acc;
+}, {} as any);
+
+const FACEIT_RANKS = ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Challenger"];
+const FACEIT_CONFIG = FACEIT_RANKS.reduce((acc, rank, idx) => {
+  acc[rank] = { icon_url: `/src/assets/ranks/faceit/${idx + 1}.svg` };
   return acc;
 }, {} as any);
 
@@ -61,20 +68,8 @@ const DEFAULT_GAMES = [
       },
       {
         name: 'Faceit',
-        ranks: ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Challenger"],
-        rank_configs: {
-          'Level 1': { icon_url: '/src/assets/ranks/faceit/1.svg' },
-          'Level 2': { icon_url: '/src/assets/ranks/faceit/2.svg' },
-          'Level 3': { icon_url: '/src/assets/ranks/faceit/3.svg' },
-          'Level 4': { icon_url: '/src/assets/ranks/faceit/4.svg' },
-          'Level 5': { icon_url: '/src/assets/ranks/faceit/5.svg' },
-          'Level 6': { icon_url: '/src/assets/ranks/faceit/6.svg' },
-          'Level 7': { icon_url: '/src/assets/ranks/faceit/7.svg' },
-          'Level 8': { icon_url: '/src/assets/ranks/faceit/8.svg' },
-          'Level 9': { icon_url: '/src/assets/ranks/faceit/9.svg' },
-          'Level 10': { icon_url: '/src/assets/ranks/faceit/10.svg' },
-          'Challenger': { icon_url: '/src/assets/ranks/faceit/11.svg' }
-        }
+        ranks: FACEIT_RANKS,
+        rank_configs: FACEIT_CONFIG
       },
       {
         name: 'Competitive (Per Map)',
