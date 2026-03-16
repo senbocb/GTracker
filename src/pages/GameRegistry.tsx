@@ -93,6 +93,7 @@ const GameRegistry = () => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const rankIconInputRef = useRef<{idx: number, rank: string} | null>(null);
 
   // Check if user is the developer/owner
   const isOwner = user?.email === "mizur@dyad.sh"; 
@@ -194,6 +195,61 @@ const GameRegistry = () => {
     showSuccess(`Imported ${imageFiles.length} ranks. Sync to save.`);
   }, [isOwner, activeGameIdx, activeModeName, games]);
 
+  const handleRankIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isOwner || !rankIconInputRef.current || activeGameIdx === null) return;
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const processed = await processImage(file, 128, 128, 0.8);
+        const { rank } = rankIconInputRef.current;
+        
+        const updatedGames = [...games];
+        const game = updatedGames[activeGameIdx];
+        const modeIdx = game.modes.findIndex((m: any) => m.name === activeModeName);
+        
+        if (modeIdx !== -1) {
+          game.modes[modeIdx].rank_configs[rank] = { icon_url: processed };
+          setGames(updatedGames);
+          showSuccess(`Icon updated for ${rank}. Sync to save.`);
+        }
+      } catch (err) {
+        showError("Failed to process icon.");
+      }
+    }
+  };
+
+  const updateGame = (index: number, field: string, value: any) => {
+    if (!isOwner) return;
+    const updated = [...games];
+    updated[index] = { ...updated[index], [field]: value };
+    setGames(updated);
+  };
+
+  const seedDefaults = () => {
+    if (!isOwner) return;
+    const newGames = [...games];
+    DEFAULT_GAMES.forEach(dg => {
+      if (!newGames.some(g => g.title === dg.title)) {
+        newGames.push(dg);
+      }
+    });
+    setGames(newGames);
+    showSuccess("Default templates added to local state. Sync to save.");
+  };
+
+  const addGame = () => {
+    if (!isOwner) return;
+    const newGame = {
+      title: 'New Operation',
+      image: '',
+      modes: [{ name: 'Competitive', ranks: ['Bronze', 'Silver', 'Gold'], rank_configs: {} }],
+      enable_rainbow: true
+    };
+    setGames([...games, newGame]);
+    setActiveGameIdx(games.length);
+    setActiveModeName('Competitive');
+  };
+
   if (isLoading) return <AppLayout><div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin text-indigo-500" /></div></AppLayout>;
 
   if (activeGameIdx !== null) {
@@ -237,18 +293,36 @@ const GameRegistry = () => {
                 <CardHeader><CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Active Modes</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   {game.modes.map((mode: any, mIdx: number) => (
-                    <Button 
-                      key={mIdx}
-                      variant="ghost" 
-                      className={cn(
-                        "w-full justify-start text-[10px] font-black uppercase tracking-widest h-10",
-                        activeModeName === mode.name ? "bg-indigo-600 text-white" : "text-slate-400 hover:bg-slate-800"
+                    <div key={mIdx} className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        className={cn(
+                          "flex-1 justify-start text-[10px] font-black uppercase tracking-widest h-10",
+                          activeModeName === mode.name ? "bg-indigo-600 text-white" : "text-slate-400 hover:bg-slate-800"
+                        )}
+                        onClick={() => setActiveModeName(mode.name)}
+                      >
+                        <Layers size={14} className="mr-2" /> {mode.name}
+                      </Button>
+                      {isOwner && (
+                        <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-600 hover:text-red-500" onClick={() => {
+                          const updatedModes = game.modes.filter((_: any, i: number) => i !== mIdx);
+                          updateGame(activeGameIdx, 'modes', updatedModes);
+                          if (activeModeName === mode.name) setActiveModeName(updatedModes[0]?.name || '');
+                        }}>
+                          <Trash2 size={14} />
+                        </Button>
                       )}
-                      onClick={() => setActiveModeName(mode.name)}
-                    >
-                      <Layers size={14} className="mr-2" /> {mode.name}
-                    </Button>
+                    </div>
                   ))}
+                  {isOwner && (
+                    <Button variant="outline" className="w-full border-dashed border-slate-800 text-[10px] font-black uppercase" onClick={() => {
+                      const name = prompt("Enter mode name:");
+                      if (name) updateGame(activeGameIdx, 'modes', [...game.modes, { name, ranks: [], rank_configs: {} }]);
+                    }}>
+                      <Plus size={14} className="mr-2" /> Add Mode
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -275,11 +349,26 @@ const GameRegistry = () => {
                 <div className="grid grid-cols-1 gap-3">
                   {currentMode?.ranks.map((rank: string, rIdx: number) => (
                     <div key={rIdx} className="flex items-center gap-4 p-3 rounded-2xl bg-slate-950 border border-slate-800 group">
-                      <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden">
+                      <div 
+                        className={cn(
+                          "w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center transition-all overflow-hidden relative group/icon",
+                          isOwner && "cursor-pointer hover:border-indigo-500"
+                        )}
+                        onClick={() => {
+                          if (!isOwner) return;
+                          rankIconInputRef.current = { idx: rIdx, rank };
+                          fileInputRef.current?.click();
+                        }}
+                      >
                         {currentMode.rank_configs[rank]?.icon_url ? (
                           <img src={currentMode.rank_configs[rank].icon_url} className="w-full h-full object-contain p-1" />
                         ) : (
-                          <FileImage size={16} className="text-slate-700" />
+                          <Upload size={16} className="text-slate-600" />
+                        )}
+                        {isOwner && (
+                          <div className="absolute inset-0 bg-indigo-600/40 opacity-0 group-hover/icon:opacity-100 flex items-center justify-center transition-opacity">
+                            <Upload size={14} className="text-white" />
+                          </div>
                         )}
                       </div>
                       <div className="flex-1">
@@ -326,6 +415,7 @@ const GameRegistry = () => {
               </div>
             </div>
           </div>
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg, image/svg+xml" onChange={handleRankIconUpload} />
         </main>
       </AppLayout>
     );
@@ -340,9 +430,14 @@ const GameRegistry = () => {
             <p className="text-slate-400 font-medium">Centralized command for operation environments and rank hierarchies.</p>
           </div>
           {isOwner && (
-            <Button onClick={handleSave} disabled={isSaving} className="bg-indigo-600 text-[10px] font-black uppercase tracking-widest h-12 px-8">
-              {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />} Sync Registry
-            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={seedDefaults} className="border-slate-800 bg-slate-900/50 text-[10px] font-black uppercase tracking-widest h-12 px-6">
+                <RefreshCw size={16} className="mr-2" /> Seed Templates
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving} className="bg-indigo-600 text-[10px] font-black uppercase tracking-widest h-12 px-8">
+                {isSaving ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />} Sync Registry
+              </Button>
+            </div>
           )}
         </div>
 
@@ -371,6 +466,18 @@ const GameRegistry = () => {
               </CardContent>
             </Card>
           ))}
+
+          {isOwner && (
+            <Card 
+              className="bg-slate-950 border-2 border-dashed border-slate-800 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all cursor-pointer flex flex-col items-center justify-center p-10 group"
+              onClick={addGame}
+            >
+              <div className="w-16 h-16 rounded-3xl bg-slate-900 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Plus size={32} className="text-slate-600 group-hover:text-indigo-500" />
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-indigo-400">Deploy New Game</p>
+            </Card>
+          )}
         </div>
       </main>
     </AppLayout>
