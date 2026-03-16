@@ -21,24 +21,24 @@ import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 
 const CS2_RANK_ICONS: Record<string, string> = {
-  "Silver I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/1.png",
-  "Silver II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/2.png",
-  "Silver III": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/3.png",
-  "Silver IV": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/4.png",
-  "Silver Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/5.png",
-  "Silver Elite Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/6.png",
-  "Gold Nova I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/7.png",
-  "Gold Nova II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/8.png",
-  "Gold Nova III": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/9.png",
-  "Gold Nova Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/10.png",
-  "Master Guardian I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/11.png",
-  "Master Guardian II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/12.png",
-  "Master Guardian Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/13.png",
-  "Distinguished Master Guardian": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/14.png",
-  "Legendary Eagle": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/15.png",
-  "Legendary Eagle Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/16.png",
-  "Supreme Master First Class": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/17.png",
-  "The Global Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/18.png"
+  "Silver I": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/1.png",
+  "Silver II": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/2.png",
+  "Silver III": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/3.png",
+  "Silver IV": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/4.png",
+  "Silver Elite": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/5.png",
+  "Silver Elite Master": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/6.png",
+  "Gold Nova I": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/7.png",
+  "Gold Nova II": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/8.png",
+  "Gold Nova III": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/9.png",
+  "Gold Nova Master": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/10.png",
+  "Master Guardian I": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/11.png",
+  "Master Guardian II": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/12.png",
+  "Master Guardian Elite": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/13.png",
+  "Distinguished Master Guardian": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/14.png",
+  "Legendary Eagle": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/15.png",
+  "Legendary Eagle Master": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/16.png",
+  "Supreme Master First Class": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/17.png",
+  "The Global Elite": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/18.png"
 };
 
 const DEFAULT_METADATA: Record<string, any> = {
