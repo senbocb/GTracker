@@ -10,6 +10,27 @@ interface RankBadgeProps {
   className?: string;
 }
 
+const CS2_RANK_ICONS: Record<string, string> = {
+  "Silver I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/1.png",
+  "Silver II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/2.png",
+  "Silver III": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/3.png",
+  "Silver IV": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/4.png",
+  "Silver Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/5.png",
+  "Silver Elite Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/6.png",
+  "Gold Nova I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/7.png",
+  "Gold Nova II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/8.png",
+  "Gold Nova III": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/9.png",
+  "Gold Nova Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/10.png",
+  "Master Guardian I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/11.png",
+  "Master Guardian II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/12.png",
+  "Master Guardian Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/13.png",
+  "Distinguished Master Guardian": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/14.png",
+  "Legendary Eagle": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/15.png",
+  "Legendary Eagle Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/16.png",
+  "Supreme Master First Class": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/17.png",
+  "The Global Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/18.png"
+};
+
 const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) => {
   const customStyle = useMemo(() => {
     const registry = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
@@ -85,10 +106,12 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     displayLabel = `#${Number(rank).toLocaleString()}`;
   }
 
+  const cs2Icon = gameTitle?.toLowerCase().includes('counter-strike') ? CS2_RANK_ICONS[rank] : null;
+
   return (
     <div 
       className={cn(
-        "flex items-center justify-center px-3 py-1 rounded-md border text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 min-w-[60px]",
+        "flex items-center justify-center gap-2 px-3 py-1 rounded-md border text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 min-w-[60px]",
         getRankStyle(),
         className
       )}
@@ -98,6 +121,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
         color: customStyle.color
       } : {}}
     >
+      {cs2Icon && <img src={cs2Icon} alt="" className="w-6 h-4 object-contain" />}
       <span>{displayLabel}</span>
     </div>
   );

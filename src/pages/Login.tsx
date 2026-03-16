@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Shield, Lock, Mail, Key, RefreshCw, ArrowLeft } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from "@/components/AuthProvider";
 import { cn } from '@/lib/utils';
 
 type AuthView = 'login' | 'signup' | 'forgot-password';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [view, setView] = useState<AuthView>('login');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -25,6 +27,13 @@ const Login = () => {
     username: '',
     pin: ''
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +127,8 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  if (authLoading) return null;
 
   return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">

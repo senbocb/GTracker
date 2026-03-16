@@ -20,10 +20,36 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 
+const CS2_RANK_ICONS: Record<string, string> = {
+  "Silver I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/1.png",
+  "Silver II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/2.png",
+  "Silver III": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/3.png",
+  "Silver IV": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/4.png",
+  "Silver Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/5.png",
+  "Silver Elite Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/6.png",
+  "Gold Nova I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/7.png",
+  "Gold Nova II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/8.png",
+  "Gold Nova III": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/9.png",
+  "Gold Nova Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/10.png",
+  "Master Guardian I": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/11.png",
+  "Master Guardian II": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/12.png",
+  "Master Guardian Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/13.png",
+  "Distinguished Master Guardian": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/14.png",
+  "Legendary Eagle": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/15.png",
+  "Legendary Eagle Master": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/16.png",
+  "Supreme Master First Class": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/17.png",
+  "The Global Elite": "https://raw.githubusercontent.com/p0melo/csgo-ranks-icons/master/18.png"
+};
+
 const DEFAULT_METADATA: Record<string, any> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"], tierCount: 3 },
   "Counter-Strike 2": { 
-    ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"], 
+    ranks: [
+      "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", 
+      "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", 
+      "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", 
+      "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
+    ], 
     tierCount: 0,
     modeRanks: {
       "Faceit": Array.from({ length: 10 }, (_, i) => `Level ${i + 1}`)
@@ -172,7 +198,14 @@ const GameDetail = () => {
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
                         {availableRanks.map((r: string) => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                          <SelectItem key={r} value={r}>
+                            <div className="flex items-center gap-2">
+                              {game.title === 'Counter-Strike 2' && CS2_RANK_ICONS[r] && (
+                                <img src={CS2_RANK_ICONS[r]} alt="" className="w-6 h-4 object-contain" />
+                              )}
+                              {r}
+                            </div>
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

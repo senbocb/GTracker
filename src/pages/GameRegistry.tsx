@@ -27,10 +27,17 @@ const DEFAULT_GAMES = [
   {
     title: 'Counter-Strike 2',
     image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
-    ranks: ["Silver", "Gold Nova", "Master Guardian", "Elite", "Global Elite"],
+    ranks: [
+      "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", 
+      "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", 
+      "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", 
+      "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
+    ],
     rank_configs: {
-      'Silver': { color: '#94a3b8' }, 'Gold Nova': { color: '#eab308' }, 'Master Guardian': { color: '#3b82f6' },
-      'Elite': { color: '#a855f7' }, 'Global Elite': { color: '#fde047' }
+      'Silver I': { color: '#94a3b8' }, 'Silver II': { color: '#94a3b8' }, 'Silver III': { color: '#94a3b8' }, 'Silver IV': { color: '#94a3b8' }, 'Silver Elite': { color: '#94a3b8' }, 'Silver Elite Master': { color: '#94a3b8' },
+      'Gold Nova I': { color: '#eab308' }, 'Gold Nova II': { color: '#eab308' }, 'Gold Nova III': { color: '#eab308' }, 'Gold Nova Master': { color: '#eab308' },
+      'Master Guardian I': { color: '#3b82f6' }, 'Master Guardian II': { color: '#3b82f6' }, 'Master Guardian Elite': { color: '#3b82f6' }, 'Distinguished Master Guardian': { color: '#3b82f6' },
+      'Legendary Eagle': { color: '#a855f7' }, 'Legendary Eagle Master': { color: '#a855f7' }, 'Supreme Master First Class': { color: '#a855f7' }, 'The Global Elite': { color: '#fde047' }
     },
     modes: ['Premier', 'Competitive', 'Wingman', 'Faceit'],
     enable_rainbow: true
