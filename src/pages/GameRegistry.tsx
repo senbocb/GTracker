@@ -20,6 +20,11 @@ import { useAuth } from "@/components/AuthProvider";
 
 const CS2_RANKS = ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"];
 
+const CS2_MM_CONFIG = CS2_RANKS.reduce((acc, rank, idx) => {
+  acc[rank] = { icon_url: `/src/assets/ranks/cs2/matchmaking/${idx + 1}.svg` };
+  return acc;
+}, {} as any);
+
 const DEFAULT_GAMES = [
   {
     title: 'Valorant',
@@ -74,16 +79,12 @@ const DEFAULT_GAMES = [
       {
         name: 'Competitive (Per Map)',
         ranks: CS2_RANKS,
-        rank_configs: {
-          'Silver I': { icon_url: '/src/assets/ranks/cs2/matchmaking.svg' }
-        }
+        rank_configs: CS2_MM_CONFIG
       },
       {
         name: 'Wingman',
         ranks: CS2_RANKS,
-        rank_configs: {
-          'Silver I': { icon_url: '/src/assets/ranks/cs2/wingman.svg' }
-        }
+        rank_configs: CS2_MM_CONFIG
       }
     ],
     enable_rainbow: true
