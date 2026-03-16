@@ -47,7 +47,7 @@ const DEFAULT_REGISTRY = {
   },
   "Kovaaks": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Jade", "Master", "Grandmaster", "Nova", "Celestial"],
-    modes: ["Voltaic Benchmarks", "rA Benchmarks"],
+    modes: ["Voltaic Benchmarks", "Revosect Benchmarks"],
     image: "https://images.unsplash.com/photo-1542751110-97427bbecf20?q=80&w=1000&auto=format&fit=crop"
   }
 };

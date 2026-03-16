@@ -3,9 +3,10 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import RankBadge from './RankBadge';
-import { ChevronRight, MoreHorizontal } from 'lucide-react';
+import { ChevronRight, MoreHorizontal, Target } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
+import KovaaksBenchmarks from './KovaaksBenchmarks';
 
 interface GameCardProps {
   id: string;
@@ -16,13 +17,13 @@ interface GameCardProps {
 
 const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
   const navigate = useNavigate();
+  const isKovaaks = title.toLowerCase().includes('kovaaks');
 
   return (
     <Card 
-      onClick={() => navigate(`/game/${id}`)}
-      className="overflow-hidden bg-slate-900/40 border-slate-800/50 group hover:border-indigo-500/50 transition-all duration-300 cursor-pointer saas-shadow rounded-2xl"
+      className="overflow-hidden bg-slate-900/40 border-slate-800/50 group hover:border-indigo-500/50 transition-all duration-300 saas-shadow rounded-2xl"
     >
-      <div className="relative h-32 overflow-hidden">
+      <div className="relative h-32 overflow-hidden cursor-pointer" onClick={() => navigate(`/game/${id}`)}>
         {image ? (
           <img src={image} alt={title} className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" />
         ) : (
@@ -38,20 +39,29 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
       </div>
       <CardContent className="p-5">
         <div className="space-y-3">
-          {modes.slice(0, 2).map((mode, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/50 group/mode hover:bg-slate-900/50 transition-colors">
-              <div className="space-y-0.5">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{mode.name}</p>
-                <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-90 origin-left" />
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Peak</p>
-                <p className="text-xs font-medium text-slate-300">{mode.peakRank || "N/A"}</p>
-              </div>
+          {isKovaaks ? (
+            <div className="py-2">
+              <KovaaksBenchmarks gameId={id} />
             </div>
-          ))}
+          ) : (
+            modes.slice(0, 2).map((mode, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/50 group/mode hover:bg-slate-900/50 transition-colors cursor-pointer" onClick={() => navigate(`/game/${id}`)}>
+                <div className="space-y-0.5">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{mode.name}</p>
+                  <RankBadge rank={mode.rank} tier={mode.tier} gameTitle={title} className="scale-90 origin-left" />
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Peak</p>
+                  <p className="text-xs font-medium text-slate-300">{mode.peakRank || "N/A"}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-        <div className="mt-4 pt-4 border-t border-slate-800/50 flex items-center justify-between text-indigo-400 group-hover:text-indigo-300 transition-colors">
+        <div 
+          className="mt-4 pt-4 border-t border-slate-800/50 flex items-center justify-between text-indigo-400 group-hover:text-indigo-300 transition-colors cursor-pointer"
+          onClick={() => navigate(`/game/${id}`)}
+        >
           <span className="text-xs font-semibold uppercase tracking-wider">View Details</span>
           <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
         </div>
