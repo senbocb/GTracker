@@ -20,41 +20,6 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 
-const CS2_RANK_ICONS: Record<string, string> = {
-  "Silver I": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/1.png",
-  "Silver II": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/2.png",
-  "Silver III": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/3.png",
-  "Silver IV": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/4.png",
-  "Silver Elite": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/5.png",
-  "Silver Elite Master": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/6.png",
-  "Gold Nova I": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/7.png",
-  "Gold Nova II": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/8.png",
-  "Gold Nova III": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/9.png",
-  "Gold Nova Master": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/10.png",
-  "Master Guardian I": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/11.png",
-  "Master Guardian II": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/12.png",
-  "Master Guardian Elite": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/13.png",
-  "Distinguished Master Guardian": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/14.png",
-  "Legendary Eagle": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/15.png",
-  "Legendary Eagle Master": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/16.png",
-  "Supreme Master First Class": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/17.png",
-  "The Global Elite": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/18.png",
-  "Unranked": "https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/0.png"
-};
-
-const FACEIT_ICONS: Record<string, string> = {
-  "Level 1": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/1.png",
-  "Level 2": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/2.png",
-  "Level 3": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/3.png",
-  "Level 4": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/4.png",
-  "Level 5": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/5.png",
-  "Level 6": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/6.png",
-  "Level 7": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/7.png",
-  "Level 8": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/8.png",
-  "Level 9": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/9.png",
-  "Level 10": "https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/10.png"
-};
-
 const DEFAULT_METADATA: Record<string, any> = {
   "Valorant": { ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"], tierCount: 3 },
   "Counter-Strike 2": { 
@@ -157,7 +122,6 @@ const GameDetail = () => {
       
       if (historyError) throw historyError;
 
-      // Only update global mode rank if not per-map
       if (!(game.title === 'Counter-Strike 2' && activeMode === 'Competitive (Per Map)')) {
         const { error: modeError } = await supabase
           .from('game_modes')
@@ -211,16 +175,17 @@ const GameDetail = () => {
                         <SelectValue placeholder="Select Rank" />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                        {availableRanks.map((r: string) => (
-                          <SelectItem key={r} value={r}>
-                            <div className="flex items-center gap-2">
-                              {(game.title === 'Counter-Strike 2' || game.title === 'CS2') && (CS2_RANK_ICONS[r] || FACEIT_ICONS[r]) && (
-                                <img src={CS2_RANK_ICONS[r] || FACEIT_ICONS[r]} alt="" className="w-6 h-4 object-contain" />
-                              )}
-                              {r}
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {availableRanks.map((r: string) => {
+                          const iconUrl = currentMetadata.rank_configs?.[r]?.icon_url;
+                          return (
+                            <SelectItem key={r} value={r}>
+                              <div className="flex items-center gap-2">
+                                {iconUrl && <img src={iconUrl} alt="" className="w-6 h-6 object-contain" />}
+                                {r}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>

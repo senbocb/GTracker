@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Gamepad2, Palette, List, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Save, Gamepad2, ImageIcon, List, Check, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,15 @@ const DEFAULT_GAMES = [
     image: 'https://images.unsplash.com/photo-1624138784614-87fd1b6528f8?q=80&w=1000&auto=format&fit=crop',
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
     rank_configs: {
-      'Iron': { color: '#525252' }, 'Bronze': { color: '#a855f7' }, 'Silver': { color: '#94a3b8' },
-      'Gold': { color: '#eab308' }, 'Platinum': { color: '#22d3ee' }, 'Diamond': { color: '#818cf8' },
-      'Ascendant': { color: '#10b981' }, 'Immortal': { color: '#ef4444' }, 'Radiant': { color: '#fde047' }
+      'Iron': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/3.png' },
+      'Bronze': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/6.png' },
+      'Silver': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/9.png' },
+      'Gold': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/12.png' },
+      'Platinum': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/15.png' },
+      'Diamond': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/18.png' },
+      'Ascendant': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/21.png' },
+      'Immortal': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/24.png' },
+      'Radiant': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/27.png' }
     },
     modes: ['Competitive'],
     enable_rainbow: true
@@ -32,13 +38,38 @@ const DEFAULT_GAMES = [
       "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", 
       "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", 
       "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", 
-      "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
+      "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite",
+      "Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10"
     ],
     rank_configs: {
-      'Silver I': { color: '#94a3b8' }, 'Silver II': { color: '#94a3b8' }, 'Silver III': { color: '#94a3b8' }, 'Silver IV': { color: '#94a3b8' }, 'Silver Elite': { color: '#94a3b8' }, 'Silver Elite Master': { color: '#94a3b8' },
-      'Gold Nova I': { color: '#eab308' }, 'Gold Nova II': { color: '#eab308' }, 'Gold Nova III': { color: '#eab308' }, 'Gold Nova Master': { color: '#eab308' },
-      'Master Guardian I': { color: '#3b82f6' }, 'Master Guardian II': { color: '#3b82f6' }, 'Master Guardian Elite': { color: '#3b82f6' }, 'Distinguished Master Guardian': { color: '#3b82f6' },
-      'Legendary Eagle': { color: '#a855f7' }, 'Legendary Eagle Master': { color: '#a855f7' }, 'Supreme Master First Class': { color: '#a855f7' }, 'The Global Elite': { color: '#fde047' }
+      'Silver I': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/1.png' },
+      'Silver II': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/2.png' },
+      'Silver III': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/3.png' },
+      'Silver IV': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/4.png' },
+      'Silver Elite': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/5.png' },
+      'Silver Elite Master': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/6.png' },
+      'Gold Nova I': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/7.png' },
+      'Gold Nova II': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/8.png' },
+      'Gold Nova III': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/9.png' },
+      'Gold Nova Master': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/10.png' },
+      'Master Guardian I': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/11.png' },
+      'Master Guardian II': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/12.png' },
+      'Master Guardian Elite': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/13.png' },
+      'Distinguished Master Guardian': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/14.png' },
+      'Legendary Eagle': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/15.png' },
+      'Legendary Eagle Master': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/16.png' },
+      'Supreme Master First Class': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/17.png' },
+      'The Global Elite': { icon_url: 'https://raw.githubusercontent.com/ItzArty/csgo-rank-icons/master/png/18.png' },
+      'Level 1': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/1.png' },
+      'Level 2': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/2.png' },
+      'Level 3': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/3.png' },
+      'Level 4': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/4.png' },
+      'Level 5': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/5.png' },
+      'Level 6': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/6.png' },
+      'Level 7': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/7.png' },
+      'Level 8': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/8.png' },
+      'Level 9': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/9.png' },
+      'Level 10': { icon_url: 'https://raw.githubusercontent.com/p0melo/faceit-icons/master/png/10.png' }
     },
     modes: ['Premier', 'Competitive', 'Wingman', 'Faceit'],
     enable_rainbow: true
@@ -48,10 +79,16 @@ const DEFAULT_GAMES = [
     image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
     ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"],
     rank_configs: {
-      'Iron': { color: '#525252' }, 'Bronze': { color: '#92400e' }, 'Silver': { color: '#94a3b8' },
-      'Gold': { color: '#eab308' }, 'Platinum': { color: '#22d3ee' }, 'Emerald': { color: '#10b981' },
-      'Diamond': { color: '#3b82f6' }, 'Master': { color: '#a855f7' }, 'Grandmaster': { color: '#ef4444' },
-      'Challenger': { color: '#fde047' }
+      'Iron': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/0/03/Season_2023_-_Iron.png' },
+      'Bronze': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/f/f4/Season_2023_-_Bronze.png' },
+      'Silver': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/7/70/Season_2023_-_Silver.png' },
+      'Gold': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/8/8d/Season_2023_-_Gold.png' },
+      'Platinum': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/b/b9/Season_2023_-_Platinum.png' },
+      'Emerald': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/a/ac/Season_2023_-_Emerald.png' },
+      'Diamond': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/9/91/Season_2023_-_Diamond.png' },
+      'Master': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/1/11/Season_2023_-_Master.png' },
+      'Grandmaster': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/7/76/Season_2023_-_Grandmaster.png' },
+      'Challenger': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/5/5f/Season_2023_-_Challenger.png' }
     },
     modes: ['Ranked Solo/Duo', 'Ranked Flex'],
     enable_rainbow: true
@@ -85,9 +122,9 @@ const GameRegistry = () => {
       image: '',
       ranks: ['Bronze', 'Silver', 'Gold'],
       rank_configs: {
-        'Bronze': { color: '#cd7f32' },
-        'Silver': { color: '#c0c0c0' },
-        'Gold': { color: '#ffd700' }
+        'Bronze': { icon_url: '' },
+        'Silver': { icon_url: '' },
+        'Gold': { icon_url: '' }
       },
       modes: ['Ranked'],
       enable_rainbow: true
@@ -193,7 +230,7 @@ const GameRegistry = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-2"><Palette size={14} /> Rank Hierarchy & Colors</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-2"><ImageIcon size={14} /> Rank Hierarchy & Icons</Label>
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                     {game.ranks.map((rank: string, rIdx: number) => (
                       <div key={rIdx} className="flex items-center gap-2">
@@ -208,14 +245,14 @@ const GameRegistry = () => {
                           className="bg-slate-950 border-slate-800 text-xs h-8"
                         />
                         <Input 
-                          type="color" 
-                          value={game.rank_configs?.[rank]?.color || '#ffffff'} 
+                          placeholder="Icon PNG URL"
+                          value={game.rank_configs?.[rank]?.icon_url || ''} 
                           onChange={(e) => {
                             const newConfigs = { ...game.rank_configs };
-                            newConfigs[rank] = { color: e.target.value };
+                            newConfigs[rank] = { ...newConfigs[rank], icon_url: e.target.value };
                             updateGame(idx, 'rank_configs', newConfigs);
                           }}
-                          className="w-12 h-8 p-1 bg-slate-950 border-slate-800"
+                          className="bg-slate-950 border-slate-800 text-[10px] h-8"
                         />
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={() => {
                           const newRanks = game.ranks.filter((_: any, i: number) => i !== rIdx);
