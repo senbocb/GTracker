@@ -5,255 +5,186 @@ import GameCard from '@/components/GameCard';
 import GameListItem from '@/components/GameListItem';
 import MatchHistory from '@/components/MatchHistory';
 import SessionTracker from '@/components/SessionTracker';
-import AddMatchModal from '@/components/AddMatchModal';
-import LayoutSettings, { LayoutSection } from '@/components/LayoutSettings';
-import QuickStatsSettings, { QuickStatConfig } from '@/components/QuickStatsSettings';
-import { Plus, Gamepad2, Activity, LayoutGrid, List, Trophy, Terminal, Settings2 } from 'lucide-react';
+import ActivityHeatmap from '@/components/ActivityHeatmap';
+import { Plus, LayoutGrid, List, Terminal, Settings2, Activity, TrendingUp, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/components/AppLayout';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { showSuccess } from '@/utils/toast';
-
-const DEFAULT_LAYOUT: LayoutSection[] = [
-  { id: 'quick_stats', label: 'Overview', enabled: true },
-  { id: 'active_operations', label: 'Games', enabled: true },
-  { id: 'session_tracker', label: 'Live Intel', enabled: true },
-  { id: 'match_history', label: 'Recent Changes', enabled: true },
-];
+import { motion } from "framer-motion";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [games, setGames] = useState<any[]>([]);
-  const [layout, setLayout] = useState<LayoutSection[]>(DEFAULT_LAYOUT);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
-  const [statConfigs, setStatConfigs] = useState<QuickStatConfig[]>([]);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
   useEffect(() => {
     if (!user) return;
-
-    const fetchData = async () => {
-      // Fetch Games
-      const { data: gamesData } = await supabase
-        .from('games')
-        .select('*, game_modes(*, game_history(*))')
-        .eq('user_id', user.id);
-      
-      if (gamesData) {
-        // Merge Duplicates Logic
-        const mergedGames: Record<string, any> = {};
-        const duplicatesToRemove: string[] = [];
-
-        gamesData.forEach(game => {
-          if (!mergedGames[game.title]) {
-            mergedGames[game.title] = { ...game, modes: game.game_modes };
-          } else {
-            // Duplicate found! Move modes to the first instance
-            duplicatesToRemove.push(game.id);
-            // We'd need to update mode game_ids in DB, but for UI we just merge
-            mergedGames[game.title].modes = [...mergedGames[game.title].modes, ...game.game_modes];
-          }
-        });
-
-        if (duplicatesToRemove.length > 0) {
-          // Cleanup DB duplicates (async)
-          supabase.from('games').delete().in('id', duplicatesToRemove).then(() => {
-            showSuccess(`Merged ${duplicatesToRemove.length} duplicate game entries.`);
-          });
-        }
-
-        const formattedGames = Object.values(mergedGames).map(g => ({
-          ...g,
-          modes: g.modes.map((m: any) => ({
-            ...m,
-            history: m.game_history.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          }))
-        }));
-        setGames(formattedGames);
-
-        // Extract recent matches
-        const allMatches: any[] = [];
-        formattedGames.forEach(game => {
-          game.modes.forEach((mode: any) => {
-            mode.history.forEach((log: any) => {
-              allMatches.push({
-                id: log.id,
-                game: game.title,
-                result: 'Rank Update',
-                change: log.rank,
-                map: mode.name,
-                score: log.tier || '',
-                date: new Date(log.timestamp).toLocaleDateString()
-              });
-            });
-          });
-        });
-        setRecentMatches(allMatches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5));
-      }
-
-      // Fetch Layout Settings from Profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('layout_settings, stat_configs')
-        .eq('id', user.id)
-        .single();
-
-      if (profileData?.layout_settings) {
-        setLayout(profileData.layout_settings);
-      }
-      if (profileData?.stat_configs) {
-        setStatConfigs(profileData.stat_configs);
-      } else {
-        setStatConfigs([
-          { id: 'active_trackers', label: 'Games Tracked', enabled: true, type: 'common' },
-          { id: 'total_logs', label: 'Total Logs', enabled: true, type: 'common' },
-        ]);
-      }
-    };
-
     fetchData();
   }, [user]);
 
-  const updateLayout = async (newLayout: LayoutSection[]) => {
-    setLayout(newLayout);
-    if (user) {
-      await supabase.from('profiles').update({ layout_settings: newLayout }).eq('id', user.id);
-    }
-  };
+  const fetchData = async () => {
+    const { data: gamesData } = await supabase
+      .from('games')
+      .select('*, game_modes(*, game_history(*))')
+      .eq('user_id', user?.id);
+    
+    if (gamesData) {
+      const formatted = gamesData.map(g => ({
+        ...g,
+        modes: g.game_modes.map((m: any) => ({
+          ...m,
+          history: m.game_history.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        }))
+      }));
+      setGames(formatted);
 
-  const updateStatConfigs = async (newConfigs: QuickStatConfig[]) => {
-    setStatConfigs(newConfigs);
-    if (user) {
-      await supabase.from('profiles').update({ stat_configs: newConfigs }).eq('id', user.id);
+      const allMatches: any[] = [];
+      formatted.forEach(game => {
+        game.modes.forEach((mode: any) => {
+          mode.history.forEach((log: any) => {
+            allMatches.push({
+              id: log.id,
+              game: game.title,
+              result: 'Update',
+              change: log.rank,
+              map: mode.name,
+              date: new Date(log.timestamp).toLocaleDateString()
+            });
+          });
+        });
+      });
+      setRecentMatches(allMatches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5));
     }
-  };
-
-  const getStatValue = (config: QuickStatConfig) => {
-    if (config.id === 'active_trackers') return games.length.toString();
-    if (config.id === 'total_logs') return games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0).toString();
-    return 'N/A';
   };
 
   return (
     <AppLayout>
-      <main className="max-w-7xl mx-auto p-4 sm:p-6 md:p-10">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 p-4 rounded-2xl bg-slate-900/50 border border-slate-800 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-500">
-              <Terminal size={20} />
-            </div>
-            <div>
-              <h1 className="text-lg font-black italic uppercase tracking-tight text-white">Dashboard Overview</h1>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status: Active</p>
-            </div>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Hero Section */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Welcome back, {profile?.username || 'Operator'}</h1>
+            <p className="text-slate-400 mt-1">Here's what's happening with your performance today.</p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Link to="/registry">
-              <Button variant="outline" size="sm" className="border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white">
-                <Settings2 className="mr-2" size={16} />
-                Registry
-              </Button>
-            </Link>
-            <LayoutSettings sections={layout} onUpdate={updateLayout} />
-            <Link to="/add-game" className="flex-1 sm:flex-none">
-              <Button variant="outline" size="sm" className="w-full border-slate-800 bg-slate-950 text-slate-400 hover:text-white">
-                <Plus size={16} className="mr-2" />
+          <div className="flex items-center gap-3">
+            <Link to="/add-game">
+              <Button className="bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/20 rounded-full px-6">
+                <Plus size={18} className="mr-2" />
                 Add Game
               </Button>
             </Link>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-10">
-          <div className="flex-1 space-y-10">
-            {layout.find(s => s.id === 'quick_stats')?.enabled && (
-              <div className="mb-10">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Terminal size={12} className="text-indigo-500" />
-                    System Overview
-                  </h2>
-                  <QuickStatsSettings configs={statConfigs} onUpdate={updateStatConfigs} games={games} />
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {statConfigs.filter(c => c.enabled).map((config) => (
-                    <div key={config.id} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800/50 backdrop-blur-md group hover:border-indigo-500/30 transition-all">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                          <Activity size={12} className="text-indigo-500" />
-                        </div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{config.label}</span>
-                      </div>
-                      <p className="text-2xl font-black text-white tabular-nums truncate">{getStatValue(config)}</p>
-                    </div>
-                  ))}
-                </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="glass-card p-6 rounded-2xl saas-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <Activity size={20} />
               </div>
-            )}
+              <span className="text-sm font-medium text-slate-400">Active Trackers</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <span className="text-3xl font-bold text-white">{games.length}</span>
+              <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
+                <TrendingUp size={12} /> +2 this week
+              </span>
+            </div>
+          </div>
+          <div className="glass-card p-6 rounded-2xl saas-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <Users size={20} />
+              </div>
+              <span className="text-sm font-medium text-slate-400">Team Rank</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <span className="text-3xl font-bold text-white">Elite</span>
+              <span className="text-xs font-medium text-slate-500">Top 5%</span>
+            </div>
+          </div>
+          <div className="glass-card p-6 rounded-2xl saas-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                <Zap size={20} />
+              </div>
+              <span className="text-sm font-medium text-slate-400">Total Logs</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <span className="text-3xl font-bold text-white">
+                {games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0)}
+              </span>
+              <span className="text-xs font-medium text-slate-500">Lifetime</span>
+            </div>
+          </div>
+        </div>
 
-            {layout.find(s => s.id === 'active_operations')?.enabled && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-black text-white flex items-center gap-3 italic uppercase tracking-tight">
-                    <span className="w-1.5 h-6 bg-indigo-600 rounded-full" />
-                    Tracked Games
-                  </h2>
-                  <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg p-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className={cn("h-8 w-8 rounded-md", viewMode === 'card' ? "bg-indigo-600 text-white" : "text-slate-400")}
-                      onClick={() => setViewMode('card')}
-                    >
-                      <LayoutGrid size={16} />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className={cn("h-8 w-8 rounded-md", viewMode === 'list' ? "bg-indigo-600 text-white" : "text-slate-400")}
-                      onClick={() => setViewMode('list')}
-                    >
-                      <List size={16} />
-                    </Button>
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Your Games</h2>
+                <div className="flex items-center bg-slate-900/50 border border-slate-800/50 rounded-lg p-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn("h-8 w-8 rounded-md", viewMode === 'card' ? "bg-slate-800 text-white" : "text-slate-500")}
+                    onClick={() => setViewMode('card')}
+                  >
+                    <LayoutGrid size={16} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn("h-8 w-8 rounded-md", viewMode === 'list' ? "bg-slate-800 text-white" : "text-slate-500")}
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List size={16} />
+                  </Button>
                 </div>
-                {games.length > 0 ? (
-                  <div className={cn(viewMode === 'card' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "flex flex-col gap-3")}>
-                    {games.map((game) => (
-                      viewMode === 'card' ? <GameCard key={game.id} {...game} /> : <GameListItem key={game.id} {...game} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-16 rounded-[2rem] border-2 border-dashed border-slate-800/50 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/40 backdrop-blur-sm">
-                    <Gamepad2 size={40} className="text-slate-600" />
-                    <h3 className="text-xl font-bold text-slate-300">No Games Tracked</h3>
-                    <Link to="/add-game"><Button className="bg-indigo-600">Add Game</Button></Link>
-                  </div>
-                )}
               </div>
-            )}
+              
+              <div className={cn(
+                viewMode === 'card' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"
+              )}>
+                {games.map((game, idx) => (
+                  <motion.div
+                    key={game.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    {viewMode === 'card' ? <GameCard {...game} /> : <GameListItem {...game} />}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold text-white">Activity</h2>
+              <ActivityHeatmap />
+            </div>
           </div>
 
-          <aside className="w-full lg:w-80 space-y-10">
-            {layout.find(s => s.id === 'session_tracker')?.enabled && (
-              <div className="space-y-4">
-                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Session Stats</h2>
-                <SessionTracker />
-                <AddMatchModal />
-              </div>
-            )}
-            {layout.find(s => s.id === 'match_history')?.enabled && (
-              <div className="space-y-4">
-                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Recent Changes</h2>
-                <MatchHistory matches={recentMatches} />
-              </div>
-            )}
-          </aside>
+          {/* Sidebar Content */}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Live Session</h2>
+              <SessionTracker />
+            </div>
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Recent Updates</h2>
+              <MatchHistory matches={recentMatches} />
+            </div>
+          </div>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 };
