@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RankBadgeProps {
   rank: string;
@@ -17,7 +18,6 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     
     if (!gameData) return null;
 
-    // Find rank config across all modes if not specified (fallback)
     let rankData = null;
     let isTopRank = false;
     
@@ -47,9 +47,7 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     const g = gameTitle?.toLowerCase() || "";
     const rankNum = parseInt(rank) || 0;
 
-    // Fallback styles if no icon is present
     if (!registryInfo?.iconUrl) {
-      // Elite Status
       const isPeak = 
         (g.includes('valorant') && r === 'radiant') ||
         (g.includes('overwatch') && r === 'top 500') ||
@@ -60,7 +58,6 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
 
       if (isPeak) return 'rainbow-gradient border-none shadow-[0_0_15px_rgba(99,102,241,0.4)]';
 
-      // Standard Tiers
       if (r.includes('iron') || r.includes('rookie') || r.includes('copper')) return 'bg-zinc-500/20 border-zinc-500/40 text-zinc-400';
       if (r.includes('bronze')) return 'bg-orange-800/20 border-orange-800/40 text-orange-700';
       if (r.includes('silver')) return 'bg-slate-300/20 border-slate-300/40 text-slate-200';
@@ -79,20 +76,38 @@ const RankBadge = ({ rank, tier, gameTitle = "", className }: RankBadgeProps) =>
     displayLabel = `#${Number(rank).toLocaleString()}`;
   }
 
-  return (
+  const badgeContent = (
     <div 
       className={cn(
-        "flex items-center justify-center gap-2 px-3 py-1 rounded-md border text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 min-w-[60px]",
-        getRankStyle(),
+        "flex items-center justify-center gap-2 px-2 py-1 rounded-md border text-[10px] font-black uppercase tracking-widest transition-all hover:scale-110",
+        registryInfo?.iconUrl ? "bg-transparent border-none p-0" : getRankStyle(),
         className
       )}
     >
-      {registryInfo?.iconUrl && (
-        <img src={registryInfo.iconUrl} alt="" className="w-6 h-6 object-contain" />
+      {registryInfo?.iconUrl ? (
+        <img src={registryInfo.iconUrl} alt={displayLabel} className="w-8 h-8 object-contain drop-shadow-lg" />
+      ) : (
+        <span>{displayLabel}</span>
       )}
-      <span>{displayLabel}</span>
     </div>
   );
+
+  if (registryInfo?.iconUrl) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {badgeContent}
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-950 border-slate-800 text-[10px] font-black uppercase tracking-widest">
+            {displayLabel}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return badgeContent;
 };
 
 export default RankBadge;
