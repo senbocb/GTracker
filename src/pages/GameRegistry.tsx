@@ -28,6 +28,13 @@ const DEFAULT_GAMES = [
         ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant"],
         rank_configs: {
           'Iron': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/3.png' },
+          'Bronze': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/6.png' },
+          'Silver': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/9.png' },
+          'Gold': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/12.png' },
+          'Platinum': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/15.png' },
+          'Diamond': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/18.png' },
+          'Ascendant': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/21.png' },
+          'Immortal': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/24.png' },
           'Radiant': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiers/27.png' }
         }
       }
@@ -41,15 +48,22 @@ const DEFAULT_GAMES = [
       {
         name: 'Premier',
         ranks: ["0-4999", "5000-9999", "10000-14999", "15000-19999", "20000-24999", "25000-29999", "30000+"],
-        rank_configs: {}
+        rank_configs: {
+          '0-4999': { icon_url: '/src/assets/ranks/cs2/premier.png' }
+        }
       },
       {
         name: 'Faceit',
         ranks: ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Challenger"],
         rank_configs: {
-          'Level 1': { icon_url: '/src/assets/ranks/faceit/1.svg' },
-          'Level 10': { icon_url: '/src/assets/ranks/faceit/10.svg' },
-          'Challenger': { icon_url: '/src/assets/ranks/faceit/11.svg' }
+          'Level 1': { icon_url: '/src/assets/ranks/cs2/faceit.png' }
+        }
+      },
+      {
+        name: 'Competitive (Per Map)',
+        ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
+        rank_configs: {
+          'Silver I': { icon_url: '/src/assets/ranks/cs2/matchmaking.png' }
         }
       }
     ],
@@ -59,7 +73,13 @@ const DEFAULT_GAMES = [
     title: 'League of Legends',
     image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
     modes: [
-      { name: 'Ranked Solo/Duo', ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"], rank_configs: {} }
+      { 
+        name: 'Ranked Solo/Duo', 
+        ranks: ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Master", "Grandmaster", "Challenger"], 
+        rank_configs: {
+          'Challenger': { icon_url: 'https://static.wikia.nocookie.net/leagueoflegends/images/5/5a/Season_2023_-_Challenger.png' }
+        } 
+      }
     ],
     enable_rainbow: true
   },
@@ -78,6 +98,23 @@ const DEFAULT_GAMES = [
     image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
     modes: [
       { name: 'Battle Royale Ranked', ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"], rank_configs: {} }
+    ],
+    enable_rainbow: true
+  },
+  {
+    title: 'Rocket League',
+    image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Standard 3v3', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Champion", "Grand Champion", "Supersonic Legend"], rank_configs: {} },
+      { name: 'Doubles 2v2', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Champion", "Grand Champion", "Supersonic Legend"], rank_configs: {} }
+    ],
+    enable_rainbow: true
+  },
+  {
+    title: 'Rainbow Six Siege',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
+    modes: [
+      { name: 'Ranked', ranks: ["Copper", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Champion"], rank_configs: {} }
     ],
     enable_rainbow: true
   }
@@ -305,7 +342,7 @@ const GameRegistry = () => {
                         <Layers size={14} className="mr-2" /> {mode.name}
                       </Button>
                       {isOwner && (
-                        <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-600 hover:text-red-500" onClick={() => {
+                        <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-600 hover:text-red-400" onClick={() => {
                           const updatedModes = game.modes.filter((_: any, i: number) => i !== mIdx);
                           updateGame(activeGameIdx, 'modes', updatedModes);
                           if (activeModeName === mode.name) setActiveModeName(updatedModes[0]?.name || '');
