@@ -18,9 +18,14 @@ import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
 import { useAuth } from "@/components/AuthProvider";
 
-const CS2_RANKS = ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"];
+const CS2_RANKS = [
+  "Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", 
+  "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", 
+  "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", 
+  "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
+];
 
-// Mapping 1-18 to the standard CS2 rank icons from Tracker.gg CDN
+// Mapping 1-18 to the official high-res PNG icons from Tracker.gg CDN
 const CS2_MM_CONFIG = CS2_RANKS.reduce((acc, rank, idx) => {
   acc[rank] = { icon_url: `https://trackercdn.com/cdn/tracker.gg/csgo/icons/ranks/rank${idx + 1}.png` };
   return acc;
@@ -63,7 +68,13 @@ const DEFAULT_GAMES = [
         name: 'Premier',
         ranks: ["0-4999", "5000-9999", "10000-14999", "15000-19999", "20000-24999", "25000-29999", "30000+"],
         rank_configs: {
-          '0-4999': { icon_url: '/src/assets/ranks/cs2/premier.png' }
+          '0-4999': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/csgo/icons/cs2/premier/rank_0.png' },
+          '5000-9999': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/csgo/icons/cs2/premier/rank_1.png' },
+          '10000-14999': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/csgo/icons/cs2/premier/rank_2.png' },
+          '15000-19999': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/csgo/icons/cs2/premier/rank_3.png' },
+          '20000-24999': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/csgo/icons/cs2/premier/rank_4.png' },
+          '25000-29999': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/csgo/icons/cs2/premier/rank_5.png' },
+          '30000+': { icon_url: 'https://trackercdn.com/cdn/tracker.gg/csgo/icons/cs2/premier/rank_6.png' }
         }
       },
       {
