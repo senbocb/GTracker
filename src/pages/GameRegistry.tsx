@@ -18,6 +18,8 @@ import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
 import { useAuth } from "@/components/AuthProvider";
 
+const CS2_RANKS = ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"];
+
 const DEFAULT_GAMES = [
   {
     title: 'Valorant',
@@ -61,9 +63,16 @@ const DEFAULT_GAMES = [
       },
       {
         name: 'Competitive (Per Map)',
-        ranks: ["Silver I", "Silver II", "Silver III", "Silver IV", "Silver Elite", "Silver Elite Master", "Gold Nova I", "Gold Nova II", "Gold Nova III", "Gold Nova Master", "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"],
+        ranks: CS2_RANKS,
         rank_configs: {
           'Silver I': { icon_url: '/src/assets/ranks/cs2/matchmaking.png' }
+        }
+      },
+      {
+        name: 'Wingman',
+        ranks: CS2_RANKS,
+        rank_configs: {
+          'Silver I': { icon_url: '/src/assets/ranks/cs2/wingman.png' }
         }
       }
     ],
@@ -98,23 +107,6 @@ const DEFAULT_GAMES = [
     image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
     modes: [
       { name: 'Battle Royale Ranked', ranks: ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Apex Predator"], rank_configs: {} }
-    ],
-    enable_rainbow: true
-  },
-  {
-    title: 'Rocket League',
-    image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop',
-    modes: [
-      { name: 'Standard 3v3', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Champion", "Grand Champion", "Supersonic Legend"], rank_configs: {} },
-      { name: 'Doubles 2v2', ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Champion", "Grand Champion", "Supersonic Legend"], rank_configs: {} }
-    ],
-    enable_rainbow: true
-  },
-  {
-    title: 'Rainbow Six Siege',
-    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
-    modes: [
-      { name: 'Ranked', ranks: ["Copper", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Diamond", "Champion"], rank_configs: {} }
     ],
     enable_rainbow: true
   }
