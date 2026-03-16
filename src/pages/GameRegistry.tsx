@@ -58,21 +58,31 @@ const DEFAULT_GAMES = [
         name: 'Faceit',
         ranks: ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Challenger"],
         rank_configs: {
-          'Level 1': { icon_url: '/src/assets/ranks/cs2/faceit.png' }
+          'Level 1': { icon_url: '/src/assets/ranks/faceit/1.svg' },
+          'Level 2': { icon_url: '/src/assets/ranks/faceit/2.svg' },
+          'Level 3': { icon_url: '/src/assets/ranks/faceit/3.svg' },
+          'Level 4': { icon_url: '/src/assets/ranks/faceit/4.svg' },
+          'Level 5': { icon_url: '/src/assets/ranks/faceit/5.svg' },
+          'Level 6': { icon_url: '/src/assets/ranks/faceit/6.svg' },
+          'Level 7': { icon_url: '/src/assets/ranks/faceit/7.svg' },
+          'Level 8': { icon_url: '/src/assets/ranks/faceit/8.svg' },
+          'Level 9': { icon_url: '/src/assets/ranks/faceit/9.svg' },
+          'Level 10': { icon_url: '/src/assets/ranks/faceit/10.svg' },
+          'Challenger': { icon_url: '/src/assets/ranks/faceit/11.svg' }
         }
       },
       {
         name: 'Competitive (Per Map)',
         ranks: CS2_RANKS,
         rank_configs: {
-          'Silver I': { icon_url: '/src/assets/ranks/cs2/matchmaking.png' }
+          'Silver I': { icon_url: '/src/assets/ranks/cs2/matchmaking.svg' }
         }
       },
       {
         name: 'Wingman',
         ranks: CS2_RANKS,
         rank_configs: {
-          'Silver I': { icon_url: '/src/assets/ranks/cs2/wingman.png' }
+          'Silver I': { icon_url: '/src/assets/ranks/cs2/wingman.svg' }
         }
       }
     ],
