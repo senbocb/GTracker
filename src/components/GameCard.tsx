@@ -25,6 +25,12 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
     ? modes.filter(m => m.name !== 'Role Queue')
     : modes;
 
+  const getPeakRank = (mode: any) => {
+    if (mode.peak_rank && mode.peak_rank !== 'Unranked') return mode.peak_rank;
+    if (mode.rank && mode.rank !== 'Unranked') return mode.rank;
+    return "N/A";
+  };
+
   return (
     <Card 
       className="overflow-hidden bg-slate-900/40 border-slate-800/50 group hover:border-indigo-500/50 transition-all duration-300 saas-shadow rounded-2xl cursor-pointer"
@@ -75,7 +81,7 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
                   <p className="text-[10px] font-black uppercase tracking-wider">Peak</p>
                 </div>
                 <p className="text-xs font-black text-indigo-400 uppercase italic leading-none">
-                  {mode.peak_rank || mode.rank || "N/A"}
+                  {getPeakRank(mode)}
                 </p>
               </div>
             </div>

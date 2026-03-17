@@ -37,6 +37,14 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
 
   const activeMode = modes[currentModeIdx];
 
+  const getPeakRank = (mode: any) => {
+    if (!mode) return "N/A";
+    const peak = mode.peak_rank || mode.peakRank;
+    if (peak && peak !== 'Unranked') return peak;
+    if (mode.rank && mode.rank !== 'Unranked') return mode.rank;
+    return "N/A";
+  };
+
   return (
     <div 
       onClick={() => navigate(`/game/${id}`)}
@@ -66,7 +74,7 @@ const GameListItem = ({ id, title, modes = [], image }: GameListItemProps) => {
             <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Peak</p>
             <div className="flex items-center gap-1 text-indigo-400">
               <Trophy size={10} />
-              <span className="text-[10px] font-black uppercase italic">{activeMode?.peak_rank || activeMode?.peakRank || "N/A"}</span>
+              <span className="text-[10px] font-black uppercase italic">{getPeakRank(activeMode)}</span>
             </div>
           </div>
         </div>

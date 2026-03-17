@@ -45,18 +45,32 @@ const Teams = () => {
   }, [user, page]);
 
   const fetchMyTeams = async () => {
-    const { data: memberTeams } = await supabase
+    // Fetch team memberships first
+    const { data: memberships } = await supabase
       .from('team_members')
-      .select('team_id, is_primary, teams(*, team_members(count, user_id, role, is_primary))')
+      .select('team_id, is_primary, role')
       .eq('user_id', user?.id);
     
-    const formatted = memberTeams?.map(m => ({
-      ...m.teams,
-      is_primary: m.is_primary,
-      member_role: m.teams.team_members.find((tm: any) => tm.user_id === user?.id)?.role
-    })) || [];
-    
-    setTeams(formatted);
+    if (memberships && memberships.length > 0) {
+      const teamIds = memberships.map(m => m.team_id);
+      const { data: teamData } = await supabase
+        .from('teams')
+        .select('*')
+        .in('id', teamIds);
+      
+      const formatted = teamData?.map(t => {
+        const membership = memberships.find(m => m.team_id === t.id);
+        return {
+          ...t,
+          is_primary: membership?.is_primary,
+          member_role: membership?.role
+        };
+      }) || [];
+      
+      setTeams(formatted);
+    } else {
+      setTeams([]);
+    }
   };
 
   const fetchDiscoverTeams = async () => {
@@ -64,7 +78,7 @@ const Teams = () => {
     try {
       let query = supabase
         .from('teams')
-        .select('*, team_members(count)', { count: 'exact' });
+        .select('*', { count: 'exact' });
       
       if (search) {
         query = query.or(`name.ilike.%${search}%,tag.ilike.%${search}%`);
@@ -193,7 +207,7 @@ const Teams = () => {
                   <CardContent>
                     <p className="text-xs text-slate-400 line-clamp-2 mb-4">{team.description}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">{team.team_members?.[0]?.count || 0} Members</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Active Unit</span>
                       {team.is_primary && <span className="text-[8px] font-black bg-indigo-600 px-2 py-0.5 rounded text-white uppercase">Primary</span>}
                     </div>
                   </CardContent>
@@ -224,7 +238,7 @@ const Teams = () => {
                   <CardContent>
                     <p className="text-xs text-slate-400 line-clamp-2 mb-4">{team.description}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">{team.team_members?.[0]?.count || 0} Members</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Recruiting</span>
                       <Button size="sm" className="bg-indigo-600 h-8 text-[10px] font-black uppercase">View Team</Button>
                     </div>
                   </CardContent>
