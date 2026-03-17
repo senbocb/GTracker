@@ -150,7 +150,7 @@ const Social = () => {
             {loading ? (
               <div className="flex justify-center py-20"><Loader2 className="animate-spin text-indigo-500" size={40} /></div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredTeams.map((team) => (
                   <div key={team.id} className="bg-slate-900/30 border border-slate-800 rounded-2xl p-6 hover:border-indigo-500/50 transition-all group">
                     <div className="flex items-center gap-4 mb-6">
@@ -191,7 +191,7 @@ const Social = () => {
                     </div>
 
                     <div className="flex gap-2">
-                      <Link to={`/teams?id=${team.id}`} className="flex-1">
+                      <Link to={`/team/${team.id}`} className="flex-1">
                         <Button variant="outline" className="w-full border-slate-800 hover:bg-slate-800 text-[10px] font-black uppercase tracking-widest h-10">
                           Squad Intel
                         </Button>

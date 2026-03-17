@@ -160,6 +160,7 @@ const GameDetail = () => {
   const rankConfigs = registryMode?.rank_configs || {};
   
   const isCS2PerMap = game.title === 'Counter-Strike 2' && activeMode === 'Competitive (Per Map)';
+  const isOW2RoleQueue = game.title === 'Overwatch 2' && activeMode === 'Role Queue';
 
   return (
     <AppLayout>
@@ -198,6 +199,21 @@ const GameDetail = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  {isOW2RoleQueue && (
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Role</Label>
+                      <Select value={logData.role} onValueChange={(v) => setLogData({...logData, role: v})}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800">
+                          <SelectValue placeholder="Select Role" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                          <SelectItem value="Tank">Tank</SelectItem>
+                          <SelectItem value="Damage">Damage</SelectItem>
+                          <SelectItem value="Support">Support</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   {isCS2PerMap && (
                     <div className="grid gap-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Map</Label>
