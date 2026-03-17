@@ -61,7 +61,7 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
             </div>
           )}
 
-          {displayedModes.slice(0, 3).map((mode, idx) => (
+          {displayedModes.map((mode, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/50 group/mode hover:bg-slate-900/50 transition-colors">
               <div className="space-y-0.5">
                 <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{mode.name}</p>
@@ -75,7 +75,7 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
                   <p className="text-[10px] font-black uppercase tracking-wider">Peak</p>
                 </div>
                 <p className="text-xs font-black text-indigo-400 uppercase italic leading-none">
-                  {mode.peak_rank || "N/A"}
+                  {mode.peak_rank || mode.rank || "N/A"}
                 </p>
               </div>
             </div>

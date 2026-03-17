@@ -45,14 +45,29 @@ const TeamDetail = () => {
       if (teamError) throw teamError;
       setTeam(teamData);
 
-      // Fetch members separately to avoid relationship issues in complex joins
+      // Fetch members and then their profiles separately to avoid relationship cache errors
       const { data: memberData, error: memberError } = await supabase
         .from('team_members')
-        .select('*, profiles:user_id(*)')
+        .select('*')
         .eq('team_id', id);
       
       if (memberError) throw memberError;
-      setMembers(memberData || []);
+
+      if (memberData && memberData.length > 0) {
+        const userIds = memberData.map(m => m.user_id);
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+        
+        const membersWithProfiles = memberData.map(m => ({
+          ...m,
+          profiles: profileData?.find(p => p.id === m.user_id)
+        }));
+        setMembers(membersWithProfiles);
+      } else {
+        setMembers([]);
+      }
     } catch (err: any) {
       showError(err.message);
       navigate('/teams');
