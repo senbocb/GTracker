@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import RankBadge from './RankBadge';
-import { ChevronRight, MoreHorizontal, Target } from 'lucide-react';
+import { ChevronRight, MoreHorizontal, Target, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import KovaaksBenchmarks from './KovaaksBenchmarks';
@@ -29,7 +29,6 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
     <Card 
       className="overflow-hidden bg-slate-900/40 border-slate-800/50 group hover:border-indigo-500/50 transition-all duration-300 saas-shadow rounded-2xl cursor-pointer"
       onClick={(e) => {
-        // Prevent navigation if clicking buttons or interactive elements
         if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('.interactive-element')) return;
         navigate(`/game/${id}`);
       }}
@@ -71,8 +70,13 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Peak</p>
-                <p className="text-xs font-black text-indigo-400 uppercase italic">{mode.peak_rank || mode.peakRank || "N/A"}</p>
+                <div className="flex items-center justify-end gap-1 text-indigo-400/60 mb-0.5">
+                  <Trophy size={10} />
+                  <p className="text-[10px] font-black uppercase tracking-wider">Peak</p>
+                </div>
+                <p className="text-xs font-black text-indigo-400 uppercase italic leading-none">
+                  {mode.peak_rank || "N/A"}
+                </p>
               </div>
             </div>
           ))}
