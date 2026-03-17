@@ -173,6 +173,7 @@ const HabitTracker = () => {
                           })}
                         </div>
                         <div className="flex items-center gap-2 border-l border-slate-800 pl-6">
+                          <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:text-indigo-400" onClick={() => setCalendarOpenId(habit.id)}><CalendarIcon size={18} /></Button>
                           <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-700 hover:text-red-500" onClick={() => saveAll(habits.filter(h => h.id !== habit.id), playlists)}><Trash2 size={18} /></Button>
                         </div>
                       </div>
@@ -183,6 +184,32 @@ const HabitTracker = () => {
             }) : <div className="p-20 text-center border-2 border-dashed border-slate-800 rounded-[2.5rem] bg-slate-900/20"><div className="w-16 h-16 rounded-3xl bg-slate-900 flex items-center justify-center mx-auto mb-6 text-slate-700"><Target size={32} /></div><h3 className="text-xl font-bold text-slate-300 mb-2">No Habits Found</h3><p className="text-slate-500 max-w-xs mx-auto text-sm mb-8">Start building consistency by adding your first habit to this playlist.</p></div>}
           </div>
         </div>
+
+        {/* Calendar Dialog */}
+        <Dialog open={!!calendarOpenId} onOpenChange={() => setCalendarOpenId(null)}>
+          <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-md">
+            <DialogHeader><DialogTitle className="italic uppercase font-black">Habit History</DialogTitle></DialogHeader>
+            <div className="p-4 flex justify-center">
+              <Calendar 
+                mode="single"
+                className="bg-slate-900 rounded-2xl border border-slate-800"
+                onSelect={(date) => date && cycleStatus(calendarOpenId!, date)}
+                modifiers={{
+                  done: (date) => habits.find(h => h.id === calendarOpenId)?.logs[format(date, 'yyyy-MM-dd')] === 'done',
+                  failed: (date) => habits.find(h => h.id === calendarOpenId)?.logs[format(date, 'yyyy-MM-dd')] === 'failed'
+                }}
+                modifiersClassNames={{
+                  done: "bg-indigo-600 text-white rounded-full",
+                  failed: "bg-red-600 text-white rounded-full"
+                }}
+              />
+            </div>
+            <div className="flex justify-center gap-4 pb-4">
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-indigo-600" /><span className="text-[10px] font-bold uppercase text-slate-500">Done</span></div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-600" /><span className="text-[10px] font-bold uppercase text-slate-500">Failed</span></div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogContent className="bg-slate-950 border-slate-800 text-white">

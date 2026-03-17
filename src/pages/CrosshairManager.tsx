@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { showSuccess, showError } from '@/utils/toast';
+import { useRegistry } from '@/components/RegistryProvider';
 
 interface Crosshair {
   id: string;
@@ -19,16 +20,14 @@ interface Crosshair {
 }
 
 const CrosshairManager = () => {
+  const { registry } = useRegistry();
   const [crosshairs, setCrosshairs] = useState<Crosshair[]>([]);
-  const [registry, setRegistry] = useState<any>({});
   const [search, setSearch] = useState('');
   const [newCrosshair, setNewCrosshair] = useState({ gameId: '', label: '', code: '' });
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('combat_crosshairs') || '[]');
     setCrosshairs(saved);
-    const savedRegistry = JSON.parse(localStorage.getItem('combat_game_registry') || '{}');
-    setRegistry(savedRegistry);
   }, []);
 
   const handleAdd = () => {
@@ -62,8 +61,14 @@ const CrosshairManager = () => {
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase text-slate-300">Operation</Label>
                     <Select value={newCrosshair.gameId} onValueChange={(v) => setNewCrosshair({...newCrosshair, gameId: v})}>
-                      <SelectTrigger className="bg-slate-950 border-slate-800 text-white"><SelectValue placeholder="Select Game" /></SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white">{Object.keys(registry).map(game => <SelectItem key={game} value={game}>{game}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
+                        <SelectValue placeholder="Select Game" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {registry.map(game => (
+                          <SelectItem key={game.id} value={game.title}>{game.title}</SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">

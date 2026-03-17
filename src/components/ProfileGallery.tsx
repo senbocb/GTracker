@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Image as ImageIcon, Plus, Trash2, Maximize2, X, Calendar, Edit2, Clock, ListMusic, FolderPlus, ArrowUpDown } from 'lucide-react';
+import { Image as ImageIcon, Plus, Trash2, Maximize2, X, Calendar, Edit2, Clock, ListMusic, FolderPlus, ArrowUpDown, Move } from 'lucide-react';
 import { processImage } from '@/utils/imageProcessing';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,7 @@ const ProfileGallery = () => {
   const [activePlaylistId, setActivePlaylistId] = useState<string>('all');
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
+  const [movingImage, setMovingImage] = useState<GalleryImage | null>(null);
   const [isNewPlaylistOpen, setIsNewPlaylistOpen] = useState(false);
   const [newPlaylist, setNewPlaylist] = useState({ name: '', description: '' });
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -87,6 +88,16 @@ const ProfileGallery = () => {
     setNewPlaylist({ name: '', description: '' });
     setIsNewPlaylistOpen(false);
     showSuccess(`Playlist "${playlist.name}" created.`);
+  };
+
+  const handleMoveImage = (playlistId: string) => {
+    if (!movingImage) return;
+    const updated = images.map(img => 
+      img.id === movingImage.id ? { ...img, playlistId: playlistId === 'none' ? undefined : playlistId } : img
+    );
+    saveAll(updated, playlists);
+    setMovingImage(null);
+    showSuccess("Capture moved.");
   };
 
   const removeImage = (id: string) => {
@@ -188,7 +199,7 @@ const ProfileGallery = () => {
                   <img src={img.url} alt="Capture" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white" onClick={() => setSelectedImage(img)}><Maximize2 size={18} /></Button>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-400" onClick={() => setEditingImage(img)}><Edit2 size={18} /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-400" onClick={() => setMovingImage(img)}><Move size={18} /></Button>
                     <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-400" onClick={() => removeImage(img.id)}><Trash2 size={18} /></Button>
                   </div>
                 </div>
@@ -201,6 +212,27 @@ const ProfileGallery = () => {
           )}
         </div>
       </div>
+
+      {/* Move to Playlist Dialog */}
+      <Dialog open={!!movingImage} onOpenChange={() => setMovingImage(null)}>
+        <DialogContent className="bg-slate-950 border-slate-800 text-white">
+          <DialogHeader><DialogTitle className="italic uppercase font-black">MOVE TO PLAYLIST</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <Label className="text-[10px] font-bold uppercase text-slate-400">Select Destination</Label>
+            <Select onValueChange={handleMoveImage}>
+              <SelectTrigger className="bg-slate-900 border-slate-800">
+                <SelectValue placeholder="Choose Playlist" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-950 border-slate-800 text-white">
+                <SelectItem value="none">No Playlist</SelectItem>
+                {playlists.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* New Playlist Dialog */}
       <Dialog open={isNewPlaylistOpen} onOpenChange={setIsNewPlaylistOpen}>

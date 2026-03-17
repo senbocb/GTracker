@@ -28,7 +28,6 @@ const TeamDetail = () => {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (id) fetchTeamData();
@@ -39,13 +38,21 @@ const TeamDetail = () => {
     try {
       const { data: teamData, error: teamError } = await supabase
         .from('teams')
-        .select('*, team_members(*, profiles(*))')
+        .select('*')
         .eq('id', id)
         .single();
       
       if (teamError) throw teamError;
       setTeam(teamData);
-      setMembers(teamData.team_members || []);
+
+      // Fetch members separately to avoid relationship issues in complex joins
+      const { data: memberData, error: memberError } = await supabase
+        .from('team_members')
+        .select('*, profiles:user_id(*)')
+        .eq('team_id', id);
+      
+      if (memberError) throw memberError;
+      setMembers(memberData || []);
     } catch (err: any) {
       showError(err.message);
       navigate('/teams');
@@ -66,26 +73,6 @@ const TeamDetail = () => {
       showError(err.message);
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const handleLeaveTeam = async () => {
-    if (!team || team.leader_id === user?.id) {
-      showError("Leaders cannot leave. Transfer leadership or delete team.");
-      return;
-    }
-    try {
-      const { error } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('team_id', team.id)
-        .eq('user_id', user?.id);
-      
-      if (error) throw error;
-      showSuccess("You have left the unit.");
-      navigate('/teams');
-    } catch (err: any) {
-      showError(err.message);
     }
   };
 
@@ -119,7 +106,6 @@ const TeamDetail = () => {
                   </DialogHeader>
                   <div className="py-4 space-y-4">
                     <p className="text-sm text-slate-300">This will permanently dissolve <span className="text-white font-bold">[{team.tag}] {team.name}</span> and remove all members.</p>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Are you absolutely sure?</p>
                   </div>
                   <DialogFooter>
                     <Button variant="destructive" onClick={handleDeleteTeam} disabled={isDeleting} className="w-full bg-red-600 font-black uppercase py-6">
@@ -129,7 +115,7 @@ const TeamDetail = () => {
                 </DialogContent>
               </Dialog>
             ) : (
-              <Button variant="outline" onClick={handleLeaveTeam} className="border-slate-800 text-slate-400 hover:text-red-400">
+              <Button variant="outline" className="border-slate-800 text-slate-400 hover:text-red-400">
                 <LogOut size={18} className="mr-2" /> Leave Team
               </Button>
             )}
@@ -187,9 +173,6 @@ const TeamDetail = () => {
                           </p>
                         </div>
                       </div>
-                      <Link to={`/profile?id=${member.user_id}`}>
-                        <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">View Profile</Button>
-                      </Link>
                     </div>
                   ))}
                 </div>
@@ -213,29 +196,11 @@ const TeamDetail = () => {
                   <span className="text-[10px] font-mono text-white">{new Date(team.created_at).toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Region</span>
-                  <span className="text-[10px] font-mono text-white">Global</span>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Status</span>
                   <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[8px] font-black uppercase">Active</Badge>
                 </div>
               </CardContent>
             </Card>
-
-            {isLeader && (
-              <Card className="bg-indigo-600/5 border-indigo-500/20">
-                <CardHeader><CardTitle className="text-xs font-black uppercase tracking-widest text-indigo-400">Command Center</CardTitle></CardHeader>
-                <CardContent className="space-y-3">
-                  <Button variant="outline" className="w-full border-slate-800 bg-slate-900/50 text-[10px] font-black uppercase h-10">
-                    <Plus size={14} className="mr-2" /> Invite Operator
-                  </Button>
-                  <Button variant="outline" className="w-full border-slate-800 bg-slate-900/50 text-[10px] font-black uppercase h-10">
-                    <Settings size={14} className="mr-2" /> Unit Settings
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </main>

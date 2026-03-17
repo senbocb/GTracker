@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, Plus, Trophy, History, Trash2 } from 'lucide-react';
+import { Calendar, Plus, Trophy, History, Trash2, Edit2 } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,7 @@ interface SeasonManagerProps {
 
 const SeasonManager = ({ gameId, seasons, onUpdate }: SeasonManagerProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [editingSeason, setEditingSeason] = useState<Season | null>(null);
   const [newSeason, setNewSeason] = useState({
     name: '',
     startDate: new Date().toISOString().slice(0, 10),
@@ -43,6 +44,14 @@ const SeasonManager = ({ gameId, seasons, onUpdate }: SeasonManagerProps) => {
     setNewSeason({ name: '', startDate: new Date().toISOString().slice(0, 10) });
     setIsOpen(false);
     showSuccess(`Season "${newSeason.name}" initialized.`);
+  };
+
+  const handleUpdateSeason = () => {
+    if (!editingSeason) return;
+    const updated = seasons.map(s => s.id === editingSeason.id ? editingSeason : s);
+    onUpdate(updated);
+    setEditingSeason(null);
+    showSuccess("Season record updated.");
   };
 
   const removeSeason = (id: string) => {
@@ -118,14 +127,24 @@ const SeasonManager = ({ gameId, seasons, onUpdate }: SeasonManagerProps) => {
                 </p>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-slate-600 hover:text-red-400"
-              onClick={() => removeSeason(season.id)}
-            >
-              <Trash2 size={14} />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-slate-600 hover:text-indigo-400"
+                onClick={() => setEditingSeason(season)}
+              >
+                <Edit2 size={14} />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-slate-600 hover:text-red-400"
+                onClick={() => removeSeason(season.id)}
+              >
+                <Trash2 size={14} />
+              </Button>
+            </div>
           </div>
         )) : (
           <div className="p-8 text-center border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
@@ -133,6 +152,27 @@ const SeasonManager = ({ gameId, seasons, onUpdate }: SeasonManagerProps) => {
           </div>
         )}
       </div>
+
+      {editingSeason && (
+        <Dialog open={!!editingSeason} onOpenChange={() => setEditingSeason(null)}>
+          <DialogContent className="bg-slate-950 border-slate-800 text-white">
+            <DialogHeader><DialogTitle className="italic uppercase font-black">Edit Season</DialogTitle></DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid gap-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-400">Season Name</Label>
+                <Input value={editingSeason.name} onChange={(e) => setEditingSeason({...editingSeason, name: e.target.value})} className="bg-slate-900 border-slate-800" />
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-400">Start Date</Label>
+                <Input type="date" value={editingSeason.startDate} onChange={(e) => setEditingSeason({...editingSeason, startDate: e.target.value})} className="bg-slate-900 border-slate-800" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleUpdateSeason} className="w-full bg-indigo-600 font-black uppercase py-6">Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

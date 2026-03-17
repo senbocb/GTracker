@@ -102,6 +102,16 @@ const GameDetail = () => {
       const mode = game.modes.find((m: any) => m.name === activeMode);
       if (!mode) throw new Error("Mode not found");
 
+      // Calculate if this is a new peak
+      const registryEntry = registryData?.[game.title];
+      const registryMode = registryEntry?.modes?.find((m: any) => m.name === activeMode);
+      const availableRanks = registryMode?.ranks || DEFAULT_METADATA[game.title]?.ranks || [];
+      
+      const currentRankIdx = availableRanks.indexOf(logData.rank);
+      const peakRankIdx = availableRanks.indexOf(mode.peak_rank || 'Unranked');
+      
+      const isNewPeak = currentRankIdx >= peakRankIdx;
+
       const { error: historyError } = await supabase
         .from('game_history')
         .insert({
@@ -115,17 +125,22 @@ const GameDetail = () => {
       
       if (historyError) throw historyError;
 
-      if (!(game.title === 'Counter-Strike 2' && activeMode === 'Competitive (Per Map)')) {
-        const { error: modeError } = await supabase
-          .from('game_modes')
-          .update({
-            rank: logData.rank,
-            tier: logData.tier
-          })
-          .eq('id', mode.id);
-        
-        if (modeError) throw modeError;
+      // Update mode with current rank and potentially new peak
+      const updateData: any = {
+        rank: logData.rank,
+        tier: logData.tier
+      };
+      
+      if (isNewPeak) {
+        updateData.peak_rank = logData.rank;
       }
+
+      const { error: modeError } = await supabase
+        .from('game_modes')
+        .update(updateData)
+        .eq('id', mode.id);
+      
+      if (modeError) throw modeError;
 
       showSuccess("Rank logged successfully.");
       setIsLogOpen(false);
@@ -139,11 +154,9 @@ const GameDetail = () => {
 
   if (!game) return null;
 
-  // Resolve metadata from registry or defaults
   const registryEntry = registryData?.[game.title];
   const registryMode = registryEntry?.modes?.find((m: any) => m.name === activeMode);
-  
-  const availableRanks = registryMode?.ranks || DEFAULT_GAMES_FALLBACK[game.title]?.modeRanks?.[activeMode] || DEFAULT_METADATA[game.title]?.ranks || [];
+  const availableRanks = registryMode?.ranks || DEFAULT_METADATA[game.title]?.ranks || [];
   const rankConfigs = registryMode?.rank_configs || {};
   
   const isCS2PerMap = game.title === 'Counter-Strike 2' && activeMode === 'Competitive (Per Map)';
@@ -250,14 +263,6 @@ const GameDetail = () => {
       </main>
     </AppLayout>
   );
-};
-
-const DEFAULT_GAMES_FALLBACK: Record<string, any> = {
-  "Counter-Strike 2": {
-    modeRanks: {
-      "Faceit": ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Challenger"]
-    }
-  }
 };
 
 export default GameDetail;
