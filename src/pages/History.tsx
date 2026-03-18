@@ -71,7 +71,7 @@ const History = () => {
           tier: editingLog.tier,
           map: editingLog.map,
           result: editingLog.result,
-          timestamp: editingLog.timestamp
+          timestamp: new Date(editingLog.timestamp).toISOString() // Convert local back to UTC
         })
         .eq('id', editingLog.id);
       
@@ -106,6 +106,13 @@ const History = () => {
     if (!gameData) return [];
     const modeData = gameData.modes?.find((m: any) => m.name === modeName);
     return modeData?.ranks || [];
+  };
+
+  // Helper to convert UTC to local ISO string for input
+  const toLocalISO = (utcString: string) => {
+    const date = new Date(utcString);
+    const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
   };
 
   return (
@@ -189,7 +196,7 @@ const History = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" onClick={() => setEditingLog(log)} className="h-8 w-8 text-slate-500 hover:text-white"><Edit2 size={14} /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => setEditingLog({ ...log, timestamp: toLocalISO(log.timestamp) })} className="h-8 w-8 text-slate-500 hover:text-white"><Edit2 size={14} /></Button>
                   <Button variant="ghost" size="icon" onClick={() => handleDelete(log.id)} className="h-8 w-8 text-slate-500 hover:text-red-400"><Trash2 size={14} /></Button>
                 </div>
               </div>
@@ -232,7 +239,7 @@ const History = () => {
                 </div>
                 <div className="grid gap-2">
                   <Label className="text-[10px] font-bold uppercase text-slate-400">Timestamp</Label>
-                  <Input type="datetime-local" value={new Date(editingLog.timestamp).toISOString().slice(0, 16)} onChange={(e) => setEditingLog({...editingLog, timestamp: e.target.value})} className="bg-slate-900 border-slate-800" />
+                  <Input type="datetime-local" value={editingLog.timestamp} onChange={(e) => setEditingLog({...editingLog, timestamp: e.target.value})} className="bg-slate-900 border-slate-800" />
                 </div>
               </div>
               <DialogFooter>

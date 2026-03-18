@@ -38,18 +38,39 @@ const DEFAULT_METADATA: Record<string, any> = {
 const GameDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // Helper to get local time in YYYY-MM-DDTHH:mm format
+  const getLocalTimestamp = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offset).toISOString().slice(0, 16);
+  };
+
   const [game, setGame] = useState<any>(null);
   const [activeMode, setActiveMode] = useState('');
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [logData, setLogData] = useState({ rank: '', tier: '', map: '', role: '', timestamp: new Date().toISOString().slice(0, 16) });
+  const [logData, setLogData] = useState({ 
+    rank: '', 
+    tier: '', 
+    map: '', 
+    role: '', 
+    timestamp: getLocalTimestamp() 
+  });
   const [registryData, setRegistryData] = useState<any>(null);
 
   useEffect(() => {
     fetchGameData();
     fetchRegistry();
   }, [id]);
+
+  // Reset timestamp whenever dialog opens
+  useEffect(() => {
+    if (isLogOpen) {
+      setLogData(prev => ({ ...prev, timestamp: getLocalTimestamp() }));
+    }
+  }, [isLogOpen]);
 
   const fetchRegistry = async () => {
     const { data } = await supabase.from('game_registry').select('*');
@@ -118,7 +139,7 @@ const GameDetail = () => {
           tier: logData.tier,
           map: logData.map,
           agent: logData.role,
-          timestamp: logData.timestamp
+          timestamp: new Date(logData.timestamp).toISOString() // Convert back to UTC for DB
         });
       
       if (historyError) throw historyError;
