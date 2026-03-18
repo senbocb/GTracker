@@ -18,6 +18,7 @@ import { useAuth } from "./AuthProvider";
 import { toast } from "sonner";
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { cn } from "@/lib/utils";
 
 const matchSchema = z.object({
   game_id: z.string().uuid('Select a game'),
