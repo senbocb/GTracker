@@ -16,6 +16,17 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { toast } from "sonner";
+import { z } from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
+
+const matchSchema = z.object({
+  game_id: z.string().uuid('Select a game'),
+  result: z.enum(['win', 'loss', 'draw']),
+  rank_before: z.string().min(1, 'Required'),
+  rank_after: z.string().min(1, 'Required'),
+  played_at: z.string().min(1, 'Required'),
+  notes: z.string().max(500).optional(),
+});
 
 interface AddMatchModalProps {
   isOpen: boolean;
@@ -25,20 +36,19 @@ interface AddMatchModalProps {
 
 const AddMatchModal = ({ isOpen, onClose, onSuccess }: AddMatchModalProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [games, setGames] = useState<any[]>([]);
   
-  // Get current local time in YYYY-MM-DDTHH:mm format
   const getCurrentLocalTime = () => {
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
-    return localISOTime;
+    return (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
   };
 
   const [formData, setFormData] = useState({
     game_id: '',
-    result: 'win',
+    result: 'win' as 'win' | 'loss' | 'draw',
     rank_before: '',
     rank_after: '',
     played_at: getCurrentLocalTime(),
@@ -46,41 +56,57 @@ const AddMatchModal = ({ isOpen, onClose, onSuccess }: AddMatchModalProps) => {
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user) {
       fetchGames();
       setFormData(prev => ({ ...prev, played_at: getCurrentLocalTime() }));
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   const fetchGames = async () => {
-    const { data } = await supabase.from('games').select('*');
+    const { data } = await supabase
+      .from('games')
+      .select('*')
+      .eq('user_id', user?.id);
     setGames(data || []);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !formData.game_id) return;
+    if (!user) return;
+
+    const parsed = matchSchema.safeParse(formData);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('history').insert({
-        user_id: user.id,
-        game_id: formData.game_id,
+      // Find the first mode for the selected game to log history against
+      const { data: modes } = await supabase
+        .from('game_modes')
+        .select('id')
+        .eq('game_id', formData.game_id)
+        .limit(1);
+
+      if (!modes || modes.length === 0) throw new Error("No modes found for this game");
+
+      const { error } = await supabase.from('game_history').insert({
+        mode_id: modes[0].id,
         result: formData.result,
-        rank_before: formData.rank_before,
-        rank_after: formData.rank_after,
-        played_at: new Date(formData.played_at).toISOString(),
-        notes: formData.notes
+        rank: formData.rank_after,
+        timestamp: new Date(formData.played_at).toISOString()
       });
 
       if (error) throw error;
 
+      queryClient.invalidateQueries({ queryKey: ['games'] });
       toast.success("Match logged successfully");
       onSuccess();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error logging match:", err);
-      toast.error("Failed to log match");
+      toast.error(err.message || "Failed to log match");
     } finally {
       setLoading(false);
     }
@@ -110,31 +136,32 @@ const AddMatchModal = ({ isOpen, onClose, onSuccess }: AddMatchModalProps) => {
                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
                   {games.map(game => (
                     <SelectItem key={game.id} value={game.id} className="text-xs font-bold uppercase">
-                      {game.name}
+                      {game.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Result</label>
                 <div className="flex gap-2">
                   <Button 
                     type="button"
                     onClick={() => setFormData({...formData, result: 'win'})}
-                    className={`flex-1 h-12 text-[10px] font-black uppercase tracking-widest ${formData.result === 'win' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-500 border border-slate-800'}`}
-                  >
-                    Win
-                  </Button>
+                    className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest", formData.result === 'win' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-500 border border-slate-800')}
+                  >Win</Button>
+                  <Button 
+                    type="button"
+                    onClick={() => setFormData({...formData, result: 'draw'})}
+                    className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest", formData.result === 'draw' ? 'bg-yellow-600 text-white' : 'bg-slate-900 text-slate-500 border border-slate-800')}
+                  >Draw</Button>
                   <Button 
                     type="button"
                     onClick={() => setFormData({...formData, result: 'loss'})}
-                    className={`flex-1 h-12 text-[10px] font-black uppercase tracking-widest ${formData.result === 'loss' ? 'bg-red-600 text-white' : 'bg-slate-900 text-slate-500 border border-slate-800'}`}
-                  >
-                    Loss
-                  </Button>
+                    className={cn("flex-1 h-12 text-[10px] font-black uppercase tracking-widest", formData.result === 'loss' ? 'bg-red-600 text-white' : 'bg-slate-900 text-slate-500 border border-slate-800')}
+                  >Loss</Button>
                 </div>
               </div>
               <div className="space-y-2">
@@ -168,16 +195,6 @@ const AddMatchModal = ({ isOpen, onClose, onSuccess }: AddMatchModalProps) => {
                 />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operation Notes</label>
-              <textarea 
-                placeholder="Brief summary of the engagement..."
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs font-bold uppercase text-white focus:ring-indigo-500 min-h-[80px]"
-              />
-            </div>
           </div>
 
           <div className="flex gap-3">
@@ -186,9 +203,7 @@ const AddMatchModal = ({ isOpen, onClose, onSuccess }: AddMatchModalProps) => {
               variant="ghost" 
               onClick={onClose}
               className="flex-1 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white"
-            >
-              Abort
-            </Button>
+            >Abort</Button>
             <Button 
               type="submit" 
               disabled={loading}

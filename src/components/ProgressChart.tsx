@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Calendar } from 'lucide-react';
+import { BarChart3, Calendar, TrendingUp } from 'lucide-react';
 import { subDays, isAfter, format } from 'date-fns';
 
 interface ProgressChartProps {
@@ -31,15 +31,21 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
     const sorted = filteredHistory.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     let peakSoFar = 0;
-    return sorted.map(h => {
+    return sorted.map((h, i) => {
       const currentVal = getRankValue(h.rank, h.tier);
       if (currentVal > peakSoFar) peakSoFar = currentVal;
+      
+      // Calculate rolling win rate (last 10 matches)
+      const window = sorted.slice(Math.max(0, i - 9), i + 1);
+      const wins = window.filter(m => m.result === 'win').length;
+      const winRate = window.length > 0 ? Math.round((wins / window.length) * 100) : 0;
       
       return {
         date: format(new Date(h.timestamp), 'MMM dd'),
         fullDate: new Date(h.timestamp).toLocaleDateString(),
         current: currentVal,
         peak: peakSoFar,
+        winRate: winRate,
         rankLabel: `${h.rank} ${h.tier || ''}`.trim()
       };
     });
@@ -88,6 +94,7 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
                   dy={10}
                 />
                 <YAxis 
+                  yAxisId="rank"
                   stroke="#94a3b8" 
                   fontSize={10} 
                   tickLine={false} 
@@ -95,17 +102,29 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
                   tickFormatter={yAxisFormatter}
                   domain={['auto', 'auto']}
                 />
+                <YAxis 
+                  yAxisId="winrate"
+                  orientation="right"
+                  stroke="#10b981" 
+                  fontSize={10} 
+                  tickLine={false} 
+                  axisLine={false}
+                  tickFormatter={(v) => `${v}%`}
+                  domain={[0, 100]}
+                />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
                   itemStyle={{ fontSize: '12px', fontWeight: 'bold', color: '#fff' }}
                   labelStyle={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}
                   formatter={(value: number, name: string, props: any) => {
                     if (name === "Current Rank") return [props.payload.rankLabel, name];
+                    if (name === "Win Rate") return [`${value}%`, name];
                     return [yAxisFormatter(value), name];
                   }}
                 />
                 <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.05em', color: '#94a3b8' }} />
                 <Line 
+                  yAxisId="rank"
                   name="Current Rank"
                   type="monotone" 
                   dataKey="current" 
@@ -115,6 +134,7 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
                   activeDot={{ r: 6, strokeWidth: 0 }}
                 />
                 <Line 
+                  yAxisId="rank"
                   name="Peak Rank"
                   type="stepAfter" 
                   dataKey="peak" 
@@ -122,6 +142,16 @@ const ProgressChart = ({ history = [], rankNames = [], getRankValue }: ProgressC
                   strokeWidth={2} 
                   strokeDasharray="5 5"
                   dot={false}
+                />
+                <Line 
+                  yAxisId="winrate"
+                  name="Win Rate"
+                  type="monotone" 
+                  dataKey="winRate" 
+                  stroke="#10b981" 
+                  strokeWidth={2} 
+                  dot={false}
+                  opacity={0.6}
                 />
               </LineChart>
             </ResponsiveContainer>

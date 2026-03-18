@@ -1,19 +1,24 @@
 "use client";
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import RankBadge from './RankBadge';
-import { ChevronRight, MoreHorizontal, Trophy, Map } from 'lucide-react';
+import { ChevronRight, MoreHorizontal, Trophy, Map, Camera } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import OW2RoleRanks from './OW2RoleRanks';
 import CS2MapPopup from './CS2MapPopup';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthProvider";
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from "sonner";
 
 interface GameCardProps {
   id: string;
   title: string;
   modes: any[];
   image?: string;
+  banner_url?: string;
 }
 
 const GAME_BANNERS: Record<string, string> = {
@@ -26,12 +31,48 @@ const GAME_BANNERS: Record<string, string> = {
   "Kovaaks": "https://images.unsplash.com/photo-1542751110-97427bbecf20?q=80&w=1000&auto=format&fit=crop"
 };
 
-const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
+const GameCard = ({ id, title, modes = [], image, banner_url }: GameCardProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const isOW2 = title.toLowerCase().includes('overwatch 2');
   const isCS2 = title.toLowerCase().includes('counter-strike 2');
   
-  const bannerImage = image || GAME_BANNERS[title] || "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop";
+  const displayBanner = banner_url || image || GAME_BANNERS[title] || "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop";
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${id}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('game-banners')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('game-banners')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('games')
+        .update({ banner_url: publicUrl })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ['games'] });
+      toast.success("Banner updated successfully");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload banner");
+    }
+  };
 
   const getPeakRank = (mode: any) => {
     if (mode.peak_rank && mode.peak_rank !== 'Unranked') return mode.peak_rank;
@@ -39,7 +80,6 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
     return "N/A";
   };
 
-  // Filter out modes that are handled by special components
   const filteredModes = modes.filter(mode => {
     if (isOW2 && mode.name === 'Role Queue') return false;
     if (isCS2 && mode.name === 'Competitive (Per Map)') return false;
@@ -57,13 +97,24 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
       }}
     >
       <div className="relative h-32 overflow-hidden shrink-0">
-        <img src={bannerImage} alt={title} className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" />
+        <img src={displayBanner} alt={title} className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent" />
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
           <h3 className="text-lg font-bold text-white">{title}</h3>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white rounded-full bg-black/20 backdrop-blur-sm">
-            <MoreHorizontal size={16} />
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-slate-400 hover:text-white rounded-full bg-black/20 backdrop-blur-sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Camera size={14} />
+            </Button>
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleBannerUpload} />
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white rounded-full bg-black/20 backdrop-blur-sm">
+              <MoreHorizontal size={16} />
+            </Button>
+          </div>
         </div>
       </div>
       <CardContent className="p-5 flex-1 flex flex-col">

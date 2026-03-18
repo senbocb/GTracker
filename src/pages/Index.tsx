@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import GameCard from '@/components/GameCard';
 import GameListItem from '@/components/GameListItem';
 import MatchHistory from '@/components/MatchHistory';
@@ -8,58 +9,60 @@ import SessionTracker from '@/components/SessionTracker';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import { Plus, LayoutGrid, List } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/components/AppLayout';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { motion } from "framer-motion";
+import { Game } from "@/types";
 
 const Index = () => {
   const { user, profile } = useAuth();
-  const [games, setGames] = useState<any[]>([]);
-  const [recentMatches, setRecentMatches] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
-  useEffect(() => {
-    if (!user) return;
-    fetchData();
-  }, [user]);
+  const { data: games, isLoading } = useQuery({
+    queryKey: ['games', user?.id],
+    queryFn: async () => {
+      const { data: gamesData, error } = await supabase
+        .from('games')
+        .select('*, game_modes(*, game_history(*))')
+        .eq('user_id', user?.id);
+      
+      if (error) throw error;
 
-  const fetchData = async () => {
-    const { data: gamesData } = await supabase
-      .from('games')
-      .select('*, game_modes(*, game_history(*))')
-      .eq('user_id', user?.id);
-    
-    if (gamesData) {
-      const formatted = gamesData.map(g => ({
+      return (gamesData || []).map(g => ({
         ...g,
         modes: g.game_modes.map((m: any) => ({
           ...m,
           history: m.game_history.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         }))
-      }));
-      setGames(formatted);
+      })) as Game[];
+    },
+    enabled: !!user,
+    staleTime: 60000,
+  });
 
-      const allMatches: any[] = [];
-      formatted.forEach(game => {
-        game.modes.forEach((mode: any) => {
-          mode.history.forEach((log: any) => {
-            allMatches.push({
-              id: log.id,
-              game: game.title,
-              result: 'Update',
-              change: log.rank,
-              map: mode.name,
-              date: new Date(log.timestamp).toLocaleDateString()
-            });
+  const recentMatches = React.useMemo(() => {
+    if (!games) return [];
+    const allMatches: any[] = [];
+    games.forEach(game => {
+      game.modes.forEach((mode: any) => {
+        mode.history?.forEach((log: any) => {
+          allMatches.push({
+            id: log.id,
+            game: game.title,
+            result: log.result || 'Update',
+            change: log.rank,
+            map: mode.name,
+            date: new Date(log.timestamp).toLocaleDateString()
           });
         });
       });
-      setRecentMatches(allMatches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5));
-    }
-  };
+    });
+    return allMatches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+  }, [games]);
 
   return (
     <AppLayout>
@@ -106,20 +109,30 @@ const Index = () => {
                 </div>
               </div>
               
-              <div className={cn(
-                viewMode === 'card' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"
-              )}>
-                {games.map((game, idx) => (
-                  <motion.div
-                    key={game.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                  >
-                    {viewMode === 'card' ? <GameCard {...game} /> : <GameListItem {...game} />}
-                  </motion.div>
-                ))}
-              </div>
+              {isLoading ? (
+                <div className={cn(
+                  viewMode === 'card' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"
+                )}>
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className={cn("bg-slate-900/50 border border-slate-800", viewMode === 'card' ? "h-64 rounded-2xl" : "h-20 rounded-xl")} />
+                  ))}
+                </div>
+              ) : (
+                <div className={cn(
+                  viewMode === 'card' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-3"
+                )}>
+                  {games?.map((game, idx) => (
+                    <motion.div
+                      key={game.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                    >
+                      {viewMode === 'card' ? <GameCard {...game} /> : <GameListItem {...game} />}
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">
