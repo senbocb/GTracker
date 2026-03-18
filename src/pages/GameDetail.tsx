@@ -2,22 +2,19 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, History, Plus, Trophy, ExternalLink, ArrowUp, ArrowDown, Table as TableIcon, Target, Activity, Edit2, Calendar, BarChart3, Map as MapIcon, RefreshCw, Eye, EyeOff, Loader2, Shield, Sword, Heart } from 'lucide-react';
+import { ChevronLeft, Plus, Trophy, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RankBadge from '@/components/RankBadge';
 import ProgressChart from '@/components/ProgressChart';
 import SeasonManager, { Season } from '@/components/SeasonManager';
 import TournamentWidget from '@/components/TournamentWidget';
 import CS2MapPopup from '@/components/CS2MapPopup';
 import AppLayout from '@/components/AppLayout';
 import { showSuccess, showError } from '@/utils/toast';
-import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 
 const DEFAULT_METADATA: Record<string, any> = {
@@ -29,10 +26,11 @@ const DEFAULT_METADATA: Record<string, any> = {
       "Master Guardian I", "Master Guardian II", "Master Guardian Elite", "Distinguished Master Guardian", 
       "Legendary Eagle", "Legendary Eagle Master", "Supreme Master First Class", "The Global Elite"
     ], 
-    tierCount: 0,
-    modeRanks: {
-      "Faceit": ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Challenger"]
-    }
+    tierCount: 0
+  },
+  "Overwatch 2": {
+    ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
+    tierCount: 5
   }
 };
 
@@ -102,7 +100,6 @@ const GameDetail = () => {
       const mode = game.modes.find((m: any) => m.name === activeMode);
       if (!mode) throw new Error("Mode not found");
 
-      // Calculate if this is a new peak
       const registryEntry = registryData?.[game.title];
       const registryMode = registryEntry?.modes?.find((m: any) => m.name === activeMode);
       const availableRanks = registryMode?.ranks || DEFAULT_METADATA[game.title]?.ranks || [];
@@ -125,7 +122,6 @@ const GameDetail = () => {
       
       if (historyError) throw historyError;
 
-      // Update mode with current rank and potentially new peak
       const updateData: any = {
         rank: logData.rank,
         tier: logData.tier
@@ -199,7 +195,7 @@ const GameDetail = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  {isOW2RoleQueue && (
+                  {(isOW2RoleQueue || game.title === 'Overwatch 2') && (
                     <div className="grid gap-2">
                       <Label className="text-[10px] font-bold uppercase text-slate-400">Role</Label>
                       <Select value={logData.role} onValueChange={(v) => setLogData({...logData, role: v})}>

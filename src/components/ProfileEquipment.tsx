@@ -4,8 +4,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Gamepad2, Globe, Zap, Shield, Wrench, Mouse, Keyboard, Headphones, Mic, Monitor, Cpu, Plus, Trash2 } from 'lucide-react';
+import { Gamepad2, Globe, Zap, Wrench, Mouse, Keyboard, Headphones, Mic, Monitor, Cpu, Plus, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 
 interface Peripheral {
@@ -30,6 +31,8 @@ const PERIPHERAL_ICONS = {
   other: <Wrench size={16} />
 };
 
+const VERIFIED_GAMES = ["Valorant", "Counter-Strike 2", "League of Legends", "Overwatch 2", "Apex Legends", "Aim Lab", "Kovaaks"];
+
 const ProfileEquipment = ({ isEditing, data, onChange }: ProfileEquipmentProps) => {
   const peripherals: Peripheral[] = data.peripherals || [];
 
@@ -48,7 +51,6 @@ const ProfileEquipment = ({ isEditing, data, onChange }: ProfileEquipmentProps) 
     onChange({ ...data, peripherals: updated });
   };
 
-  // Auto-detect type based on name
   const detectType = (name: string): Peripheral['type'] => {
     const n = name.toLowerCase();
     if (n.includes('mouse') || n.includes('gpro') || n.includes('viper')) return 'mouse';
@@ -64,8 +66,8 @@ const ProfileEquipment = ({ isEditing, data, onChange }: ProfileEquipmentProps) 
     <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
       <CardHeader className="pb-2 border-b border-slate-800/50 flex flex-row items-center justify-between">
         <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 flex items-center gap-2">
-          <Wrench size={14} />
-          Tactical Equipment
+          <User size={14} />
+          User Info
         </CardTitle>
         {isEditing && (
           <Button variant="ghost" size="icon" className="h-6 w-6 text-indigo-400" onClick={addPeripheral}>
@@ -81,11 +83,16 @@ const ProfileEquipment = ({ isEditing, data, onChange }: ProfileEquipmentProps) 
               <span className="text-[10px] font-black uppercase tracking-widest">Main Game</span>
             </div>
             {isEditing ? (
-              <Input 
-                value={data.main_game || ''}
-                onChange={(e) => onChange({...data, main_game: e.target.value})}
-                className="bg-slate-950 border-slate-800 h-8 w-32 text-[10px] font-bold uppercase"
-              />
+              <Select value={data.main_game} onValueChange={(v) => onChange({...data, main_game: v})}>
+                <SelectTrigger className="bg-slate-950 border-slate-800 h-8 w-32 text-[10px] font-bold uppercase">
+                  <SelectValue placeholder="Select Game" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-950 border-slate-800 text-white">
+                  {VERIFIED_GAMES.map(game => (
+                    <SelectItem key={game} value={game}>{game}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : (
               <span className="text-[10px] font-black uppercase text-white">{data.main_game || 'N/A'}</span>
             )}
@@ -119,7 +126,9 @@ const ProfileEquipment = ({ isEditing, data, onChange }: ProfileEquipmentProps) 
                 className="bg-slate-950 border-slate-800 h-8 w-32 text-[10px] font-bold uppercase"
               />
             ) : (
-              <span className="text-[10px] font-black uppercase text-white">{data.sensitivity || 'N/A'}</span>
+              <span className="text-[10px] font-black uppercase text-white">
+                {data.sensitivity ? `${data.sensitivity} cm/360` : 'N/A'}
+              </span>
             )}
           </div>
         </div>
@@ -151,9 +160,6 @@ const ProfileEquipment = ({ isEditing, data, onChange }: ProfileEquipmentProps) 
               )}
             </div>
           ))}
-          {peripherals.length === 0 && !isEditing && (
-            <p className="text-[9px] text-slate-600 italic">No peripherals listed.</p>
-          )}
         </div>
       </CardContent>
     </Card>

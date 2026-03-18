@@ -6,7 +6,7 @@ import GameListItem from '@/components/GameListItem';
 import MatchHistory from '@/components/MatchHistory';
 import SessionTracker from '@/components/SessionTracker';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
-import { Plus, LayoutGrid, List, Terminal, Settings2, Activity, TrendingUp, Users, Zap } from 'lucide-react';
+import { Plus, LayoutGrid, List } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -77,50 +77,6 @@ const Index = () => {
                 Add Game
               </Button>
             </Link>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass-card p-6 rounded-2xl saas-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                <Activity size={20} />
-              </div>
-              <span className="text-sm font-medium text-slate-400">Active Trackers</span>
-            </div>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold text-white">{games.length}</span>
-              <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
-                <TrendingUp size={12} /> +2 this week
-              </span>
-            </div>
-          </div>
-          <div className="glass-card p-6 rounded-2xl saas-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                <Users size={20} />
-              </div>
-              <span className="text-sm font-medium text-slate-400">Team Rank</span>
-            </div>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold text-white">Elite</span>
-              <span className="text-xs font-medium text-slate-500">Top 5%</span>
-            </div>
-          </div>
-          <div className="glass-card p-6 rounded-2xl saas-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-                <Zap size={20} />
-              </div>
-              <span className="text-sm font-medium text-slate-400">Total Logs</span>
-            </div>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold text-white">
-                {games.reduce((acc, g) => acc + g.modes.reduce((mAcc: number, m: any) => mAcc + (m.history?.length || 0), 0), 0)}
-              </span>
-              <span className="text-xs font-medium text-slate-500">Lifetime</span>
-            </div>
           </div>
         </div>
 

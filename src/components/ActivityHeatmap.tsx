@@ -96,19 +96,18 @@ const ActivityHeatmap = () => {
             <Loader2 className="animate-spin text-indigo-500" />
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(53,minmax(0,1fr))] gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-[repeat(53,minmax(0,1fr))] gap-1 w-full">
             <TooltipProvider delayDuration={0}>
               {weeks.map((week, wi) => (
-                <div key={wi} className="flex flex-col gap-1.5 sm:gap-2">
+                <div key={wi} className="flex flex-col gap-1">
                   {week.map((day, di) => (
                     <Tooltip key={di}>
                       <TooltipTrigger asChild>
                         <div 
                           className={cn(
-                            "aspect-square w-full rounded-[3px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
+                            "aspect-square w-full rounded-[2px] border transition-all hover:scale-150 hover:z-10 cursor-crosshair",
                             getColor(day)
                           )} 
-                          style={{ minWidth: '6px' }}
                         />
                       </TooltipTrigger>
                       {!day.isFuture && day.isCurrentYear && (

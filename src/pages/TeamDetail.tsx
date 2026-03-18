@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { 
   Shield, Users, MessageSquare, Settings, LogOut, Trash2, 
   ChevronLeft, User, Crown, Calendar, Globe, Lock, Unlock,
-  AlertTriangle, Loader2, Check, X, Plus
+  AlertTriangle, Loader2, Check, X, Plus, Camera, ImageIcon, Gamepad2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,10 +15,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { showSuccess, showError } from '@/utils/toast';
+import { processImage } from '@/utils/imageProcessing';
 import { cn } from '@/lib/utils';
+
+const VERIFIED_GAMES = ["Valorant", "Counter-Strike 2", "League of Legends", "Overwatch 2", "Apex Legends", "Aim Lab", "Kovaaks"];
 
 const TeamDetail = () => {
   const { id } = useParams();
@@ -28,6 +34,12 @@ const TeamDetail = () => {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [editedTeam, setEditedTeam] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const iconInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (id) fetchTeamData();
@@ -44,8 +56,8 @@ const TeamDetail = () => {
       
       if (teamError) throw teamError;
       setTeam(teamData);
+      setEditedTeam({ ...teamData });
 
-      // Fetch members and then their profiles separately to avoid relationship cache errors
       const { data: memberData, error: memberError } = await supabase
         .from('team_members')
         .select('*')
@@ -80,6 +92,8 @@ const TeamDetail = () => {
     if (!team || team.leader_id !== user?.id) return;
     setIsDeleting(true);
     try {
+      // Delete members first due to foreign key constraints
+      await supabase.from('team_members').delete().eq('team_id', team.id);
       const { error } = await supabase.from('teams').delete().eq('id', team.id);
       if (error) throw error;
       showSuccess("Team decommissioned.");
@@ -88,6 +102,61 @@ const TeamDetail = () => {
       showError(err.message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({
+          name: editedTeam.name,
+          tag: editedTeam.tag,
+          description: editedTeam.description,
+          is_open: editedTeam.is_open,
+          main_game: editedTeam.main_game,
+          icon_url: editedTeam.icon_url,
+          banner_url: editedTeam.banner_url
+        })
+        .eq('id', team.id);
+      
+      if (error) throw error;
+      showSuccess("Team settings updated.");
+      setIsSettingsOpen(false);
+      fetchTeamData();
+    } catch (err: any) {
+      showError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'icon' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const processed = await processImage(file, type === 'icon' ? 400 : 1920, type === 'icon' ? 400 : 600, 0.8);
+        setEditedTeam({ ...editedTeam, [type === 'icon' ? 'icon_url' : 'banner_url']: processed });
+        showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} processed.`);
+      } catch (err) {
+        showError("Failed to process image.");
+      }
+    }
+  };
+
+  const updateMemberRole = async (memberId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .update({ role: newRole })
+        .eq('id', memberId);
+      
+      if (error) throw error;
+      showSuccess("Member role updated.");
+      fetchTeamData();
+    } catch (err: any) {
+      showError(err.message);
     }
   };
 
@@ -106,30 +175,12 @@ const TeamDetail = () => {
             </Button>
           </Link>
           <div className="flex gap-3">
-            {isLeader ? (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="destructive" className="bg-red-600/10 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white">
-                    <Trash2 size={18} className="mr-2" /> Delete Team
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-slate-950 border-slate-800 text-white">
-                  <DialogHeader>
-                    <DialogTitle className="text-red-500 flex items-center gap-2 uppercase italic font-black">
-                      <AlertTriangle /> Critical Authorization
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="py-4 space-y-4">
-                    <p className="text-sm text-slate-300">This will permanently dissolve <span className="text-white font-bold">[{team.tag}] {team.name}</span> and remove all members.</p>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="destructive" onClick={handleDeleteTeam} disabled={isDeleting} className="w-full bg-red-600 font-black uppercase py-6">
-                      {isDeleting ? <Loader2 className="animate-spin mr-2" /> : "Confirm Dissolution"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            ) : (
+            {isLeader && (
+              <Button variant="outline" onClick={() => setIsSettingsOpen(true)} className="border-slate-800 text-slate-400 hover:text-white">
+                <Settings size={18} className="mr-2" /> Team Settings
+              </Button>
+            )}
+            {!isLeader && (
               <Button variant="outline" className="border-slate-800 text-slate-400 hover:text-red-400">
                 <LogOut size={18} className="mr-2" /> Leave Team
               </Button>
@@ -137,25 +188,34 @@ const TeamDetail = () => {
           </div>
         </div>
 
+        <div className="relative h-48 md:h-64 rounded-[2.5rem] overflow-hidden border border-slate-800 bg-slate-900 mb-10">
+          {team.banner_url ? (
+            <img src={team.banner_url} className="w-full h-full object-cover opacity-60" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-indigo-900/40 to-violet-900/40" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#020617] to-transparent" />
+          <div className="absolute -bottom-1 left-10 flex items-end gap-6">
+            <div className="w-32 h-32 rounded-[2rem] bg-slate-800 border-8 border-[#020617] flex items-center justify-center overflow-hidden shadow-2xl">
+              {team.icon_url ? <img src={team.icon_url} className="w-full h-full object-cover" /> : <Shield size={48} className="text-indigo-500" />}
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-3xl bg-slate-900 border-2 border-slate-800 flex items-center justify-center overflow-hidden shadow-2xl">
-                {team.icon_url ? <img src={team.icon_url} className="w-full h-full object-cover" /> : <Shield size={48} className="text-indigo-500" />}
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">
+                  <span className="text-indigo-400">[{team.tag}]</span> {team.name}
+                </h1>
+                {team.is_open ? <Unlock size={16} className="text-emerald-500" /> : <Lock size={16} className="text-slate-500" />}
               </div>
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">
-                    <span className="text-indigo-400">[{team.tag}]</span> {team.name}
-                  </h1>
-                  {team.is_open ? <Unlock size={16} className="text-emerald-500" /> : <Lock size={16} className="text-slate-500" />}
-                </div>
-                <div className="flex items-center gap-4 mt-2">
-                  <Badge className="bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest">{team.main_game || 'Multi-Game'}</Badge>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                    <Users size={12} /> {members.length} Operators
-                  </span>
-                </div>
+              <div className="flex items-center gap-4 mt-2">
+                <Badge className="bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest">{team.main_game || 'Multi-Game'}</Badge>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                  <Users size={12} /> {members.length} Operators
+                </span>
               </div>
             </div>
 
@@ -188,6 +248,19 @@ const TeamDetail = () => {
                           </p>
                         </div>
                       </div>
+                      {isLeader && member.user_id !== user?.id && (
+                        <Select value={member.role} onValueChange={(v) => updateMemberRole(member.id, v)}>
+                          <SelectTrigger className="w-24 h-8 bg-slate-950 border-slate-800 text-[9px] font-black uppercase">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-950 border-slate-800 text-white">
+                            <SelectItem value="Leader">Leader</SelectItem>
+                            <SelectItem value="Officer">Officer</SelectItem>
+                            <SelectItem value="Member">Member</SelectItem>
+                            <SelectItem value="Recruit">Recruit</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -218,6 +291,86 @@ const TeamDetail = () => {
             </Card>
           </div>
         </div>
+
+        {/* Team Settings Dialog */}
+        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+          <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle className="italic uppercase font-black">Team Configuration</DialogTitle></DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400">Team Name</Label>
+                    <Input value={editedTeam?.name} onChange={(e) => setEditedTeam({...editedTeam, name: e.target.value})} className="bg-slate-900 border-slate-800" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400">Tag</Label>
+                    <Input value={editedTeam?.tag} onChange={(e) => setEditedTeam({...editedTeam, tag: e.target.value.toUpperCase()})} maxLength={4} className="bg-slate-900 border-slate-800" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400">Main Game</Label>
+                    <Select value={editedTeam?.main_game} onValueChange={(v) => setEditedTeam({...editedTeam, main_game: v})}>
+                      <SelectTrigger className="bg-slate-900 border-slate-800">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        {VERIFIED_GAMES.map(game => (
+                          <SelectItem key={game} value={game}>{game}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400">Team Icon</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden">
+                        {editedTeam?.icon_url ? <img src={editedTeam.icon_url} className="w-full h-full object-cover" /> : <Shield size={24} className="text-slate-600" />}
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => iconInputRef.current?.click()} className="border-slate-800 bg-slate-900/50">Change</Button>
+                      <input type="file" ref={iconInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'icon')} />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400">Team Banner</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-32 h-16 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden">
+                        {editedTeam?.banner_url ? <img src={editedTeam.banner_url} className="w-full h-full object-cover" /> : <ImageIcon size={24} className="text-slate-600" />}
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()} className="border-slate-800 bg-slate-900/50">Change</Button>
+                      <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-400">Description</Label>
+                <Textarea value={editedTeam?.description} onChange={(e) => setEditedTeam({...editedTeam, description: e.target.value})} className="bg-slate-900 border-slate-800 min-h-[100px]" />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-bold">Open Recruitment</Label>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest">Allow anyone to join without invite</p>
+                </div>
+                <Switch checked={editedTeam?.is_open} onCheckedChange={(v) => setEditedTeam({...editedTeam, is_open: v})} />
+              </div>
+
+              <div className="pt-6 border-t border-slate-800">
+                <Button variant="destructive" onClick={handleDeleteTeam} disabled={isDeleting} className="w-full bg-red-600/10 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white h-12 font-black uppercase">
+                  {isDeleting ? <Loader2 className="animate-spin mr-2" /> : <Trash2 size={18} className="mr-2" />} Decommission Team
+                </Button>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleSaveSettings} disabled={isSaving} className="w-full bg-indigo-600 font-black uppercase py-6">
+                {isSaving ? <Loader2 className="animate-spin mr-2" /> : "Save Configuration"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </AppLayout>
   );

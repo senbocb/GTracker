@@ -37,12 +37,39 @@ const Social = () => {
         if (error) throw error;
         setOperators(data || []);
       } else {
-        const { data, error } = await supabase
+        const { data: teamData, error: teamError } = await supabase
           .from('teams')
           .select('*')
           .limit(20);
-        if (error) throw error;
-        setTeams(data || []);
+        
+        if (teamError) throw teamError;
+
+        if (teamData) {
+          const teamsWithMembers = await Promise.all(teamData.map(async (team) => {
+            const { data: memberData } = await supabase
+              .from('team_members')
+              .select('user_id')
+              .eq('team_id', team.id)
+              .limit(5);
+            
+            let memberProfiles = [];
+            if (memberData && memberData.length > 0) {
+              const { data: profiles } = await supabase
+                .from('profiles')
+                .select('avatar_url, username')
+                .in('id', memberData.map(m => m.user_id));
+              memberProfiles = profiles || [];
+            }
+
+            const { count } = await supabase
+              .from('team_members')
+              .select('*', { count: 'exact', head: true })
+              .eq('team_id', team.id);
+
+            return { ...team, memberProfiles, memberCount: count || 0 };
+          }));
+          setTeams(teamsWithMembers);
+        }
       }
     } catch (err) {
       console.error("Error fetching social data:", err);
@@ -176,17 +203,26 @@ const Social = () => {
 
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex -space-x-2">
-                        {[1, 2, 3].map((i) => (
+                        {team.memberProfiles?.map((profile: any, i: number) => (
                           <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-950 bg-slate-800 flex items-center justify-center overflow-hidden">
-                            <User size={14} className="text-slate-500" />
+                            {profile.avatar_url ? (
+                              <img src={profile.avatar_url} className="w-full h-full object-cover" />
+                            ) : (
+                              <User size={14} className="text-slate-500" />
+                            )}
                           </div>
                         ))}
-                        <div className="w-8 h-8 rounded-full border-2 border-slate-950 bg-slate-900 flex items-center justify-center text-[8px] font-black text-slate-500">
-                          +12
-                        </div>
+                        {team.memberCount > 5 && (
+                          <div className="w-8 h-8 rounded-full border-2 border-slate-950 bg-slate-900 flex items-center justify-center text-[8px] font-black text-slate-500">
+                            +{team.memberCount - 5}
+                          </div>
+                        )}
                       </div>
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[8px] font-black uppercase">
-                        Recruiting
+                      <Badge variant="outline" className={cn(
+                        "text-[8px] font-black uppercase",
+                        team.is_open ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                      )}>
+                        {team.is_open ? 'Recruiting' : 'Invite Only'}
                       </Badge>
                     </div>
 
