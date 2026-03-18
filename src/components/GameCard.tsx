@@ -3,11 +3,11 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import RankBadge from './RankBadge';
-import { ChevronRight, MoreHorizontal, Trophy } from 'lucide-react';
+import { ChevronRight, MoreHorizontal, Trophy, Map } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
-import KovaaksBenchmarks from './KovaaksBenchmarks';
 import OW2RoleRanks from './OW2RoleRanks';
+import CS2MapPopup from './CS2MapPopup';
 
 interface GameCardProps {
   id: string;
@@ -28,8 +28,8 @@ const GAME_BANNERS: Record<string, string> = {
 
 const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
   const navigate = useNavigate();
-  const isKovaaks = title.toLowerCase().includes('kovaaks');
   const isOW2 = title.toLowerCase().includes('overwatch 2');
+  const isCS2 = title.toLowerCase().includes('counter-strike 2');
   
   const bannerImage = image || GAME_BANNERS[title] || "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop";
 
@@ -38,6 +38,15 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
     if (mode.rank && mode.rank !== 'Unranked') return mode.rank;
     return "N/A";
   };
+
+  // Filter out modes that are handled by special components
+  const filteredModes = modes.filter(mode => {
+    if (isOW2 && mode.name === 'Role Queue') return false;
+    if (isCS2 && mode.name === 'Competitive (Per Map)') return false;
+    return true;
+  });
+
+  const compPerMapMode = modes.find(m => m.name === 'Competitive (Per Map)');
 
   return (
     <Card 
@@ -59,19 +68,28 @@ const GameCard = ({ id, title, modes = [], image }: GameCardProps) => {
       </div>
       <CardContent className="p-5 flex-1 flex flex-col">
         <div className="space-y-3 flex-1">
-          {isKovaaks && (
-            <div className="py-2 interactive-element">
-              <KovaaksBenchmarks gameId={id} />
-            </div>
-          )}
-          
           {isOW2 && (
             <div className="py-2 interactive-element">
               <OW2RoleRanks gameId={id} onLogClick={() => navigate(`/game/${id}`)} />
             </div>
           )}
 
-          {modes.map((mode, idx) => (
+          {isCS2 && compPerMapMode && (
+            <div className="py-2 interactive-element">
+              <CS2MapPopup 
+                gameId={id} 
+                history={compPerMapMode.history || []} 
+                trigger={
+                  <Button variant="outline" className="w-full border-slate-800 bg-slate-900/50 text-indigo-400 hover:text-white hover:bg-indigo-600/10 h-12 rounded-xl font-black uppercase tracking-widest">
+                    <Map className="mr-2" size={18} />
+                    View Map Ranks
+                  </Button>
+                }
+              />
+            </div>
+          )}
+
+          {filteredModes.map((mode, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800/50 group/mode hover:bg-slate-900/50 transition-colors">
               <div className="space-y-0.5">
                 <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{mode.name}</p>

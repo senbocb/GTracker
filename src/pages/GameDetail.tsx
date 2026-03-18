@@ -30,7 +30,8 @@ const DEFAULT_METADATA: Record<string, any> = {
   },
   "Overwatch 2": {
     ranks: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Top 500"],
-    tierCount: 5
+    tierCount: 5,
+    modes: ["Role Queue", "Open Queue", "Stadium"]
   }
 };
 
@@ -154,9 +155,10 @@ const GameDetail = () => {
   const registryMode = registryEntry?.modes?.find((m: any) => m.name === activeMode);
   const availableRanks = registryMode?.ranks || DEFAULT_METADATA[game.title]?.ranks || [];
   const rankConfigs = registryMode?.rank_configs || {};
+  const tierCount = registryMode?.tierCount ?? DEFAULT_METADATA[game.title]?.tierCount ?? 0;
   
   const isCS2PerMap = game.title === 'Counter-Strike 2' && activeMode === 'Competitive (Per Map)';
-  const isOW2RoleQueue = game.title === 'Overwatch 2' && activeMode === 'Role Queue';
+  const isOW2 = game.title === 'Overwatch 2';
 
   return (
     <AppLayout>
@@ -195,9 +197,24 @@ const GameDetail = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  {(isOW2RoleQueue || game.title === 'Overwatch 2') && (
+                  {tierCount > 0 && logData.rank !== 'Top 500' && (
                     <div className="grid gap-2">
-                      <Label className="text-[10px] font-bold uppercase text-slate-400">Role</Label>
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Tier</Label>
+                      <Select value={logData.tier} onValueChange={(v) => setLogData({...logData, tier: v})}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800">
+                          <SelectValue placeholder="Select Tier" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                          {Array.from({ length: tierCount }, (_, i) => (i + 1).toString()).map(t => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {isOW2 && (
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-400">Role / Hero</Label>
                       <Select value={logData.role} onValueChange={(v) => setLogData({...logData, role: v})}>
                         <SelectTrigger className="bg-slate-900 border-slate-800">
                           <SelectValue placeholder="Select Role" />
